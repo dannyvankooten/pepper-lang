@@ -18,7 +18,7 @@ int is_digit(char ch) {
     return (ch >= '0' && ch <= '9');
 }
 
-void gettoken(lexer *l, token *t) {
+int gettoken(lexer *l, token *t) {
     char ch = l->input[l->pos++];
     
     // skip whitespace
@@ -125,10 +125,7 @@ void gettoken(lexer *l, token *t) {
             t->literal[1] = '\0';
         break;
 
-        case '\0':
-            strcpy(t->type, EOF);
-            t->literal[0] = '\0';
-        break;
+
 
         default:
             if (is_letter(ch)) {    
@@ -161,5 +158,13 @@ void gettoken(lexer *l, token *t) {
             
             
             break;
+
+            case '\0':
+                strcpy(t->type, EOF);
+                t->literal[0] = '\0';
+                return -1; // signal DONE
+            break;
     }
+
+    return 1;
 }

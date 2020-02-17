@@ -1,15 +1,12 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -Werror -Wshadow
+CFLAGS = -std=c99 -Wall -ledit
 
-test: *.c *.h .dist
-	$(CC) $(CFLAGS) *.c -o .dist/test
-	.dist/test || (echo "Test failed" && exit 1)
-
-debug: *.c *.h  .dist
-	$(CC) $(CFLAGS) -g *.c -o .dist/debug
+repl: .dist
+	$(CC) $(CFLAGS) repl.c -o .dist/repl
+	.dist/repl
 
 .dist:
-	mkdir -p dist
+	mkdir -p .dist
 
 clean:
 	rm -r .dist

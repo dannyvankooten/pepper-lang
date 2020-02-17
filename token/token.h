@@ -1,5 +1,5 @@
 #include <string.h>
-
+#undef EOF
 typedef struct Token {
     char type[100];
     char literal[100];
