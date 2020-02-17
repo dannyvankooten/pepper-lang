@@ -17,7 +17,9 @@ int main() {
         "\treturn true;\n"
         "} else {\n"
         "\treturn false;\n"
-        "}\n";
+        "}\n"
+        "10 == 10;\n"
+        "10 != 9;\n";
 
     lexer l;
     l.input = input;
@@ -154,6 +156,22 @@ int main() {
     strcpy(tokens[i++].literal, ";");
     strcpy(tokens[i].type, RBRACE);
     strcpy(tokens[i++].literal, "}");
+    strcpy(tokens[i].type, INT);
+    strcpy(tokens[i++].literal, "10");
+    strcpy(tokens[i].type, EQ);
+    strcpy(tokens[i++].literal, "==");
+    strcpy(tokens[i].type, INT);
+    strcpy(tokens[i++].literal, "10");
+    strcpy(tokens[i].type, SEMICOLON);
+    strcpy(tokens[i++].literal, ";");
+    strcpy(tokens[i].type, INT);
+    strcpy(tokens[i++].literal, "10");
+    strcpy(tokens[i].type, NOT_EQ);
+    strcpy(tokens[i++].literal, "!=");
+    strcpy(tokens[i].type, INT);
+    strcpy(tokens[i++].literal, "9");
+    strcpy(tokens[i].type, SEMICOLON);
+    strcpy(tokens[i++].literal, ";");
     strcpy(tokens[i].type, EOF);
     strcpy(tokens[i++].literal, "");
 
@@ -161,16 +179,17 @@ int main() {
     for (int j = 0; j < i; j++) {
         token t;
         gettoken(&l, &t);
+
+        if (strcmp(t.type, tokens[j].type) != 0) {
+            printf("[%d] wrong type: expected \"%s\", got \"%s\"\n", j, tokens[j].type, t.type);
+            abort();
+        }
         
         if (strcmp(t.literal, tokens[j].literal) != 0) {
             printf("[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
             abort();
         }
 
-        if (strcmp(t.type, tokens[j].type) != 0) {
-            printf("[%d] wrong type: expected \"%s\", got \"%s\"\n", j, tokens[j].type, t.type);
-            abort();
-        }
 
     }
 

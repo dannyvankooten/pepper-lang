@@ -20,16 +20,25 @@ int is_digit(char ch) {
 
 void gettoken(lexer *l, token *t) {
     char ch = l->input[l->pos++];
-
+    
+    // skip whitespace
     while (ch == ' ' || ch == '\n' || ch == '\t') {
         ch = l->input[l->pos++];
     }
 
+    char ch_next = l->input[l->pos];
+
     switch (ch) {
         case '=':
-            strcpy(t->type, ASSIGN);
-            t->literal[0] = ch;
-            t->literal[1] = '\0';
+            if (ch_next == '=') {
+                strcpy(t->type, EQ);
+                strcpy(t->literal, "==");
+                l->pos++;
+            } else {
+                strcpy(t->type, ASSIGN);
+                t->literal[0] = ch;
+                t->literal[1] = '\0';
+            }
         break;
 
         case ';':
@@ -69,9 +78,15 @@ void gettoken(lexer *l, token *t) {
         break;
 
         case '!':
-            strcpy(t->type, BANG);
-            t->literal[0] = ch;
-            t->literal[1] = '\0';
+            if (ch_next == '=') {
+                strcpy(t->type, NOT_EQ);
+                strcpy(t->literal, "!=");
+                l->pos++;
+            } else {
+                strcpy(t->type, BANG);
+                t->literal[0] = ch;
+                t->literal[1] = '\0';
+            }
         break;
 
         case '/':
