@@ -17,7 +17,7 @@ int main() {
     lexer l;
     l.input = input;
     l.pos = 0;
-    token tokens[37];
+    token tokens[100];
     strcpy(tokens[0].type, LET);
     strcpy(tokens[0].literal, "let");
     strcpy(tokens[1].type, IDENT);
@@ -90,11 +90,35 @@ int main() {
     strcpy(tokens[34].literal, ")");
     strcpy(tokens[35].type, SEMICOLON);
     strcpy(tokens[35].literal, ";");
-    strcpy(tokens[36].type, EOF);
-    strcpy(tokens[36].literal, "");
+    strcpy(tokens[36].type, BANG);
+    strcpy(tokens[36].literal, "!");
+    strcpy(tokens[37].type, MINUS);
+    strcpy(tokens[37].literal, "-");
+    strcpy(tokens[38].type, SLASH);
+    strcpy(tokens[38].literal, "/");
+    strcpy(tokens[39].type, ASTERISK);
+    strcpy(tokens[39].literal, "*");
+    strcpy(tokens[40].type, INT);
+    strcpy(tokens[40].literal, "5");
+    strcpy(tokens[41].type, SEMICOLON);
+    strcpy(tokens[41].literal, ";");
+    strcpy(tokens[42].type, INT);
+    strcpy(tokens[42].literal, "5");
+    strcpy(tokens[43].type, LT);
+    strcpy(tokens[43].literal, "<");
+    strcpy(tokens[44].type, INT);
+    strcpy(tokens[44].literal, "10");
+    strcpy(tokens[45].type, GT);
+    strcpy(tokens[45].literal, ">");
+    strcpy(tokens[46].type, INT);
+    strcpy(tokens[46].literal, "5");
+    strcpy(tokens[47].type, SEMICOLON);
+    strcpy(tokens[47].literal, ";");
+    strcpy(tokens[48].type, EOF);
+    strcpy(tokens[48].literal, "");
 
 
-    for (int i = 0; i < 37; i++) {
+    for (int i = 0; i < 49; i++) {
         token t;
         gettoken(&l, &t);
         
