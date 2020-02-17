@@ -12,9 +12,9 @@ int main() {
         "};\n"
         "let result = add(five, ten);\n";
 
-    lexer lexer;
-    lexer.input = input;
-    lexer.pos = 0;
+    lexer l;
+    l.input = input;
+    l.pos = 0;
     token tokens[37];
     strcpy(tokens[0].type, LET);
     strcpy(tokens[0].literal, "let");
@@ -93,7 +93,7 @@ int main() {
 
     for (int i = 0; i < 37; i++) {
         token t;
-        gettoken(&lexer, &t);
+        gettoken(&l, &t);
         
         if (strcmp(t.literal, tokens[i].literal) != 0) {
             printf("[%d] wrong literal: expected \"%s\", got \"%s\"\n", i, tokens[i].literal, t.literal);
