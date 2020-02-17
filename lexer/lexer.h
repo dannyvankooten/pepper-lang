@@ -62,6 +62,42 @@ void gettoken(lexer *l, token *t) {
             t->literal[1] = '\0';
         break;
 
+        case '-':
+            strcpy(t->type, MINUS);
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
+        case '!':
+            strcpy(t->type, BANG);
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
+        case '/':
+            strcpy(t->type, SLASH);
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
+        case '*':
+            strcpy(t->type, ASTERISK);
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
+        case '<':
+            strcpy(t->type, LT);
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
+        case '>':
+            strcpy(t->type, GT);
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
         case '{':
             strcpy(t->type, LBRACE);
             t->literal[0] = ch;

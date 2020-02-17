@@ -10,7 +10,9 @@ int main() {
         "let add = fn(x, y) {\n"
         "x + y;\n"
         "};\n"
-        "let result = add(five, ten);\n";
+        "let result = add(five, ten);\n"
+        "!-/*5;\n"
+        "5 < 10 > 5;\n";
 
     lexer l;
     l.input = input;
@@ -90,6 +92,7 @@ int main() {
     strcpy(tokens[35].literal, ";");
     strcpy(tokens[36].type, EOF);
     strcpy(tokens[36].literal, "");
+
 
     for (int i = 0; i < 37; i++) {
         token t;
