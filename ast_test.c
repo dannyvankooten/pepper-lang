@@ -37,17 +37,17 @@ int main() {
         "foobar",
     };
     for (int i = 0; i < 3; i++) {
-        if (strcmp(p.statements[i]->token.literal, "let") != 0) {
-            abortf("wrong literal. expected %s, got %s\n", "let", p.statements[i]->token.literal);
+        if (strcmp(p.statements[i].token.literal, "let") != 0) {
+            abortf("wrong literal. expected %s, got %s\n", "let", p.statements[i].token.literal);
         }
 
-        if (strcmp(p.statements[i]->name.value, tests[i]) != 0) {
-            abortf("wrong name value. expected %s, got %s\n", tests[i], p.statements[i]->name.value);
+        if (strcmp(p.statements[i].name.value, tests[i]) != 0) {
+            abortf("wrong name value. expected %s, got %s\n", tests[i], p.statements[i].name.value);
         }
 
-        // if (strcmp(p.statements[i].name.token.literal, tests[i]) != 0) {
-        //     abortf("wrong name literal. expected %s, got %s", tests[i], p.statements[i].token.literal);
-        // }
+        if (strcmp(p.statements[i].name.token.literal, tests[i]) != 0) {
+            abortf("wrong name literal. expected %s, got %s", tests[i], p.statements[i].token.literal);
+        }
     }
 
 }

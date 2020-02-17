@@ -17,7 +17,8 @@ typedef struct statement {
 } statement;
 
 typedef struct program {
-    statement * statements[1024];
+   // statement * statements[1024];
+    statement statements[1024];
     unsigned int size;
 } program;
 
@@ -75,8 +76,9 @@ program parse_program(parser *parser) {
     };
 
     while (strcmp(parser->current_token.type, EOF) != 0) {
-        statement *s = malloc(sizeof (struct statement));
-        if (parse_statement(parser, s) != -1) {
+        //statement *s = malloc(sizeof (struct statement));
+        statement s;
+        if (parse_statement(parser, &s) != -1) {
             prog.statements[prog.size++] = s;
         }
 

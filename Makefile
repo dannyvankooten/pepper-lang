@@ -1,4 +1,3 @@
-CC = gcc
 CFLAGS = -std=c99 -Wall -ledit
 TESTFLAGS = $(CFLAGS) -g 
 repl: .dist
