@@ -8,11 +8,16 @@ int main() {
     char * input = "let five = 5;\n"
         "let ten = 10;\n"
         "let add = fn(x, y) {\n"
-        "x + y;\n"
+        "\tx + y;\n"
         "};\n"
         "let result = add(five, ten);\n"
         "!-/*5;\n"
-        "5 < 10 > 5;\n";
+        "5 < 10 > 5;\n"
+        "if (5 < 10) {\n"
+        "\treturn true;\n"
+        "} else {\n"
+        "\treturn false;\n"
+        "}\n";
 
     lexer l;
     l.input = input;
@@ -114,21 +119,56 @@ int main() {
     strcpy(tokens[46].literal, "5");
     strcpy(tokens[47].type, SEMICOLON);
     strcpy(tokens[47].literal, ";");
-    strcpy(tokens[48].type, EOF);
-    strcpy(tokens[48].literal, "");
+    strcpy(tokens[48].type, IF);
+    strcpy(tokens[48].literal, "if");
+    strcpy(tokens[49].type, LPAREN);
+    strcpy(tokens[49].literal, "(");
+    int i = 50;
+    strcpy(tokens[i].type, INT);
+    strcpy(tokens[i++].literal, "5");
+    strcpy(tokens[i].type, LT);
+    strcpy(tokens[i++].literal, "<");
+    strcpy(tokens[i].type, INT);
+    strcpy(tokens[i++].literal, "10");
+    strcpy(tokens[i].type, RPAREN);
+    strcpy(tokens[i++].literal, ")");
+    strcpy(tokens[i].type, LBRACE);
+    strcpy(tokens[i++].literal, "{");
+    strcpy(tokens[i].type, RETURN);
+    strcpy(tokens[i++].literal, "return");
+    strcpy(tokens[i].type, TRUE);
+    strcpy(tokens[i++].literal, "true");
+    strcpy(tokens[i].type, SEMICOLON);
+    strcpy(tokens[i++].literal, ";");
+    strcpy(tokens[i].type, RBRACE);
+    strcpy(tokens[i++].literal, "}");
+    strcpy(tokens[i].type, ELSE);
+    strcpy(tokens[i++].literal, "else");
+    strcpy(tokens[i].type, LBRACE);
+    strcpy(tokens[i++].literal, "{");
+    strcpy(tokens[i].type, RETURN);
+    strcpy(tokens[i++].literal, "return");
+    strcpy(tokens[i].type, FALSE);
+    strcpy(tokens[i++].literal, "false");
+    strcpy(tokens[i].type, SEMICOLON);
+    strcpy(tokens[i++].literal, ";");
+    strcpy(tokens[i].type, RBRACE);
+    strcpy(tokens[i++].literal, "}");
+    strcpy(tokens[i].type, EOF);
+    strcpy(tokens[i++].literal, "");
 
 
-    for (int i = 0; i < 49; i++) {
+    for (int j = 0; j < i; j++) {
         token t;
         gettoken(&l, &t);
         
-        if (strcmp(t.literal, tokens[i].literal) != 0) {
-            printf("[%d] wrong literal: expected \"%s\", got \"%s\"\n", i, tokens[i].literal, t.literal);
+        if (strcmp(t.literal, tokens[j].literal) != 0) {
+            printf("[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
             abort();
         }
 
-        if (strcmp(t.type, tokens[i].type) != 0) {
-            printf("[%d] wrong type: expected \"%s\", got \"%s\"\n", i, tokens[i].type, t.type);
+        if (strcmp(t.type, tokens[j].type) != 0) {
+            printf("[%d] wrong type: expected \"%s\", got \"%s\"\n", j, tokens[j].type, t.type);
             abort();
         }
 
