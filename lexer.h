@@ -1,4 +1,4 @@
-#include "../token/token.h"
+#include "token.h"
 #include <string.h>
 #include <stdio.h>
 #undef EOF

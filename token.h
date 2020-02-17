@@ -5,6 +5,7 @@ typedef struct Token {
     char literal[100];
 } token;
 
+// TODO: Turn all of these into enum with int values
 const char * ILLEGAL = "ILLEGAL";
 const char * EOF = "EOF";
 const char * IDENT = "IDENT";

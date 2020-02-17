@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "lexer/lexer.h"
+#include "lexer.h"
 
 // TODO: perhaps mock this in case it's not installed, since it's not super necessary
 #include <editline/readline.h>
@@ -13,13 +13,13 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        char *input = readline("monkey> ");
+        char * input = readline("monkey> ");
         add_history(input);
 
-        lexer l;
-        l.input = input;
-        l.pos = 0;
-
+        lexer l = {
+            .input = input,
+            .pos = 0
+        };
         token t;
         while (gettoken(&l, &t) != -1)
         {
