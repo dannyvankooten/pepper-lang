@@ -33,13 +33,30 @@ static void next_token(parser * p) {
     gettoken(p->lexer, &p->next_token);
 }
 
+static int current_token_is(parser *p, int t) {
+    return t == p->current_token.type;
+}
+
+static int next_token_is(parser *p, int t) {
+     return t == p->next_token.type;
+}
+
+static int expect_next_token(parser *p, int t) {
+    if (next_token_is(p, t)) {
+        next_token(p);
+        return 1;
+    }
+
+    return 0;
+}
+
+
 int parse_let_statement(parser *p, statement *s) {
     s->token = p->current_token;
 
-    if (strcmp(p->next_token.type, IDENT) != 0) {
+     if (!expect_next_token(p, IDENT)) {
         return -1;
     }
-    next_token(p);
 
     // parse name
     identifier id = {
@@ -48,15 +65,13 @@ int parse_let_statement(parser *p, statement *s) {
     strcpy(id.value, p->current_token.literal);
     s->name = id;
 
-    if (strcmp(p->next_token.type, ASSIGN) != 0) {
+    if (!expect_next_token(p, ASSIGN)) {
         return -1;
     }
-    next_token(p);
 
     // TODO: Read expression here, for now we just skip forward until semicolon
 
-    
-    while (strcmp(p->current_token.type, SEMICOLON) != 0) {
+    while (!next_token_is(p, SEMICOLON)) {
         next_token(p);
     }
 
@@ -64,7 +79,7 @@ int parse_let_statement(parser *p, statement *s) {
 }
 
 int parse_statement(parser *p, statement *s) {
-   if (strcmp(p->current_token.type, LET) == 0) {
+   if (p->current_token.type == LET) {
        return parse_let_statement(p, s);
    }
    return -1;
@@ -75,7 +90,7 @@ program parse_program(parser *parser) {
         .size = 0,
     };
 
-    while (strcmp(parser->current_token.type, EOF) != 0) {
+    while (parser->current_token.type != EOF) {
         //statement *s = malloc(sizeof (struct statement));
         statement s;
         if (parse_statement(parser, &s) != -1) {

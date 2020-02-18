@@ -31,96 +31,96 @@ int gettoken(lexer *l, token *t) {
     switch (ch) {
         case '=':
             if (ch_next == '=') {
-                strcpy(t->type, EQ);
+                t->type = EQ;
                 strcpy(t->literal, "==");
                 l->pos++;
             } else {
-                strcpy(t->type, ASSIGN);
+                t->type = ASSIGN;
                 t->literal[0] = ch;
                 t->literal[1] = '\0';
             }
         break;
 
         case ';':
-            strcpy(t->type, SEMICOLON);
+            t->type = SEMICOLON;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '(':
-            strcpy(t->type, LPAREN);
+            t->type = LPAREN;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
         
         case ')':
-            strcpy(t->type, RPAREN);
+            t->type = RPAREN;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case ',':
-            strcpy(t->type, COMMA);
+            t->type = COMMA;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '+':
-            strcpy(t->type, PLUS);
+            t->type = PLUS;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '-':
-            strcpy(t->type, MINUS);
+            t->type = MINUS;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '!':
             if (ch_next == '=') {
-                strcpy(t->type, NOT_EQ);
+                t->type = NOT_EQ;
                 strcpy(t->literal, "!=");
                 l->pos++;
             } else {
-                strcpy(t->type, BANG);
+                t->type = BANG;
                 t->literal[0] = ch;
                 t->literal[1] = '\0';
             }
         break;
 
         case '/':
-            strcpy(t->type, SLASH);
+            t->type = SLASH;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '*':
-            strcpy(t->type, ASTERISK);
+            t->type = ASTERISK;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '<':
-            strcpy(t->type, LT);
+            t->type = LT;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '>':
-            strcpy(t->type, GT);
+            t->type = GT;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '{':
-            strcpy(t->type, LBRACE);
+            t->type = LBRACE;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '}':
-            strcpy(t->type, RBRACE);
+            t->type = RBRACE;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
@@ -146,21 +146,18 @@ int gettoken(lexer *l, token *t) {
                     ch = l->input[l->pos++];
                 }
                 t->literal[i++] = '\0';
-                strcpy(t->type, INT);
+                t->type = INT;
 
                 // return last character to input 
                 l->pos--;
             } else {
-                strcpy(t->type, ILLEGAL);
+                t->type = ILLEGAL;
                 t->literal[0] = ch;  
-            }
-
-            
-            
+            }            
             break;
 
             case '\0':
-                strcpy(t->type, EOF);
+                t->type = EOF;
                 t->literal[0] = '\0';
                 return -1; // signal DONE
             break;
