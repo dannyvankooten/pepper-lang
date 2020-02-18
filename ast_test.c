@@ -176,9 +176,8 @@ void test_integer_literal(expression expr, int expected) {
         abortf("wrong integer value: expected %d, got %d", expected, expr.int_value);
     }
 
-    // TODO: Test token literal here?
+    // TODO: Test token literal here as well?
 }
-
 
 void test_integer_expression() {
     char * input = "5;";
@@ -200,6 +199,40 @@ void test_integer_expression() {
     }
 
     test_integer_literal(stmt.expression, 5);
+}
+
+void test_infix_expressions() {
+    struct test {
+        char input[64];
+        int left_value;
+        char operator[2];
+        int right_value;
+    } tests[] = {
+       {"5 + 5", 5, "+", 5},
+       {"5 - 5", 5, "-", 5},
+       {"5 * 5", 5, "*", 5},
+       {"5 / 5", 5, "/", 5},
+       {"5 > 5", 5, ">", 5},
+       {"5 < 5", 5, "<", 5},
+       {"5 == 5", 5, "==", 5},
+       {"5 != 5", 5, "!=", 5},
+    };
+
+    for (int i=0; i < 2; i++) {
+        lexer l = {tests[i].input, 0};
+        parser parser = new_parser(&l);
+        program p = parse_program(&parser);
+
+        assert_parser_errors(&parser);
+        assert_program_size(&p, 1);
+        statement stmt = p.statements[0];
+       
+        test_integer_literal(*stmt.expression.left, tests[i].left_value);
+         if (strcmp(stmt.expression.operator, tests[i].operator) != 0) {
+            abortf("wrong operator. expected %s, got %s\n", tests[i].operator, stmt.expression.operator);
+        }
+        test_integer_literal(*stmt.expression.right, tests[i].right_value);
+    }
 }
 
 void test_prefix_expressions() {
@@ -235,4 +268,5 @@ int main() {
     test_identifier_expression();
     test_integer_expression();
     test_prefix_expressions();
+    test_infix_expressions();
 }
