@@ -148,8 +148,58 @@ void test_program_string() {
     free(str);
 }
 
+void test_identifier_expression() {
+    char * input = "foobar;";
+    lexer l = {input, 0};
+    parser parser = new_parser(&l);
+    program p = parse_program(&parser);
+
+    assert_program_size(&p, 1);
+
+    if (p.statements[0].token.type != IDENT) {
+        abortf("expected %s, got %s", token_to_str(IDENT), p.statements[0].token.type);
+    }
+
+    if (strcmp(p.statements[0].token.literal, "foobar") != 0) {
+        abortf("expected %s, got %s", "foobar", p.statements[0].token.literal);
+    }
+
+    if (strcmp(p.statements[0].expression.str_value, "foobar") != 0) {
+        abortf("expected %s, got %s", "foobar", p.statements[0].expression.str_value);
+    }
+}
+
+void test_integer_expression() {
+    char * input = "5;";
+    lexer l = {input, 0};
+    parser parser = new_parser(&l);
+    program p = parse_program(&parser);
+
+    assert_parser_errors(&parser);
+    assert_program_size(&p, 1);
+
+    statement stmt = p.statements[0];
+
+    if (stmt.token.type != INT) {
+        abortf("expected %s, got %s", token_to_str(INT), p.statements[0].token.type);
+    }
+
+    if (strcmp(stmt.token.literal, "5") != 0) {
+        abortf("expected %s, got %s", "foobar", p.statements[0].token.literal);
+    }
+
+    if (stmt.expression.int_value != 5) {
+        abortf("expected %s, got %s", 5, p.statements[0].expression.int_value);
+    }
+}
+
+
+
+
 int main() {
-    test_let_statements();
-    test_return_statements();
-    test_program_string();
+    // test_let_statements();
+    // test_return_statements();
+    // test_program_string();
+    // test_identifier_expression();
+    test_integer_expression();
 }

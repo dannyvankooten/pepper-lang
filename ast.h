@@ -1,20 +1,35 @@
 #include "lexer.h"
 #include <stdlib.h>
 
+enum {
+    LOWEST = 1,
+    EQUALS,
+    LESSGREATER,
+    SUM,
+    PRODUCT,
+    PREFIX,
+    CALL
+};
+
 typedef struct expression {
     token token; // token.IDENT
-    char value[64];
+    union {
+        long int_value;
+        char str_value[128];
+    };
 } expression;
 
 typedef struct identifier {
     token token; // token.IDENT
-    char value[64];
+    char value[32];
 } identifier;
 
 typedef struct statement {
     token token; // token.LET
     identifier name;
-    expression value;
+    identifier value;
+
+    expression expression;
 } statement;
 
 typedef struct program {
@@ -51,7 +66,6 @@ static int expect_next_token(parser *p, int t) {
     }
 
     sprintf(p->error_messages[p->errors++], "expected next token to be %s, got %s instead", token_to_str(t), token_to_str(p->next_token.type));
-
     return 0;
 }
 
@@ -96,11 +110,48 @@ static int parse_return_statement(parser *p, statement *s) {
     return 1;
 }
 
-static int parse_statement(parser *p, statement *s) {
+int parse_identifier_expression(parser *p, expression *e) {
+    e->token = p->current_token;
+    strcpy(e->str_value, p->current_token.literal);
+    return 1;
+}
 
+int parse_int_expression(parser *p, expression *e) {
+    e->token = p->current_token;
+    e->int_value =  atoi(p->current_token.literal);
+    // TODO: Signal errors?
+    return 1;
+}
+
+int parse_expression(parser *p, expression *e, int precedence) {
+    switch (p->current_token.type) {
+        case IDENT: return parse_identifier_expression(p, e); break;
+        case INT: return parse_int_expression(p, e); break;
+    }
+
+    return -1;
+}
+
+static int parse_expression_statement(parser *p ,statement *s) {
+    s->token = p->current_token;
+
+    if (parse_expression(p, &s->expression, LOWEST) < 0) {
+        sprintf(p->error_messages[p->errors++], "error parsing expression");
+        return -1;
+    }
+
+    if (next_token_is(p, SEMICOLON)) {
+        next_token(p);
+    } 
+
+    return 1;
+}
+
+static int parse_statement(parser *p, statement *s) {
     switch (p->current_token.type) {
         case LET: return parse_let_statement(p, s); break;
         case RETURN: return parse_return_statement(p ,s); break;
+        default: return parse_expression_statement(p, s); break;
     }
   
    return -1;
