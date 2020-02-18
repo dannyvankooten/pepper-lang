@@ -13,10 +13,14 @@ enum {
 
 typedef struct expression {
     token token; // token.IDENT
+    char operator[2];
     union {
         long int_value;
         char str_value[128];
     };
+
+    struct expression *right;
+    struct expression *left;
 } expression;
 
 typedef struct identifier {
@@ -45,6 +49,8 @@ typedef struct parser {
     unsigned errors;
     char error_messages[8][128];
 } parser;
+
+static int parse_expression(parser *p, expression *e, int precedence);
 
 static void next_token(parser * p) {
     p->current_token = p->next_token;
@@ -110,23 +116,38 @@ static int parse_return_statement(parser *p, statement *s) {
     return 1;
 }
 
-int parse_identifier_expression(parser *p, expression *e) {
+static int parse_identifier_expression(parser *p, expression *e) {
     e->token = p->current_token;
     strcpy(e->str_value, p->current_token.literal);
     return 1;
 }
 
-int parse_int_expression(parser *p, expression *e) {
+static int parse_int_expression(parser *p, expression *e) {
     e->token = p->current_token;
     e->int_value =  atoi(p->current_token.literal);
     // TODO: Signal errors?
     return 1;
 }
 
-int parse_expression(parser *p, expression *e, int precedence) {
+static int parse_prefix_expression(parser *p, expression *e) {
+    e->token = p->current_token;
+    strncpy(e->operator, p->current_token.literal, 2);
+    next_token(p);
+    expression right;
+    parse_expression(p, &right, PREFIX);
+    e->right = &right;
+    return 1;
+}
+
+static int parse_expression(parser *p, expression *e, int precedence) {
     switch (p->current_token.type) {
         case IDENT: return parse_identifier_expression(p, e); break;
         case INT: return parse_int_expression(p, e); break;
+        case BANG:
+        case MINUS: return parse_prefix_expression(p, e); break;
+        default: 
+             sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
+        break;
     }
 
     return -1;

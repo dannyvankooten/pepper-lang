@@ -15,8 +15,9 @@ void abortf(char *format, ...) {
 
 void assert_parser_errors(parser *p) {
     if (p->errors > 0) {
+        printf("parser has %d errors: \n", p->errors);
         for (int i = 0; i < p->errors; i++) {
-            printf("parser error: %s\n", p->error_messages[i]);
+            printf("  - %s\n", p->error_messages[i]);
         }
 
         abort();
@@ -169,6 +170,16 @@ void test_identifier_expression() {
     }
 }
 
+
+void test_integer_literal(expression expr, int expected) {
+    if (expr.int_value != expected) {
+        abortf("wrong integer value: expected %d, got %d", expected, expr.int_value);
+    }
+
+    // TODO: Test token literal here?
+}
+
+
 void test_integer_expression() {
     char * input = "5;";
     lexer l = {input, 0};
@@ -188,18 +199,40 @@ void test_integer_expression() {
         abortf("expected %s, got %s", "foobar", p.statements[0].token.literal);
     }
 
-    if (stmt.expression.int_value != 5) {
-        abortf("expected %s, got %s", 5, p.statements[0].expression.int_value);
+    test_integer_literal(stmt.expression, 5);
+}
+
+void test_prefix_expressions() {
+    struct test {
+        char input[64];
+        char operator[2];
+        int int_value;
+    } tests[] = {
+        {"!5", "!", 5},
+        {"-15", "-", 15},
+    };
+
+    for (int i=0; i < 2; i++) {
+        lexer l = {tests[i].input, 0};
+        parser parser = new_parser(&l);
+        program p = parse_program(&parser);
+
+        assert_parser_errors(&parser);
+        assert_program_size(&p, 1);
+        statement stmt = p.statements[0];
+        if (strcmp(stmt.expression.operator, tests[i].operator) != 0) {
+            abortf("wrong operator. expected %s, got %s\n", tests[i].operator, stmt.expression.operator);
+        }
+
+        test_integer_literal(*stmt.expression.right, tests[i].int_value);
     }
 }
 
-
-
-
 int main() {
-    // test_let_statements();
-    // test_return_statements();
-    // test_program_string();
-    // test_identifier_expression();
+    test_let_statements();
+    test_return_statements();
+    test_program_string();
+    test_identifier_expression();
     test_integer_expression();
+    test_prefix_expressions();
 }
