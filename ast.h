@@ -51,6 +51,7 @@ typedef struct parser {
 } parser;
 
 static int parse_expression(parser *p, expression *e, int precedence);
+static int get_token_precedence(token t);
 
 static void next_token(parser * p) {
     p->current_token = p->next_token;
@@ -139,19 +140,62 @@ static int parse_prefix_expression(parser *p, expression *e) {
     return 1;
 }
 
-static int parse_expression(parser *p, expression *e, int precedence) {
+static int parse_infix_expression(parser *p, expression *left, expression *e) {
+    e->left = left;
+    e->token = p->current_token;
+    strncpy(e->operator, p->current_token.literal, 2);
+    next_token(p);
+    int precedence = get_token_precedence(p->current_token);
+    parse_expression(p, e->right, precedence);
+    return 1;
+}
+
+static int parse_expression(parser *p, expression *left, int precedence) {
+
+    int success;
+
     switch (p->current_token.type) {
-        case IDENT: return parse_identifier_expression(p, e); break;
-        case INT: return parse_int_expression(p, e); break;
+        case IDENT: success = parse_identifier_expression(p, left); break;
+        case INT: success =  parse_int_expression(p, left); break;
         case BANG:
-        case MINUS: return parse_prefix_expression(p, e); break;
+        case MINUS: success =  parse_prefix_expression(p, left); break;
         default: 
-             sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
+            sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
+            return -1;
         break;
     }
 
-    return -1;
+    if (!success) {
+        return -1;
+    }
+
+
+
+    while (!next_token_is(p, SEMICOLON) && precedence < get_token_precedence(p->next_token)) {
+        expression right;
+        next_token(p);
+        parse_infix_expression(p, left, &right);
+
+        // TODO: Right becomes left here, recursively keep going
+    }
+
+    return 1;
 }
+
+static int get_token_precedence(token t) {
+    switch (t.type) {
+        case EQ: return EQUALS;
+        case NOT_EQ: return EQUALS;
+        case LT: return LESSGREATER;
+        case GT: return LESSGREATER;
+        case PLUS: return SUM;
+        case MINUS: return SUM;
+        case SLASH: return PRODUCT;
+        case ASTERISK: return PRODUCT;
+    }
+
+    return LOWEST;
+};
 
 static int parse_expression_statement(parser *p ,statement *s) {
     s->token = p->current_token;
