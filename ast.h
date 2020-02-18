@@ -3,12 +3,12 @@
 
 enum {
     LOWEST = 1,
-    EQUALS,
-    LESSGREATER,
-    SUM,
-    PRODUCT,
-    PREFIX,
-    CALL
+    EQUALS,         // ==
+    LESSGREATER,    // < or >
+    SUM,            // - and +
+    PRODUCT,        // * and /
+    PREFIX,         // - or !x
+    CALL            // fn()
 };
 
 typedef struct expression {
@@ -33,11 +33,11 @@ typedef struct statement {
     identifier name;
     identifier value;
 
-    expression expression;
+    expression * expression;
 } statement;
 
 typedef struct program {
-    statement statements[64];
+    statement statements[32];
     unsigned int size;
 } program;
 
@@ -50,7 +50,7 @@ typedef struct parser {
     char error_messages[8][128];
 } parser;
 
-static int parse_expression(parser *p, expression *e, int precedence);
+expression * parse_expression(parser *p, int precedence);
 static int get_token_precedence(token t);
 
 static void next_token(parser * p) {
@@ -130,56 +130,49 @@ static int parse_int_expression(parser *p, expression *e) {
     return 1;
 }
 
-static int parse_prefix_expression(parser *p, expression *e) {
-    e->token = p->current_token;
-    strncpy(e->operator, p->current_token.literal, 2);
+static expression * parse_prefix_expression(parser *p, expression *expr) {
+    expr->token = p->current_token;
+    strncpy(expr->operator, p->current_token.literal, 2);
     next_token(p);
-    expression right;
-    parse_expression(p, &right, PREFIX);
-    e->right = &right;
-    return 1;
+    expr->right = parse_expression(p, PREFIX);
+    return expr;
 }
 
-static int parse_infix_expression(parser *p, expression *left, expression *e) {
-    e->left = left;
-    e->token = p->current_token;
-    strncpy(e->operator, p->current_token.literal, 2);
-    next_token(p);
+static expression * parse_infix_expression(parser *p, expression *left) {
+    expression * expr = malloc(sizeof (expression));
+    expr->left = left;
+    expr->token = p->current_token;
+    strncpy(expr->operator, p->current_token.literal, 2);
     int precedence = get_token_precedence(p->current_token);
-    parse_expression(p, e->right, precedence);
-    return 1;
+    next_token(p);
+    expr->right =  parse_expression(p, precedence);
+    return expr;
 }
 
-static int parse_expression(parser *p, expression *left, int precedence) {
-
-    int success;
-
+expression * parse_expression(parser *p, int precedence) {
+    expression * left = malloc(sizeof (expression));
     switch (p->current_token.type) {
-        case IDENT: success = parse_identifier_expression(p, left); break;
-        case INT: success =  parse_int_expression(p, left); break;
+        case IDENT: parse_identifier_expression(p, left); break;
+        case INT: parse_int_expression(p, left); break;
         case BANG:
-        case MINUS: success =  parse_prefix_expression(p, left); break;
+        case MINUS: parse_prefix_expression(p, left); break;
         default: 
             sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
-            return -1;
+            return NULL;
         break;
     }
 
-    if (!success) {
-        return -1;
-    }
-
-
-
     while (!next_token_is(p, SEMICOLON) && precedence < get_token_precedence(p->next_token)) {
-        expression right;
-        next_token(p);
-        parse_infix_expression(p, left, &right);
-
-        // TODO: Right becomes left here, recursively keep going
+        int type = p->next_token.type;
+        if (type == PLUS || type == MINUS || type == ASTERISK || type == SLASH || type == EQ || type == NOT_EQ || type == LT || type == GT) {
+            next_token(p);
+            left = parse_infix_expression(p, left);
+        } else {
+            return left;
+        }
     }
 
-    return 1;
+    return left;
 }
 
 static int get_token_precedence(token t) {
@@ -197,13 +190,9 @@ static int get_token_precedence(token t) {
     return LOWEST;
 };
 
-static int parse_expression_statement(parser *p ,statement *s) {
+static int parse_expression_statement(parser *p, statement *s) {
     s->token = p->current_token;
-
-    if (parse_expression(p, &s->expression, LOWEST) < 0) {
-        sprintf(p->error_messages[p->errors++], "error parsing expression");
-        return -1;
-    }
+    s->expression = parse_expression(p, LOWEST);
 
     if (next_token_is(p, SEMICOLON)) {
         next_token(p);
@@ -228,7 +217,6 @@ extern program parse_program(parser *parser) {
     };
 
     while (parser->current_token.type != EOF) {
-        //statement *s = malloc(sizeof (struct statement));
         statement s;
         if (parse_statement(parser, &s) != -1) {
             prog.statements[prog.size++] = s;

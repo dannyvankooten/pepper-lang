@@ -10,7 +10,7 @@ void abortf(char *format, ...) {
    vprintf(format, args);
    va_end(args);
 
-   abort();
+   exit(1);
 }
 
 void assert_parser_errors(parser *p) {
@@ -20,7 +20,7 @@ void assert_parser_errors(parser *p) {
             printf("  - %s\n", p->error_messages[i]);
         }
 
-        abort();
+        exit(1);
     }
 }
 
@@ -158,22 +158,22 @@ void test_identifier_expression() {
     assert_program_size(&p, 1);
 
     if (p.statements[0].token.type != IDENT) {
-        abortf("expected %s, got %s", token_to_str(IDENT), p.statements[0].token.type);
+        abortf("wrong token type: expected %s, got %s\n", token_to_str(IDENT), p.statements[0].token.type);
     }
 
     if (strcmp(p.statements[0].token.literal, "foobar") != 0) {
-        abortf("expected %s, got %s", "foobar", p.statements[0].token.literal);
+        abortf("wrong token literal: expected %s, got %s\n", "foobar", p.statements[0].token.literal);
     }
 
-    if (strcmp(p.statements[0].expression.str_value, "foobar") != 0) {
-        abortf("expected %s, got %s", "foobar", p.statements[0].expression.str_value);
+    if (strcmp(p.statements[0].expression->str_value, "foobar") != 0) {
+        abortf("wrong expression value: expected \"%s\", got \"%s\"\n", "foobar", p.statements[0].expression->str_value);
     }
 }
 
 
-void test_integer_literal(expression expr, int expected) {
-    if (expr.int_value != expected) {
-        abortf("wrong integer value: expected %d, got %d", expected, expr.int_value);
+void test_integer_literal(expression * expr, int expected) {
+    if (expr->int_value != expected) {
+        abortf("wrong integer value: expected %d, got %d\n", expected, expr->int_value);
     }
 
     // TODO: Test token literal here as well?
@@ -191,11 +191,11 @@ void test_integer_expression() {
     statement stmt = p.statements[0];
 
     if (stmt.token.type != INT) {
-        abortf("expected %s, got %s", token_to_str(INT), p.statements[0].token.type);
+        abortf("wroken token type: expected %s, got %s", token_to_str(INT), p.statements[0].token.type);
     }
 
     if (strcmp(stmt.token.literal, "5") != 0) {
-        abortf("expected %s, got %s", "foobar", p.statements[0].token.literal);
+        abortf("wrong token literal: expected %s, got %s", "foobar", p.statements[0].token.literal);
     }
 
     test_integer_literal(stmt.expression, 5);
@@ -203,7 +203,7 @@ void test_integer_expression() {
 
 void test_infix_expressions() {
     struct test {
-        char input[64];
+        char input[16];
         int left_value;
         char operator[2];
         int right_value;
@@ -218,7 +218,7 @@ void test_infix_expressions() {
        {"5 != 5", 5, "!=", 5},
     };
 
-    for (int i=0; i < 2; i++) {
+    for (int i=0; i < 8; i++) {
         lexer l = {tests[i].input, 0};
         parser parser = new_parser(&l);
         program p = parse_program(&parser);
@@ -227,11 +227,11 @@ void test_infix_expressions() {
         assert_program_size(&p, 1);
         statement stmt = p.statements[0];
        
-        test_integer_literal(*stmt.expression.left, tests[i].left_value);
-         if (strcmp(stmt.expression.operator, tests[i].operator) != 0) {
-            abortf("wrong operator. expected %s, got %s\n", tests[i].operator, stmt.expression.operator);
+        test_integer_literal(stmt.expression->left, tests[i].left_value);
+         if (strcmp(stmt.expression->operator, tests[i].operator) != 0) {
+            abortf("wrong operator: expected %s, got %s\n", tests[i].operator, stmt.expression->operator);
         }
-        test_integer_literal(*stmt.expression.right, tests[i].right_value);
+        test_integer_literal(stmt.expression->right, tests[i].right_value);
     }
 }
 
@@ -253,11 +253,11 @@ void test_prefix_expressions() {
         assert_parser_errors(&parser);
         assert_program_size(&p, 1);
         statement stmt = p.statements[0];
-        if (strcmp(stmt.expression.operator, tests[i].operator) != 0) {
-            abortf("wrong operator. expected %s, got %s\n", tests[i].operator, stmt.expression.operator);
+        if (strcmp(stmt.expression->operator, tests[i].operator) != 0) {
+            abortf("wrong operator. expected %s, got %s\n", tests[i].operator, stmt.expression->operator);
         }
 
-        test_integer_literal(*stmt.expression.right, tests[i].int_value);
+        test_integer_literal(stmt.expression->right, tests[i].int_value);
     }
 }
 
@@ -269,4 +269,5 @@ int main() {
     test_integer_expression();
     test_prefix_expressions();
     test_infix_expressions();
+    printf("All tests passed.\n");
 }
