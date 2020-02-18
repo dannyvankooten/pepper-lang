@@ -98,8 +98,58 @@ void test_return_statements() {
     }
 }
 
+void test_program_string() {
+    program p = {
+        .statements = {
+            {
+                .token = {
+                    .type = LET,
+                    .literal = "let",
+                },
+                .name = {
+                    .token = {
+                        .type = IDENT,
+                        .literal = "myVar",
+                    },
+                    .value = "myVar",
+                },
+                .value = {
+                    .token = {
+                        .type = IDENT,
+                        .literal = "anotherVar",
+                    },
+                    .value = "anotherVar",
+                }
+            }, 
+            {
+                .token = {
+                    .type = RETURN,
+                    .literal = "return",
+                },
+                .value = {
+                    .token = {
+                        .type = INT,
+                        .literal = "5",
+                    },
+                    .value = "5",
+                }
+            }, 
+        }, 
+        .size = 2
+    };
+
+    char * str = program_to_str(&p);
+    char * expected = "let myVar = anotherVar;\nreturn 5;";
+
+    if (strcmp(str, expected) != 0) {
+        abortf("wrong program string. expected \"%s\", got \"%s\"\n", expected, str);
+    }
+
+    free(str);
+}
 
 int main() {
     test_let_statements();
     test_return_statements();
+    test_program_string();
 }

@@ -2,12 +2,13 @@
 #include <stdlib.h>
 
 typedef struct expression {
-
+    token token; // token.IDENT
+    char value[64];
 } expression;
 
 typedef struct identifier {
     token token; // token.IDENT
-    char value[1048];
+    char value[64];
 } identifier;
 
 typedef struct statement {
@@ -17,8 +18,7 @@ typedef struct statement {
 } statement;
 
 typedef struct program {
-   // statement * statements[1024];
-    statement statements[1024];
+    statement statements[64];
     unsigned int size;
 } program;
 
@@ -28,7 +28,7 @@ typedef struct parser {
     token next_token;
 
     unsigned errors;
-    char error_messages[256][256];
+    char error_messages[8][128];
 } parser;
 
 static void next_token(parser * p) {
@@ -75,7 +75,7 @@ static int parse_let_statement(parser *p, statement *s) {
 
     // TODO: Read expression here, for now we just skip forward until semicolon
 
-    while (!next_token_is(p, SEMICOLON)) {
+    while (!current_token_is(p, SEMICOLON)) {
         next_token(p);
     }
 
@@ -89,7 +89,7 @@ static int parse_return_statement(parser *p, statement *s) {
 
     // TODO: Parse expression
 
-    while (!next_token_is(p, SEMICOLON)) {
+    while (!current_token_is(p, SEMICOLON)) {
         next_token(p);
     }
 
@@ -133,4 +133,44 @@ parser new_parser(lexer *l) {
     next_token(&p);
     next_token(&p);
     return p;
+}
+
+static char * let_statement_to_str(char * str, statement s) {
+    str = realloc(str, sizeof(str) + sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value.token.literal) + 16);
+    strcat(str, s.token.literal);
+    strcat(str, " ");
+    strcat(str, s.name.token.literal);
+    strcat(str, " = ");
+    strcat(str, s.value.token.literal);
+    strcat(str, ";");
+    return str;
+}
+
+static char * return_statement_to_str(char * str, statement s) {
+    str = realloc(str, sizeof(str) + sizeof(s.token.literal) + sizeof(s.value.token.literal) + 16);
+    strcat(str, s.token.literal);
+    strcat(str, " ");
+    strcat(str, s.value.token.literal);
+    strcat(str, ";");
+    return str;
+}
+
+char * program_to_str(program *p) {
+    char * str = malloc(1);
+    *str = '\0';
+
+    statement s;
+    for (int i = 0; i < p->size; i++) {
+        s = p->statements[i];
+        switch (s.token.type) {
+            case LET: let_statement_to_str(str, s); break;
+            case RETURN: return_statement_to_str(str, s); break;
+        }
+
+        if (i < p->size -1) {
+            strcat(str, "\n");
+        }
+    }    
+
+    return str;
 }

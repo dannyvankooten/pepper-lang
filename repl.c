@@ -16,14 +16,11 @@ int main(int argc, char **argv)
         char * input = readline("monkey> ");
         add_history(input);
 
-        lexer l = {
-            .input = input,
-            .pos = 0
-        };
+        lexer l = {input, 0};
         token t;
         while (gettoken(&l, &t) != -1)
         {
-            printf("Type: %s\t Literal: %s\n", t.type, t.literal);
+            printf("Type: %s\t Literal: %s\n", token_to_str(t.type), t.literal);
         }
 
         free(input);

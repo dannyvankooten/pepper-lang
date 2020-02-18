@@ -33,7 +33,7 @@ typedef enum {
 
 typedef struct Token {
     int type;
-    char literal[100];
+    char literal[32];
 } token;
 
 void get_ident(token *t) {
