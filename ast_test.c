@@ -261,6 +261,32 @@ void test_prefix_expressions() {
     }
 }
 
+void test_operator_precedence_parsing() {
+
+    // TODO: Add some more tests here
+    struct test {
+        char input[16];
+        char expected[16];
+    } tests[] = {
+       {"-a * b", "((-a) * b)"}
+    };
+
+    for (int i=0; i < 1; i++) {
+        lexer l = {tests[i].input, 0};
+        parser parser = new_parser(&l);
+        program p = parse_program(&parser);
+
+        assert_parser_errors(&parser);
+        assert_program_size(&p, 1);
+        
+        char *program_str = program_to_str(&p);
+        if (strcmp(program_str, tests[i].expected) != 0) {
+            abortf("incorrect program string: expected %s, got %s\n", tests[i].expected, program_str);
+        }
+
+    }
+}
+
 int main() {
     test_let_statements();
     test_return_statements();
@@ -269,5 +295,6 @@ int main() {
     test_integer_expression();
     test_prefix_expressions();
     test_infix_expressions();
+    test_operator_precedence_parsing();
     printf("All tests passed.\n");
 }
