@@ -1,7 +1,7 @@
 #include <string.h>
 #undef EOF
 
-enum TokenType {
+typedef enum {
     ILLEGAL,
     EOF,
     IDENT,
@@ -29,7 +29,7 @@ enum TokenType {
     RPAREN,
     LBRACE,
     RBRACE
-};
+}  token_type ;
 
 typedef struct Token {
     int type;
@@ -55,4 +55,38 @@ void get_ident(token *t) {
     } else {
         t->type = IDENT;
     }
+}
+
+const char * token_to_str(token_type type) {
+    switch (type) {
+        case ILLEGAL: return "ILLEGAL"; break;
+        case EOF: return "EOF"; break;
+        case IDENT: return "IDENT"; break;
+        case INT: return "INT"; break;
+        case FUNCTION: return "FUNCTION"; break;
+        case LET: return "LET"; break;
+        case TRUE: return "TRUE"; break;
+        case FALSE: return "FALSE"; break;
+        case IF: return "IF"; break;
+        case ELSE: return "ELSE"; break;
+        case RETURN: return "RETURN"; break;
+        case ASSIGN: return "="; break;
+        case PLUS: return "+"; break;
+        case MINUS: return "-"; break;
+        case BANG: return "!"; break;
+        case ASTERISK: return "*"; break;
+        case SLASH: return "/"; break;
+        case LT: return "<"; break;
+        case GT: return ">"; break;
+        case EQ: return "=="; break;
+        case NOT_EQ: return "!="; break;
+        case COMMA: return ","; break;
+        case SEMICOLON: return ";"; break;
+        case LPAREN: return "("; break;
+        case RPAREN: return ")"; break;
+        case LBRACE: return "{"; break;
+        case RBRACE: return "}"; break;
+     }
+
+     return "Invalid token";
 }

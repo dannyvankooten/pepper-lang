@@ -15,8 +15,8 @@ void abortf(char *format, ...) {
 
 int main() {
     char * input = ""
-        "let x = 5;\n"
-        "let y = 10;\n"
+        "let = x 5;\n"
+        "let = y 10;\n"
         "let foobar = 838383;\n";
 
     lexer l = {
@@ -26,7 +26,15 @@ int main() {
 
     parser parser = new_parser(&l);
     program p = parse_program(&parser);
-   
+      
+    if (parser.errors > 0) {
+        for (int i = 0; i < parser.errors; i++) {
+            printf("parser error: %s\n", parser.error_messages[i]);
+        }
+
+        abort();
+    }
+
     if (p.size != 3) {
         abortf("wrong program size. expected %d, got %d\n", 3, p.size);
     }    

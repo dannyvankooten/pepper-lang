@@ -26,6 +26,9 @@ typedef struct parser {
     lexer * lexer;
     token current_token;
     token next_token;
+
+    unsigned errors;
+    char error_messages[256][256];
 } parser;
 
 static void next_token(parser * p) {
@@ -47,9 +50,10 @@ static int expect_next_token(parser *p, int t) {
         return 1;
     }
 
+    sprintf(p->error_messages[p->errors++], "expected next token to be %s, got %s instead", token_to_str(t), token_to_str(p->next_token.type));
+
     return 0;
 }
-
 
 int parse_let_statement(parser *p, statement *s) {
     s->token = p->current_token;
@@ -82,6 +86,7 @@ int parse_statement(parser *p, statement *s) {
    if (p->current_token.type == LET) {
        return parse_let_statement(p, s);
    }
+
    return -1;
 }
 
