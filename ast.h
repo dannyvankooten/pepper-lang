@@ -55,7 +55,7 @@ static int expect_next_token(parser *p, int t) {
     return 0;
 }
 
-int parse_let_statement(parser *p, statement *s) {
+static int parse_let_statement(parser *p, statement *s) {
     s->token = p->current_token;
 
      if (!expect_next_token(p, IDENT)) {
@@ -82,15 +82,31 @@ int parse_let_statement(parser *p, statement *s) {
     return 1;
 }
 
-int parse_statement(parser *p, statement *s) {
-   if (p->current_token.type == LET) {
-       return parse_let_statement(p, s);
-   }
+static int parse_return_statement(parser *p, statement *s) {
+    s->token = p->current_token;
 
+    next_token(p);
+
+    // TODO: Parse expression
+
+    while (!next_token_is(p, SEMICOLON)) {
+        next_token(p);
+    }
+
+    return 1;
+}
+
+static int parse_statement(parser *p, statement *s) {
+
+    switch (p->current_token.type) {
+        case LET: return parse_let_statement(p, s); break;
+        case RETURN: return parse_return_statement(p ,s); break;
+    }
+  
    return -1;
 }
 
-program parse_program(parser *parser) {
+extern program parse_program(parser *parser) {
     program prog = {
         .size = 0,
     };
