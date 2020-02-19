@@ -3,10 +3,10 @@
 #include <stdio.h>
 #undef EOF
 
-typedef struct Lexer {
+struct lexer {
     char * input;
     unsigned int pos;
-} lexer;
+};
 
 int is_letter(char ch) {
     return (ch >= 'a' && ch <= 'z') 
@@ -18,7 +18,7 @@ int is_digit(char ch) {
     return (ch >= '0' && ch <= '9');
 }
 
-int gettoken(lexer *l, token *t) {
+int gettoken(struct lexer *l, struct token *t) {
     char ch = l->input[l->pos++];
     
     // skip whitespace

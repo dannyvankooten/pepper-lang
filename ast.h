@@ -14,105 +14,105 @@ enum {
     CALL            // fn()
 };
 
-typedef enum {
+enum expression_type {
     EXPR_INFIX,
     EXPR_PREFIX,
     EXPR_INT,
     EXPR_IDENT,
     EXPR_BOOL,
     EXPR_IF,
-} expression_type;
+};
 
-typedef struct bool_expression {
-    token token;
+struct bool_expression {
+    struct token token;
     char value;
-} bool_expression;
+};
 
-typedef struct identifier_expression {
-    token token;
+struct identifier_expression {
+    struct token token;
     char value[MAX_IDENT_LENGTH];
-} identifier_expression;
+};
 
-typedef struct integer_expression {
-    token token;
+struct integer_expression {
+    struct token token;
     int value;
-} integer_expression;
+};
 
-typedef struct prefix_expression {
-    token token;
+struct prefix_expression {
+    struct token token;
     char operator[MAX_OPERATOR_LENGTH];
     struct expression *right;
-} prefix_expression;
+};
 
-typedef struct infix_expression {
-    token token;
+struct infix_expression {
+    struct token token;
     char operator[MAX_OPERATOR_LENGTH];
     struct expression *left;
     struct expression *right;
-} infix_expression;
+};
 
-typedef struct identifier {
-    token token; 
+struct identifier {
+    struct token token; 
     char value[MAX_IDENT_LENGTH];
-} identifier;
+};
 
-typedef struct expression {
-    expression_type type;
+struct expression {
+    enum expression_type type;
     union {
-        bool_expression bool;
-        identifier_expression ident;
-        integer_expression _int;
-        prefix_expression prefix;
-        infix_expression infix;
+        struct bool_expression bool;
+        struct identifier_expression ident;
+        struct integer_expression _int;
+        struct prefix_expression prefix;
+        struct infix_expression infix;
 
         // TODO: Fix this
-        if_expression _if;
+        struct if_expression *_if;
     };
 } expression;
 
-typedef struct statement {
-    token token;
-    identifier name;
-    expression * value;
-} statement;
+struct statement {
+    struct token token;
+    struct identifier name;
+    struct expression * value;
+};
 
-typedef struct block_statement {
-    token token;
-    statement *statements;
-} block_statement;
+struct block_statement {
+    struct token token;
+    struct statement *statements;
+};
 
-typedef struct if_expression {
-    token token;
-    expression condition;
-    block_statement *consequence;
-    block_statement *alternative;
-} if_expression;
+struct if_expression {
+    struct token token;
+    struct expression condition;
+    struct block_statement *consequence;
+    struct block_statement *alternative;
+};
 
-typedef struct program {
-    statement * statements;
+struct program {
+    struct statement * statements;
     unsigned int cap;
     unsigned int size;
-} program;
+};
 
-typedef struct parser {
-    lexer * lexer;
-    token current_token;
-    token next_token;
+struct parser {
+    struct lexer * lexer;
+    struct token current_token;
+    struct token next_token;
 
     // TODO: allocate this dynamically
     unsigned int errors;
     char error_messages[8][128];
-} parser;
+};
 
-static expression * parse_expression(parser *p, int precedence);
-static int get_token_precedence(token t);
-static void next_token(parser * p);
-static int current_token_is(parser *p, int t);
-static int next_token_is(parser *p, int t) ;
-static int expect_next_token(parser *p, int t);
+static struct expression * parse_expression(struct parser *p, int precedence);
+static int get_token_precedence(struct token t);
+static void next_token(struct parser * p);
+static int current_token_is(struct parser *p, int t);
+static int next_token_is(struct parser *p, int t) ;
+static int expect_next_token(struct parser *p, int t);
 
-parser new_parser(lexer *l) {
-    parser p = {
+struct parser new_parser(struct lexer *l) {
+    struct parser p = {
         .lexer = l,
     };
    
@@ -122,20 +122,20 @@ parser new_parser(lexer *l) {
     return p;
 }
 
-static void next_token(parser * p) {
+static void next_token(struct parser * p) {
     p->current_token = p->next_token;
     gettoken(p->lexer, &p->next_token);
 }
 
-static int current_token_is(parser *p, int t) {
+static int current_token_is(struct parser *p, int t) {
     return t == p->current_token.type;
 }
 
-static int next_token_is(parser *p, int t) {
+static int next_token_is(struct parser *p, int t) {
      return t == p->next_token.type;
 }
 
-static int expect_next_token(parser *p, int t) {
+static int expect_next_token(struct parser *p, int t) {
     if (next_token_is(p, t)) {
         next_token(p);
         return 1;
@@ -145,7 +145,7 @@ static int expect_next_token(parser *p, int t) {
     return 0;
 }
 
-static int parse_let_statement(parser *p, statement *s) {
+static int parse_let_statement(struct parser *p, struct statement *s) {
     s->token = p->current_token;
 
      if (!expect_next_token(p, IDENT)) {
@@ -153,7 +153,7 @@ static int parse_let_statement(parser *p, statement *s) {
     }
 
     // parse name
-    identifier id = {
+    struct identifier id = {
         .token = p->current_token,
     };
     strcpy(id.value, p->current_token.literal);
@@ -172,7 +172,7 @@ static int parse_let_statement(parser *p, statement *s) {
     return 1;
 }
 
-static int parse_return_statement(parser *p, statement *s) {
+static int parse_return_statement(struct parser *p, struct statement *s) {
     s->token = p->current_token;
 
     next_token(p);
@@ -186,24 +186,24 @@ static int parse_return_statement(parser *p, statement *s) {
     return 1;
 }
 
-expression *parse_identifier_expression(parser *p) {
-    expression *expr = malloc(sizeof (expression));
+static struct expression *parse_identifier_expression(struct parser *p) {
+    struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_IDENT;
     expr->ident.token = p->current_token;
     strncpy(expr->ident.value, p->current_token.literal, MAX_IDENT_LENGTH);
     return expr;
 }
 
-expression *parse_int_expression(parser *p) {
-    expression *expr = malloc(sizeof (expression));
+static struct expression *parse_int_expression(struct parser *p) {
+    struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_INT;
     expr->_int.token = p->current_token;
     expr->_int.value =  atoi(p->current_token.literal);
     return expr;
 }
 
-expression *parse_prefix_expression(parser *p) {
-    expression *expr = malloc(sizeof (expression));
+static struct expression *parse_prefix_expression(struct parser *p) {
+    struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_PREFIX;
     expr->prefix.token = p->current_token;
     strncpy(expr->prefix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
@@ -212,8 +212,8 @@ expression *parse_prefix_expression(parser *p) {
     return expr;
 }
 
-static expression *parse_infix_expression(parser *p, expression *left) {
-    expression * expr = malloc(sizeof (expression));
+static struct expression *parse_infix_expression(struct parser *p, struct expression *left) {
+    struct expression * expr = malloc(sizeof (struct expression));
     expr->type = EXPR_INFIX;
     expr->infix.left = left;
     expr->infix.token = p->current_token;
@@ -224,18 +224,18 @@ static expression *parse_infix_expression(parser *p, expression *left) {
     return expr;
 }
 
-expression *parse_boolean_expression(parser *p) {
-    expression *expr = malloc(sizeof (expression));
+struct expression *parse_boolean_expression(struct parser *p) {
+    struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_BOOL;
     expr->bool.token = p->current_token;
     expr->bool.value = current_token_is(p, TRUE);
     return expr;
 }
 
-expression *parse_grouped_expression(parser *p) {
+struct expression *parse_grouped_expression(struct parser *p) {
     next_token(p);
     
-    expression *expr = parse_expression(p, LOWEST);
+    struct expression *expr = parse_expression(p, LOWEST);
 
     if (!expect_next_token(p, RPAREN)) {
         free(expr);
@@ -245,8 +245,8 @@ expression *parse_grouped_expression(parser *p) {
     return expr;
 }
 
-static expression *parse_expression(parser *p, int precedence) {
-    expression *left;
+static struct expression *parse_expression(struct parser *p, int precedence) {
+    struct expression *left;
     switch (p->current_token.type) {
         case IDENT: 
             left = parse_identifier_expression(p); 
@@ -284,7 +284,7 @@ static expression *parse_expression(parser *p, int precedence) {
     return left;
 }
 
-static int get_token_precedence(token t) {
+static int get_token_precedence(struct token t) {
     switch (t.type) {
         case EQ: return EQUALS;
         case NOT_EQ: return EQUALS;
@@ -294,12 +294,13 @@ static int get_token_precedence(token t) {
         case MINUS: return SUM;
         case SLASH: return PRODUCT;
         case ASTERISK: return PRODUCT;
+        default: return LOWEST;
     }
 
     return LOWEST;
 };
 
-static int parse_expression_statement(parser *p, statement *s) {
+static int parse_expression_statement(struct parser *p, struct statement *s) {
     s->token = p->current_token;
     s->value = parse_expression(p, LOWEST);
 
@@ -310,7 +311,7 @@ static int parse_expression_statement(parser *p, statement *s) {
     return 1;
 }
 
-static int parse_statement(parser *p, statement *s) {
+static int parse_statement(struct parser *p, struct statement *s) {
     switch (p->current_token.type) {
         case LET: return parse_let_statement(p, s); break;
         case RETURN: return parse_return_statement(p ,s); break;
@@ -320,14 +321,14 @@ static int parse_statement(parser *p, statement *s) {
    return -1;
 }
 
-extern program parse_program(parser *parser) {
-    program prog = {
+extern struct program parse_program(struct parser *parser) {
+    struct program prog = {
         .size = 0,
         .cap = 32, 
-        .statements = malloc(sizeof (statement) * 32),
+        .statements = malloc(sizeof (struct statement) * 32),
     };
 
-    statement s;
+    struct statement s;
     while (parser->current_token.type != EOF) {
         // if an error occured, skip token & continue
         if (parse_statement(parser, &s) == -1) {
@@ -340,7 +341,7 @@ extern program parse_program(parser *parser) {
 
         // increase program capacity if needed (by doubling it)
         if (prog.size >= prog.cap) {
-            prog.statements = realloc(prog.statements, sizeof (statement) * prog.cap * 2);
+            prog.statements = realloc(prog.statements, sizeof (struct statement) * prog.cap * 2);
             prog.cap *= 2;
         }
 
@@ -351,19 +352,19 @@ extern program parse_program(parser *parser) {
     return prog;
 }
 
-static char * let_statement_to_str(statement s) {
+static char * let_statement_to_str(struct statement s) {
     char * str = malloc(sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value->ident.token.literal) + 16);
     sprintf(str, "%s %s = %s;", s.token.literal, s.name.token.literal, s.value->ident.token.literal);
     return str;
 }
 
-static char * return_statement_to_str(statement s) {
+static char * return_statement_to_str(struct statement s) {
     char * str = malloc(sizeof(s.token.literal) + sizeof(s.value->ident.token.literal) + 16);
     sprintf(str, "%s %s;", s.token.literal, s.value->ident.token.literal);
     return str;
 }
 
-static char * expression_to_str(expression *expr) {
+static char * expression_to_str(struct expression *expr) {
     char * str = malloc(256);
 
     switch (expr->type) {
@@ -383,19 +384,19 @@ static char * expression_to_str(expression *expr) {
             sprintf(str, "%d", expr->_int.value);
         break;
         case EXPR_IF:
-            sprintf(str, "if %s %s");
-            if (expr->_if->)
+            //sprintf(str, "if %s %s");
+            // TODO
         break;
     }
 
     return str;
 }
 
-char * program_to_str(program *p) {
+char * program_to_str(struct program *p) {
     char * str = malloc(256);
     *str = '\0';
 
-    statement s;
+    struct statement s;
     for (int i = 0; i < p->size; i++) {
         s = p->statements[i];
                

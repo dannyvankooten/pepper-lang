@@ -19,7 +19,7 @@ typedef union {
     char * str_value;
 } expression_value;
 
-void assert_parser_errors(parser *p) {
+void assert_parser_errors(struct parser *p) {
     if (p->errors > 0) {
         printf("parser has %d errors: \n", p->errors);
         for (int i = 0; i < p->errors; i++) {
@@ -30,7 +30,7 @@ void assert_parser_errors(parser *p) {
     }
 }
 
-void assert_program_size(program *p, unsigned expected_size) {
+void assert_program_size(struct program *p, unsigned expected_size) {
     if (p->size != expected_size) {
         abortf("wrong program size. expected %d, got %d\n", expected_size, p->size);
     }   
@@ -42,9 +42,9 @@ void test_let_statements() {
         "let y = 10;\n"
         "let foo = 838383;\n";
 
-    lexer l = {input, 0 };
-    parser parser = new_parser(&l);
-    program p = parse_program(&parser);
+    struct lexer l = {input, 0 };
+    struct parser parser = new_parser(&l);
+    struct program p = parse_program(&parser);
     
     assert_parser_errors(&parser);
     assert_program_size(&p, 3);    
@@ -80,9 +80,9 @@ void test_return_statements() {
         "return 10;\n"
         "return 993322;\n";
 
-    lexer l = {input, 0 };
-    parser parser = new_parser(&l);
-    program p = parse_program(&parser);
+    struct lexer l = {input, 0 };
+    struct parser parser = new_parser(&l);
+    struct program p = parse_program(&parser);
     
     assert_parser_errors(&parser);
     assert_program_size(&p, 3);   
@@ -106,7 +106,7 @@ void test_return_statements() {
 }
 
 void test_program_string() {
-    expression e1 = {
+    struct expression e1 = {
         .type = EXPR_IDENT,
         .ident = {
             .token = {
@@ -116,7 +116,7 @@ void test_program_string() {
             .value = "anotherVar"
         }
     };
-    expression e2 = {
+    struct expression e2 = {
         .type = EXPR_INT,
         ._int = {
             .token = {
@@ -126,7 +126,7 @@ void test_program_string() {
             .value = 5
         }
     };
-    statement statements[2] = {
+    struct statement statements[2] = {
         {
             .token = {
                 .type = LET,
@@ -149,7 +149,7 @@ void test_program_string() {
             .value = &e2
         }, 
     };
-    program p = {
+    struct program p = {
         .statements = statements, 
         .size = 2
     };
@@ -164,7 +164,7 @@ void test_program_string() {
     free(str);
 }
 
-void test_identifier_expression(expression *e, char * expected) {
+void test_identifier_expression(struct expression *e, char * expected) {
     if (e->type != EXPR_IDENT) {
         abortf("wrong expression type: expected %d, got %d\n", EXPR_IDENT, e->type);
     }
@@ -181,13 +181,13 @@ void test_identifier_expression(expression *e, char * expected) {
 
 void test_identifier_expression_parsing() {
     char * input = "foobar;";
-    lexer l = {input, 0};
-    parser parser = new_parser(&l);
-    program p = parse_program(&parser);
+    struct lexer l = {input, 0};
+    struct parser parser = new_parser(&l);
+    struct program p = parse_program(&parser);
 
     assert_program_size(&p, 1);
 
-    statement stmt = p.statements[0];
+    struct statement stmt = p.statements[0];
 
     if (stmt.token.type != IDENT) {
         abortf("wrong token type: expected %s, got %s\n", token_to_str(IDENT), stmt.token.type);
@@ -201,7 +201,7 @@ void test_identifier_expression_parsing() {
 }
 
 
-void test_integer_expression(expression * expr, int expected) {
+void test_integer_expression(struct expression * expr, int expected) {
     if (expr->type != EXPR_INT) {
         abortf("wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
     }
@@ -220,14 +220,14 @@ void test_integer_expression(expression * expr, int expected) {
 
 void test_integer_expression_parsing() {
     char * input = "5;";
-    lexer l = {input, 0};
-    parser parser = new_parser(&l);
-    program p = parse_program(&parser);
+    struct lexer l = {input, 0};
+    struct parser parser = new_parser(&l);
+    struct program p = parse_program(&parser);
 
     assert_parser_errors(&parser);
     assert_program_size(&p, 1);
 
-    statement stmt = p.statements[0];
+    struct statement stmt = p.statements[0];
 
     if (stmt.token.type != INT) {
         abortf("wroken token type: expected %s, got %s", token_to_str(INT), p.statements[0].token.type);
@@ -241,7 +241,7 @@ void test_integer_expression_parsing() {
 }
 
 
-void test_boolean_expression(expression * expr, char expected) {
+void test_boolean_expression(struct expression * expr, char expected) {
     if (expr->type != EXPR_BOOL) {
         abortf("wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
     }
@@ -266,19 +266,19 @@ void test_boolean_expression_parsing() {
     };
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
-        lexer l = {tests[i].input, 0};
-        parser parser = new_parser(&l);
-        program p = parse_program(&parser);
+        struct lexer l = {tests[i].input, 0};
+        struct parser parser = new_parser(&l);
+        struct program p = parse_program(&parser);
 
         assert_parser_errors(&parser);
         assert_program_size(&p, 1);
-        statement stmt = p.statements[0];
+        struct statement stmt = p.statements[0];
 
         test_boolean_expression(stmt.value, tests[i].expected);
     }
 }
 
-void test_expression(expression *e, expression_value expected) {
+void test_expression(struct expression *e, expression_value expected) {
     switch (e->type) {
         case EXPR_BOOL: return test_boolean_expression(e, expected.bool_value); break;
         case EXPR_INT: return test_integer_expression(e, expected.int_value); break;
@@ -310,13 +310,13 @@ void test_infix_expression_parsing() {
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
         t = tests[i];
-        lexer l = {tests[i].input, 0};
-        parser parser = new_parser(&l);
-        program p = parse_program(&parser);
+        struct lexer l = {tests[i].input, 0};
+        struct parser parser = new_parser(&l);
+        struct program p = parse_program(&parser);
 
         assert_parser_errors(&parser);
         assert_program_size(&p, 1);
-        statement stmt = p.statements[0];
+        struct statement stmt = p.statements[0];
 
         if (stmt.value->type != EXPR_INFIX) {
             abortf("wrong expression type. expected %d, got %d\n", EXPR_INFIX, stmt.value->type);
@@ -347,13 +347,13 @@ void test_prefix_expression_parsing() {
     test t;
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
         t = tests[i];
-        lexer l = {tests[i].input, 0};
-        parser parser = new_parser(&l);
-        program p = parse_program(&parser);
+        struct lexer l = {tests[i].input, 0};
+        struct parser parser = new_parser(&l);
+        struct program p = parse_program(&parser);
 
         assert_parser_errors(&parser);
         assert_program_size(&p, 1);
-        statement stmt = p.statements[0];
+        struct statement stmt = p.statements[0];
 
         if (stmt.value->type != EXPR_PREFIX) {
             abortf("wrong expression type. expected %d, got %d\n", EXPR_PREFIX, stmt.value->type);
@@ -395,9 +395,9 @@ void test_operator_precedence_parsing() {
     };
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
-        lexer l = {tests[i].input, 0};
-        parser parser = new_parser(&l);
-        program p = parse_program(&parser);
+        struct lexer l = {tests[i].input, 0};
+        struct parser parser = new_parser(&l);
+        struct program p = parse_program(&parser);
 
         assert_parser_errors(&parser);
         

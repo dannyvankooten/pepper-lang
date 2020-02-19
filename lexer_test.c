@@ -21,10 +21,10 @@ int main() {
         "10 == 10;\n"
         "10 != 9;\n";
 
-    lexer l;
+    struct lexer l;
     l.input = input;
     l.pos = 0;
-    token tokens[100];
+    struct token tokens[100];
     tokens[0].type = LET;
     strcpy(tokens[0].literal, "let");
     tokens[1].type = IDENT;
@@ -175,9 +175,8 @@ int main() {
     tokens[i].type = EOF;
     strcpy(tokens[i++].literal, "");
 
-
     for (int j = 0; j < i; j++) {
-        token t;
+       struct token t;
         gettoken(&l, &t);
 
         if (t.type != tokens[j].type) {

@@ -1,7 +1,7 @@
 #include <string.h>
 #undef EOF
 
-typedef enum {
+enum token_type {
     ILLEGAL,
     EOF,
     IDENT,
@@ -29,14 +29,14 @@ typedef enum {
     RPAREN,
     LBRACE,
     RBRACE
-}  token_type ;
+};
 
-typedef struct Token {
-    int type;
+struct token {
+    enum token_type type;
     char literal[32];
-} token;
+};
 
-void get_ident(token *t) {
+void get_ident(struct token *t) {
     // TODO: Proper implementation, using simple hashmap probably
     if (strcmp(t->literal, "let") == 0) {
        t->type = LET;
@@ -57,7 +57,7 @@ void get_ident(token *t) {
     }
 }
 
-const char * token_to_str(token_type type) {
+const char * token_to_str(enum token_type type) {
     switch (type) {
         case ILLEGAL: return "ILLEGAL"; break;
         case EOF: return "EOF"; break;
