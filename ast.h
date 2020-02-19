@@ -21,18 +21,18 @@ typedef enum {
     EXPR_BOOL,
 } expression_type;
 
+typedef union {
+    long int_value;
+    char str_value[128];
+    unsigned char bool_value;
+} expression_value;
+
 // TODO: Make better union struct for this
 typedef struct expression {
     expression_type type;
     token token; // token.IDENT
     char operator[3]; // 2 for operator + 1 for null terminator
-
-    union {
-        long int_value;
-        char str_value[128];
-        unsigned char bool_value;
-    };
-
+    expression_value value;
     struct expression *right;
     struct expression *left;
 } expression;
@@ -134,13 +134,13 @@ static int parse_return_statement(parser *p, statement *s) {
 static void parse_identifier_expression(parser *p, expression *e) {
     e->token = p->current_token;
     e->type = EXPR_IDENT;
-    strcpy(e->str_value, p->current_token.literal);
+    strcpy(e->value.str_value, p->current_token.literal);
 }
 
 static void parse_int_expression(parser *p, expression *e) {
     e->token = p->current_token;
     e->type = EXPR_INT;
-    e->int_value =  atoi(p->current_token.literal);
+    e->value.int_value =  atoi(p->current_token.literal);
 }
 
 static expression * parse_prefix_expression(parser *p, expression *expr) {
@@ -167,7 +167,7 @@ static expression * parse_infix_expression(parser *p, expression *left) {
 static void parse_boolean_expression(parser *p, expression *expr) {
     expr->type = EXPR_BOOL;
     expr->token = p->current_token;
-    expr->bool_value = current_token_is(p, TRUE);
+    expr->value.bool_value = current_token_is(p, TRUE);
 }
 
 static expression * parse_expression(parser *p, int precedence) {
@@ -314,10 +314,10 @@ static char * expression_to_str(expression *expr) {
             sprintf(str, "(%s %s %s)", expression_to_str(expr->left), expr->operator, expression_to_str(expr->right));
         break;
         case EXPR_IDENT:
-            strcpy(str, expr->str_value);
+            strcpy(str, expr->value.str_value);
         break;
         case EXPR_BOOL:
-            strcpy(str, expr->bool_value ? "true" : "false");
+            strcpy(str, expr->value.bool_value ? "true" : "false");
             break;
         case EXPR_INT:
             strcpy(str, expr->token.literal);
