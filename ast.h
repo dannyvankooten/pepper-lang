@@ -107,9 +107,9 @@ struct parser {
 static struct expression * parse_expression(struct parser *p, int precedence);
 static int get_token_precedence(struct token t);
 static void next_token(struct parser * p);
-static int current_token_is(struct parser *p, int t);
-static int next_token_is(struct parser *p, int t) ;
-static int expect_next_token(struct parser *p, int t);
+static int current_token_is(struct parser *p, enum token_type t);
+static int next_token_is(struct parser *p, enum token_type t) ;
+static int expect_next_token(struct parser *p, enum token_type t);
 
 struct parser new_parser(struct lexer *l) {
     struct parser p = {
@@ -127,15 +127,15 @@ static void next_token(struct parser * p) {
     gettoken(p->lexer, &p->next_token);
 }
 
-static int current_token_is(struct parser *p, int t) {
+static int current_token_is(struct parser *p, enum token_type t) {
     return t == p->current_token.type;
 }
 
-static int next_token_is(struct parser *p, int t) {
+static int next_token_is(struct parser *p, enum token_type t) {
      return t == p->next_token.type;
 }
 
-static int expect_next_token(struct parser *p, int t) {
+static int expect_next_token(struct parser *p, enum token_type t) {
     if (next_token_is(p, t)) {
         next_token(p);
         return 1;
@@ -272,7 +272,7 @@ static struct expression *parse_expression(struct parser *p, int precedence) {
     }
 
     while (!next_token_is(p, SEMICOLON) && precedence < get_token_precedence(p->next_token)) {
-        int type = p->next_token.type;
+        enum token_type type = p->next_token.type;
         if (type == PLUS || type == MINUS || type == ASTERISK || type == SLASH || type == EQ || type == NOT_EQ || type == LT || type == GT) {
             next_token(p);
             left = parse_infix_expression(p, left);
