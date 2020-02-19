@@ -347,24 +347,15 @@ extern program parse_program(parser *parser) {
     return prog;
 }
 
-
 static char * let_statement_to_str(statement s) {
     char * str = malloc(sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value->ident.token.literal) + 16);
-    strcat(str, s.token.literal);
-    strcat(str, " ");
-    strcat(str, s.name.token.literal);
-    strcat(str, " = ");
-    strcat(str, s.value->ident.token.literal);
-    strcat(str, ";");
+    sprintf(str, "%s %s = %s;", s.token.literal, s.name.token.literal, s.value->ident.token.literal);
     return str;
 }
 
 static char * return_statement_to_str(statement s) {
-    char * str = malloc(sizeof(str) + sizeof(s.token.literal) + sizeof(s.value->ident.token.literal) + 16);
-    strcat(str, s.token.literal);
-    strcat(str, " ");
-    strcat(str, s.value->ident.token.literal);
-    strcat(str, ";");
+    char * str = malloc(sizeof(s.token.literal) + sizeof(s.value->ident.token.literal) + 16);
+    sprintf(str, "%s %s;", s.token.literal, s.value->ident.token.literal);
     return str;
 }
 
@@ -385,7 +376,7 @@ static char * expression_to_str(expression *expr) {
             strcpy(str, expr->bool.value ? "true" : "false");
             break;
         case EXPR_INT:
-            strcpy(str, expr->_int.token.literal);
+            sprintf(str, "%d", expr->_int.value);
         break;
     }
 
@@ -397,7 +388,6 @@ char * program_to_str(program *p) {
     *str = '\0';
 
     statement s;
-
     for (int i = 0; i < p->size; i++) {
         s = p->statements[i];
                
