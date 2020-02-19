@@ -114,30 +114,31 @@ void test_program_string() {
         },
         .int_value = 5,
     };
-    program p = {
-        .statements = {
-            {
+    statement statements[2] = {
+        {
+            .token = {
+                .type = LET,
+                .literal = "let",
+            },
+            .name = {
                 .token = {
-                    .type = LET,
-                    .literal = "let",
+                    .type = IDENT,
+                    .literal = "myVar",
                 },
-                .name = {
-                    .token = {
-                        .type = IDENT,
-                        .literal = "myVar",
-                    },
-                    .value = "myVar",
-                },
-                .value = &e1,
-            }, 
-            {
-                .token = {
-                    .type = RETURN,
-                    .literal = "return",
-                },
-                .value = &e2
-            }, 
+                .value = "myVar",
+            },
+            .value = &e1,
         }, 
+        {
+            .token = {
+                .type = RETURN,
+                .literal = "return",
+            },
+            .value = &e2
+        }, 
+    };
+    program p = {
+        .statements = statements, 
         .size = 2
     };
 
@@ -218,7 +219,7 @@ void test_infix_expressions() {
     struct test {
         char input[16];
         int left_value;
-        char operator[2];
+        char operator[4];
         int right_value;
     } tests[] = {
        {"5 + 5", 5, "+", 5},
@@ -231,7 +232,7 @@ void test_infix_expressions() {
        {"5 != 5", 5, "!=", 5},
     };
 
-    for (int i=0; i < 8; i++) {
+    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
         lexer l = {tests[i].input, 0};
         parser parser = new_parser(&l);
         program p = parse_program(&parser);
@@ -241,7 +242,7 @@ void test_infix_expressions() {
         statement stmt = p.statements[0];
        
         test_integer_literal(stmt.value->left, tests[i].left_value);
-         if (strcmp(stmt.value->operator, tests[i].operator) != 0) {
+        if (strncmp(stmt.value->operator, tests[i].operator, 2) != 0) {
             abortf("wrong operator: expected %s, got %s\n", tests[i].operator, stmt.value->operator);
         }
         test_integer_literal(stmt.value->right, tests[i].right_value);
@@ -251,7 +252,7 @@ void test_infix_expressions() {
 void test_prefix_expressions() {
     struct test {
         char input[64];
-        char operator[2];
+        char operator[4];
         int int_value;
     } tests[] = {
         {"!5", "!", 5},
@@ -267,7 +268,7 @@ void test_prefix_expressions() {
         assert_program_size(&p, 1);
         statement stmt = p.statements[0];
 
-        if (strcmp(stmt.value->operator, tests[i].operator) != 0) {
+        if (strncmp(stmt.value->operator, tests[i].operator, 2) != 0) {
             abortf("wrong operator. expected %s, got %s\n", tests[i].operator, stmt.value->operator);
         }
 
@@ -301,7 +302,7 @@ void test_operator_precedence_parsing() {
         assert_parser_errors(&parser);
         
         char *program_str = program_to_str(&p);
-        if (strcmp(program_str, tests[i].expected) != 0) {
+        if (strncmp(program_str, tests[i].expected, 48) != 0) {
             abortf("incorrect program string: expected %s, got %s\n", tests[i].expected, program_str);
         }
     }

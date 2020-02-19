@@ -1,6 +1,8 @@
 #include "lexer.h"
 #include <stdlib.h>
 
+#define MAX_IDENT_LENGTH 32
+
 enum {
     LOWEST = 1,
     EQUALS,         // ==
@@ -22,7 +24,7 @@ typedef enum {
 typedef struct expression {
     expression_type type;
     token token; // token.IDENT
-    char operator[2];
+    char operator[3]; // 2 for operator + 1 for null terminator
     union {
         long int_value;
         char str_value[128];
@@ -33,19 +35,19 @@ typedef struct expression {
 } expression;
 
 typedef struct identifier {
-    token token; // token.IDENT
-    char value[32];
+    token token; 
+    char value[MAX_IDENT_LENGTH];
 } identifier;
 
 typedef struct statement {
-    token token; // token.LET
+    token token;
     identifier name;
     expression * value;
 } statement;
 
-// TODO: Dynamically allocate statements here
 typedef struct program {
-    statement statements[32];
+    statement * statements;
+    unsigned int cap;
     unsigned int size;
 } program;
 
@@ -54,7 +56,8 @@ typedef struct parser {
     token current_token;
     token next_token;
 
-    unsigned errors;
+    // TODO: allocate this dynamically
+    unsigned int errors;
     char error_messages[8][128];
 } parser;
 
@@ -226,12 +229,25 @@ static int parse_statement(parser *p, statement *s) {
 extern program parse_program(parser *parser) {
     program prog = {
         .size = 0,
+        .cap = 1,
     };
+    prog.statements = malloc(sizeof (statement));
 
+    statement s;
     while (parser->current_token.type != EOF) {
-        statement s;
-        if (parse_statement(parser, &s) != -1) {
-            prog.statements[prog.size++] = s;
+        // if an error occured, skip token & continue
+        if (parse_statement(parser, &s) == -1) {
+            next_token(parser);
+            continue;
+        }
+
+        // add to program statements
+        prog.statements[prog.size++] = s;
+
+        // increase program capacity if needed
+        if (prog.size >= prog.cap) {
+            prog.statements = realloc(prog.statements, sizeof (statement) * prog.cap * 2);
+            prog.cap *= 2;
         }
 
         next_token(parser);        
