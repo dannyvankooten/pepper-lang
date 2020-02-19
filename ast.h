@@ -11,7 +11,16 @@ enum {
     CALL            // fn()
 };
 
+typedef enum {
+    EXPR_INFIX,
+    EXPR_PREFIX,
+    EXPR_INT,
+    EXPR_IDENT,
+} expression_type;
+
+// TODO: Make better union struct for this
 typedef struct expression {
+    expression_type type;
     token token; // token.IDENT
     char operator[2];
     union {
@@ -31,11 +40,10 @@ typedef struct identifier {
 typedef struct statement {
     token token; // token.LET
     identifier name;
-    identifier value;
-
-    expression * expression;
+    expression * value;
 } statement;
 
+// TODO: Dynamically allocate statements here
 typedef struct program {
     statement statements[32];
     unsigned int size;
@@ -119,12 +127,14 @@ static int parse_return_statement(parser *p, statement *s) {
 
 static int parse_identifier_expression(parser *p, expression *e) {
     e->token = p->current_token;
+    e->type = EXPR_IDENT;
     strcpy(e->str_value, p->current_token.literal);
     return 1;
 }
 
 static int parse_int_expression(parser *p, expression *e) {
     e->token = p->current_token;
+    e->type = EXPR_INT;
     e->int_value =  atoi(p->current_token.literal);
     // TODO: Signal errors?
     return 1;
@@ -132,6 +142,7 @@ static int parse_int_expression(parser *p, expression *e) {
 
 static expression * parse_prefix_expression(parser *p, expression *expr) {
     expr->token = p->current_token;
+    expr->type = EXPR_PREFIX;
     strncpy(expr->operator, p->current_token.literal, 2);
     next_token(p);
     expr->right = parse_expression(p, PREFIX);
@@ -141,6 +152,7 @@ static expression * parse_prefix_expression(parser *p, expression *expr) {
 static expression * parse_infix_expression(parser *p, expression *left) {
     expression * expr = malloc(sizeof (expression));
     expr->left = left;
+    expr->type = EXPR_INFIX;
     expr->token = p->current_token;
     strncpy(expr->operator, p->current_token.literal, 2);
     int precedence = get_token_precedence(p->current_token);
@@ -192,7 +204,7 @@ static int get_token_precedence(token t) {
 
 static int parse_expression_statement(parser *p, statement *s) {
     s->token = p->current_token;
-    s->expression = parse_expression(p, LOWEST);
+    s->value = parse_expression(p, LOWEST);
 
     if (next_token_is(p, SEMICOLON)) {
         next_token(p);
@@ -239,40 +251,71 @@ parser new_parser(lexer *l) {
     return p;
 }
 
-static char * let_statement_to_str(char * str, statement s) {
-    str = realloc(str, sizeof(str) + sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value.token.literal) + 16);
+static char * let_statement_to_str(statement s) {
+    char * str = malloc(sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value->token.literal) + 16);
     strcat(str, s.token.literal);
     strcat(str, " ");
     strcat(str, s.name.token.literal);
     strcat(str, " = ");
-    strcat(str, s.value.token.literal);
+    strcat(str, s.value->token.literal);
     strcat(str, ";");
     return str;
 }
 
-static char * return_statement_to_str(char * str, statement s) {
-    str = realloc(str, sizeof(str) + sizeof(s.token.literal) + sizeof(s.value.token.literal) + 16);
+static char * return_statement_to_str(statement s) {
+    char * str = malloc(sizeof(str) + sizeof(s.token.literal) + sizeof(s.value->token.literal) + 16);
     strcat(str, s.token.literal);
     strcat(str, " ");
-    strcat(str, s.value.token.literal);
+    strcat(str, s.value->token.literal);
     strcat(str, ";");
+    return str;
+}
+
+static char * expression_to_str(expression *expr) {
+    char * str = malloc(256);
+
+    switch (expr->type) {
+        case EXPR_PREFIX: 
+            sprintf(str, "(%s%s)", expr->operator, expression_to_str(expr->right)); 
+        break;
+        case EXPR_INFIX: 
+            sprintf(str, "(%s %s %s)", expression_to_str(expr->left), expr->operator, expression_to_str(expr->right));
+        break;
+        case EXPR_IDENT:
+            strcpy(str, expr->str_value);
+        break;
+        case EXPR_INT:
+            strcpy(str, expr->token.literal);
+        break;
+    }
+
     return str;
 }
 
 char * program_to_str(program *p) {
-    char * str = malloc(1);
+    char * str = malloc(256);
     *str = '\0';
 
     statement s;
+
     for (int i = 0; i < p->size; i++) {
         s = p->statements[i];
+               
         switch (s.token.type) {
-            case LET: let_statement_to_str(str, s); break;
-            case RETURN: return_statement_to_str(str, s); break;
+            case LET: 
+                strcat(str, let_statement_to_str(s)); 
+            break;
+            case RETURN: 
+                strcat(str, return_statement_to_str(s)); 
+            break;
+            default:
+                strcat(str, expression_to_str(s.value));
+            break;
         }
-
+        
         if (i < p->size -1) {
             strcat(str, "\n");
+            str = realloc(str, sizeof str + 256);
         }
     }    
 
