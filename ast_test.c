@@ -199,7 +199,7 @@ void test_integer_literal(expression * expr, int expected) {
         abortf("wrong integer value: expected %d, got %d\n", expected, expr->int_value);
     }
 
-    char expected_str[16];
+    char expected_str[8];
     sprintf(expected_str, "%d", expected);
     if (strcmp(expr->token.literal, expected_str) != 0) {
         abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
@@ -230,7 +230,7 @@ void test_integer_expression_parsing() {
 
 void test_boolean_expression_parsing() {
     struct test {
-        char input[16];
+        char * input;
         char expected;
     } tests[] = {
       {"true;", 1},
@@ -258,9 +258,9 @@ void test_boolean_expression_parsing() {
 
 void test_infix_expressions() {
     struct test {
-        char input[16];
+        char *input;
         int left_value;
-        char operator[4];
+        char *operator;
         int right_value;
     } tests[] = {
        {"5 + 5", 5, "+", 5},
@@ -292,8 +292,8 @@ void test_infix_expressions() {
 
 void test_prefix_expressions() {
     struct test {
-        char input[64];
-        char operator[4];
+        char *input;
+        char *operator;
         int int_value;
     } tests[] = {
         {"!5", "!", 5},
@@ -319,8 +319,8 @@ void test_prefix_expressions() {
 
 void test_operator_precedence_parsing() {
     struct test {
-        char input[32];
-        char expected[48];
+        char *input;
+        char *expected;
     } tests[] = {
        {"-a * b", "((-a) * b)"},
        {"!-a", "(!(-a))"},
