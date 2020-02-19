@@ -118,7 +118,7 @@ void test_program_string() {
     };
     struct expression e2 = {
         .type = EXPR_INT,
-        ._int = {
+        .integer = {
             .token = {
                 .type = INT,
                 .literal = "5",
@@ -208,14 +208,14 @@ void test_integer_expression(struct expression * expr, int expected) {
         abortf("wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
     }
 
-    if (expr->_int.value != expected) {
-        abortf("wrong integer value: expected %d, got %d\n", expected, expr->_int.value);
+    if (expr->integer.value != expected) {
+        abortf("wrong integer value: expected %d, got %d\n", expected, expr->integer.value);
     }
 
     char expected_str[8];
     sprintf(expected_str, "%d", expected);
-    if (strcmp(expr->_int.token.literal, expected_str) != 0) {
-        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->_int.token.literal);
+    if (strcmp(expr->integer.token.literal, expected_str) != 0) {
+        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->integer.token.literal);
     }
 }
 
@@ -429,9 +429,9 @@ void test_if_expression_parsing() {
 
     expression_value left = {.str_value = "x"};
     expression_value right = {.str_value = "y"};
-    test_infix_expression(expr->_if.condition, left, "<", right);
+    test_infix_expression(expr->ifelse.condition, left, "<", right);
 
-    struct block_statement *consequence = expr->_if.consequence;
+    struct block_statement *consequence = expr->ifelse.consequence;
     if (!consequence) {
         abortf("expected consequence block statement, got NULL\n");
     }
@@ -446,7 +446,7 @@ void test_if_expression_parsing() {
 
     test_identifier_expression(consequence->statements[0].value, "x");
 
-    if (expr->_if.alternative) {
+    if (expr->ifelse.alternative) {
         abortf("expected NULL, got alternative block statement\n");
     }
 }
@@ -467,9 +467,9 @@ void test_if_else_expression_parsing() {
 
     expression_value left = {.str_value = "x"};
     expression_value right = {.str_value = "y"};
-    test_infix_expression(expr->_if.condition, left, "<", right);
+    test_infix_expression(expr->ifelse.condition, left, "<", right);
 
-    struct block_statement *consequence = expr->_if.consequence;
+    struct block_statement *consequence = expr->ifelse.consequence;
     if (!consequence) {
         abortf("expected consequence block statement, got NULL\n");
     }
@@ -484,7 +484,7 @@ void test_if_else_expression_parsing() {
 
     test_identifier_expression(consequence->statements[0].value, "x");
 
-    struct block_statement *alternative = expr->_if.alternative;
+    struct block_statement *alternative = expr->ifelse.alternative;
     if (alternative == NULL) {
         abortf("alternative was NULL");
     }

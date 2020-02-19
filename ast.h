@@ -34,12 +34,7 @@ struct bool_expression {
     char value;
 };
 
-struct identifier_expression {
-    struct token token;
-    char value[MAX_IDENT_LENGTH];
-};
-
-struct integer_expression {
+struct integer_literal {
     struct token token;
     int value;
 };
@@ -84,15 +79,22 @@ struct if_expression {
     struct block_statement *alternative;
 };
 
+struct function_literal {
+    struct token token;
+    struct identifier *parameters;
+    struct block_statement *body;
+};
+
 struct expression {
     enum expression_type type;
     union {
         struct bool_expression bool;
-        struct identifier_expression ident;
-        struct integer_expression _int;
+        struct identifier ident;
+        struct integer_literal integer;
         struct prefix_expression prefix;
         struct infix_expression infix;
-        struct if_expression _if;
+        struct if_expression ifelse;
+        struct function_literal function;
     };
 } expression;
 
@@ -210,8 +212,8 @@ static struct expression *parse_identifier_expression(struct parser *p) {
 static struct expression *parse_int_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_INT;
-    expr->_int.token = p->current_token;
-    expr->_int.value =  atoi(p->current_token.literal);
+    expr->integer.token = p->current_token;
+    expr->integer.value =  atoi(p->current_token.literal);
     return expr;
 }
 
@@ -285,7 +287,7 @@ struct block_statement *parse_block_statement(struct parser *p) {
 struct expression *parse_if_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_IF;
-    expr->_if.token = p->current_token;
+    expr->ifelse.token = p->current_token;
 
     if (!expect_next_token(p, LPAREN)) {
         free(expr);
@@ -293,7 +295,7 @@ struct expression *parse_if_expression(struct parser *p) {
     }
 
     next_token(p);
-    expr->_if.condition = parse_expression(p, LOWEST);
+    expr->ifelse.condition = parse_expression(p, LOWEST);
 
     if (!expect_next_token(p, RPAREN)) {
         free(expr);
@@ -305,7 +307,7 @@ struct expression *parse_if_expression(struct parser *p) {
         return NULL;
     }
 
-    expr->_if.consequence = parse_block_statement(p);
+    expr->ifelse.consequence = parse_block_statement(p);
 
     if (next_token_is(p, ELSE)) {
         next_token(p);
@@ -315,7 +317,7 @@ struct expression *parse_if_expression(struct parser *p) {
             return NULL;
         }
 
-        expr->_if.alternative = parse_block_statement(p);
+        expr->ifelse.alternative = parse_block_statement(p);
     }
 
     return expr;
@@ -479,12 +481,12 @@ static char * expression_to_str(struct expression *expr) {
             strcpy(str, expr->bool.value ? "true" : "false");
             break;
         case EXPR_INT:
-            sprintf(str, "%d", expr->_int.value);
+            sprintf(str, "%d", expr->integer.value);
         break;
         case EXPR_IF:
-            sprintf(str, "if %s %s", expression_to_str(expr->_if.condition), block_statement_to_str(expr->_if.consequence));
-            if (expr->_if.alternative) {
-                 sprintf(str, "else %s", block_statement_to_str(expr->_if.alternative));
+            sprintf(str, "if %s %s", expression_to_str(expr->ifelse.condition), block_statement_to_str(expr->ifelse.consequence));
+            if (expr->ifelse.alternative) {
+                 sprintf(str, "else %s", block_statement_to_str(expr->ifelse.alternative));
             }
         break;
         default: 
