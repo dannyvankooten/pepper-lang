@@ -142,7 +142,7 @@ void test_program_string() {
     };
 
     char * str = program_to_str(&p);
-    char * expected = "let myVar = anotherVar;\nreturn 5;";
+    char * expected = "let myVar = anotherVar;return 5;";
 
     if (strcmp(str, expected) != 0) {
         abortf("wrong program string. expected \"%s\", got \"%s\"\n", expected, str);
@@ -282,30 +282,28 @@ void test_operator_precedence_parsing() {
     } tests[] = {
        {"-a * b", "((-a) * b)"},
        {"!-a", "(!(-a))"},
-       {"a + b + c", "((a + b) - c)"},
+       {"a + b + c", "((a + b) + c)"},
+       {"a + b - c", "((a + b) - c)"},
        {"a * b * c", "((a * b) * c)"},
-       {"a * b / c", "((a * b ) / c"},
+       {"a * b / c", "((a * b) / c)"},
        {"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
        {"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
        {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
        {"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
        {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
-       {"", ""},
     };
 
-    for (int i=0; i < 1; i++) {
+    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
         lexer l = {tests[i].input, 0};
         parser parser = new_parser(&l);
         program p = parse_program(&parser);
 
         assert_parser_errors(&parser);
-        assert_program_size(&p, 1);
         
         char *program_str = program_to_str(&p);
         if (strcmp(program_str, tests[i].expected) != 0) {
             abortf("incorrect program string: expected %s, got %s\n", tests[i].expected, program_str);
         }
-
     }
 }
 

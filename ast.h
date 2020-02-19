@@ -314,7 +314,6 @@ char * program_to_str(program *p) {
         }
         
         if (i < p->size -1) {
-            strcat(str, "\n");
             str = realloc(str, sizeof str + 256);
         }
     }    
