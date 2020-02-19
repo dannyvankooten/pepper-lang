@@ -378,14 +378,13 @@ static char * return_statement_to_str(struct statement *s) {
 }
 
 static char * statement_to_str(struct statement *s) {
-
     switch (s->type) {
         case STMT_LET: return let_statement_to_str(s); break;
         case STMT_RETURN: return return_statement_to_str(s); break;
         case STMT_EXPR: return expression_to_str(s->value); break;
     }
 
-    return "";
+    return "Error: missing to_str implementation for statement type";
 }
 
 static char * block_statement_to_str(struct block_statement *b) {
@@ -420,6 +419,9 @@ static char * expression_to_str(struct expression *expr) {
             if (expr->_if.alternative) {
                  sprintf(str, "else %s", block_statement_to_str(expr->_if.alternative));
             }
+        break;
+        default: 
+            sprintf(str, "Missing to_str implementation for expression type %d", expr->type);
         break;
     }
 

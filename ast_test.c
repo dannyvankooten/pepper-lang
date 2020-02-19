@@ -126,7 +126,7 @@ void test_program_string() {
             .value = 5
         }
     };
-    struct statement statements[2] = {
+    struct statement statements[] = {
         {
             .type = STMT_LET,
             .token = {
