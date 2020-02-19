@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #define MAX_IDENT_LENGTH 32
-
+#define MAX_OPERATOR_LENGTH 3
 enum {
     LOWEST = 1,
     EQUALS,         // ==
@@ -19,34 +19,70 @@ typedef enum {
     EXPR_INT,
     EXPR_IDENT,
     EXPR_BOOL,
+   // EXPR_IF,
 } expression_type;
 
-typedef union {
-    long int_value;
-    char str_value[128];
-    unsigned char bool_value;
-} expression_value;
+typedef struct {
+    token token;
+    char value;
+} bool_expression;
 
-// TODO: Make better union struct for this
+typedef struct {
+    token token;
+    char value[MAX_IDENT_LENGTH];
+} identifier_expression;
+
+typedef struct {
+    token token;
+    int value;
+} integer_expression;
+
+typedef struct {
+    token token;
+    char operator[MAX_OPERATOR_LENGTH];
+    struct expression *right;
+} prefix_expression;
+
+typedef struct {
+    token token;
+    char operator[MAX_OPERATOR_LENGTH];
+    struct expression *left;
+    struct expression *right;
+} infix_expression;
+
 typedef struct expression {
     expression_type type;
-    token token; // token.IDENT
-    char operator[3]; // 2 for operator + 1 for null terminator
-    expression_value value;
-    struct expression *right;
-    struct expression *left;
+    union {
+        bool_expression bool;
+        identifier_expression ident;
+        integer_expression _int;
+        prefix_expression prefix;
+        infix_expression infix;
+    };
 } expression;
 
-typedef struct identifier {
+typedef struct {
     token token; 
     char value[MAX_IDENT_LENGTH];
 } identifier;
 
-typedef struct statement {
+typedef struct {
     token token;
     identifier name;
     expression * value;
 } statement;
+
+typedef struct {
+    token token;
+    statement *statements;
+} block_statement;
+
+typedef struct {
+    token token;
+    expression condition;
+    block_statement *consequence;
+    block_statement *alternative;
+} if_expression;
 
 typedef struct program {
     statement * statements;
@@ -148,47 +184,47 @@ static int parse_return_statement(parser *p, statement *s) {
 
 expression *parse_identifier_expression(parser *p) {
     expression *expr = malloc(sizeof (expression));
-    expr->token = p->current_token;
     expr->type = EXPR_IDENT;
-    strcpy(expr->value.str_value, p->current_token.literal);
+    expr->ident.token = p->current_token;
+    strncpy(expr->ident.value, p->current_token.literal, MAX_IDENT_LENGTH);
     return expr;
 }
 
 expression *parse_int_expression(parser *p) {
     expression *expr = malloc(sizeof (expression));
-    expr->token = p->current_token;
     expr->type = EXPR_INT;
-    expr->value.int_value =  atoi(p->current_token.literal);
+    expr->_int.token = p->current_token;
+    expr->_int.value =  atoi(p->current_token.literal);
     return expr;
 }
 
 expression *parse_prefix_expression(parser *p) {
     expression *expr = malloc(sizeof (expression));
-    expr->token = p->current_token;
     expr->type = EXPR_PREFIX;
-    strncpy(expr->operator, p->current_token.literal, 2);
+    expr->prefix.token = p->current_token;
+    strncpy(expr->prefix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
     next_token(p);
-    expr->right = parse_expression(p, PREFIX);
+    expr->prefix.right = parse_expression(p, PREFIX);
     return expr;
 }
 
 static expression *parse_infix_expression(parser *p, expression *left) {
     expression * expr = malloc(sizeof (expression));
-    expr->left = left;
     expr->type = EXPR_INFIX;
-    expr->token = p->current_token;
-    strncpy(expr->operator, p->current_token.literal, 4);
+    expr->infix.left = left;
+    expr->infix.token = p->current_token;
+    strncpy(expr->infix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
-    expr->right =  parse_expression(p, precedence);
+    expr->infix.right =  parse_expression(p, precedence);
     return expr;
 }
 
 expression *parse_boolean_expression(parser *p) {
     expression *expr = malloc(sizeof (expression));
     expr->type = EXPR_BOOL;
-    expr->token = p->current_token;
-    expr->value.bool_value = current_token_is(p, TRUE);
+    expr->bool.token = p->current_token;
+    expr->bool.value = current_token_is(p, TRUE);
     return expr;
 }
 
@@ -312,21 +348,21 @@ extern program parse_program(parser *parser) {
 
 
 static char * let_statement_to_str(statement s) {
-    char * str = malloc(sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value->token.literal) + 16);
+    char * str = malloc(sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value->ident.token.literal) + 16);
     strcat(str, s.token.literal);
     strcat(str, " ");
     strcat(str, s.name.token.literal);
     strcat(str, " = ");
-    strcat(str, s.value->token.literal);
+    strcat(str, s.value->ident.token.literal);
     strcat(str, ";");
     return str;
 }
 
 static char * return_statement_to_str(statement s) {
-    char * str = malloc(sizeof(str) + sizeof(s.token.literal) + sizeof(s.value->token.literal) + 16);
+    char * str = malloc(sizeof(str) + sizeof(s.token.literal) + sizeof(s.value->ident.token.literal) + 16);
     strcat(str, s.token.literal);
     strcat(str, " ");
-    strcat(str, s.value->token.literal);
+    strcat(str, s.value->ident.token.literal);
     strcat(str, ";");
     return str;
 }
@@ -336,19 +372,19 @@ static char * expression_to_str(expression *expr) {
 
     switch (expr->type) {
         case EXPR_PREFIX: 
-            sprintf(str, "(%s%s)", expr->operator, expression_to_str(expr->right)); 
+            sprintf(str, "(%s%s)", expr->prefix.operator, expression_to_str(expr->prefix.right)); 
         break;
         case EXPR_INFIX: 
-            sprintf(str, "(%s %s %s)", expression_to_str(expr->left), expr->operator, expression_to_str(expr->right));
+            sprintf(str, "(%s %s %s)", expression_to_str(expr->infix.left), expr->infix.operator, expression_to_str(expr->infix.right));
         break;
         case EXPR_IDENT:
-            strcpy(str, expr->value.str_value);
+            strcpy(str, expr->ident.value);
         break;
         case EXPR_BOOL:
-            strcpy(str, expr->value.bool_value ? "true" : "false");
+            strcpy(str, expr->bool.value ? "true" : "false");
             break;
         case EXPR_INT:
-            strcpy(str, expr->token.literal);
+            strcpy(str, expr->_int.token.literal);
         break;
     }
 

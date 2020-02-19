@@ -13,6 +13,12 @@ void abortf(char *format, ...) {
    exit(1);
 }
 
+typedef union {
+    int int_value;
+    char bool_value;
+    char * str_value;
+} expression_value;
+
 void assert_parser_errors(parser *p) {
     if (p->errors > 0) {
         printf("parser has %d errors: \n", p->errors);
@@ -101,18 +107,24 @@ void test_return_statements() {
 
 void test_program_string() {
     expression e1 = {
-        .token = {
-            .type = IDENT,
-            .literal = "anotherVar",
-        },
-        .value = { .str_value = "anotherVar"}
+        .type = EXPR_IDENT,
+        .ident = {
+            .token = {
+                .type = IDENT,
+                .literal = "anotherVar",
+            },
+            .value = "anotherVar"
+        }
     };
     expression e2 = {
-        .token = {
-            .type = INT,
-            .literal = "5",
-        },
-        .value = { .int_value = 5}
+        .type = EXPR_INT,
+        ._int = {
+            .token = {
+                .type = INT,
+                .literal = "5",
+            },
+            .value = 5
+        }
     };
     statement statements[2] = {
         {
@@ -157,12 +169,12 @@ void test_identifier_expression(expression *e, char * expected) {
         abortf("wrong expression type: expected %d, got %d\n", EXPR_IDENT, e->type);
     }
 
-    if (strcmp(e->token.literal, expected) != 0) {
-        abortf("wrong token literal: expected \"%s\", got \"%s\"\n", expected, e->token.literal);
+    if (strcmp(e->ident.token.literal, expected) != 0) {
+        abortf("wrong token literal: expected \"%s\", got \"%s\"\n", expected, e->ident.token.literal);
     }
 
-    if (strcmp(e->value.str_value, expected) != 0) {
-        abortf("wrong expression value: expected \"%s\", got \"%s\"\n", expected, e->value.str_value);
+    if (strcmp(e->ident.value, expected) != 0) {
+        abortf("wrong expression value: expected \"%s\", got \"%s\"\n", expected, e->ident.value);
     }
 }
 
@@ -194,32 +206,17 @@ void test_integer_expression(expression * expr, int expected) {
         abortf("wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
     }
 
-    if (expr->value.int_value != expected) {
-        abortf("wrong integer value: expected %d, got %d\n", expected, expr->value.int_value);
+    if (expr->_int.value != expected) {
+        abortf("wrong integer value: expected %d, got %d\n", expected, expr->_int.value);
     }
 
     char expected_str[8];
     sprintf(expected_str, "%d", expected);
-    if (strcmp(expr->token.literal, expected_str) != 0) {
-        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
+    if (strcmp(expr->_int.token.literal, expected_str) != 0) {
+        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->_int.token.literal);
     }
 }
 
-
-void test_boolean_expression(expression * expr, char expected) {
-    if (expr->type != EXPR_BOOL) {
-        abortf("wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
-    }
-
-    if (expr->value.bool_value != expected) {
-        abortf("wrong boolean value: expected %d, got %d\n", expected, expr->value.bool_value);
-    }
-
-    char * expected_str = expected ? "true" : "false";
-    if (strcmp(expr->token.literal, expected_str) != 0) {
-        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
-    }
-}
 
 void test_integer_expression_parsing() {
     char * input = "5;";
@@ -241,6 +238,22 @@ void test_integer_expression_parsing() {
     }
 
     test_integer_expression(stmt.value, 5);
+}
+
+
+void test_boolean_expression(expression * expr, char expected) {
+    if (expr->type != EXPR_BOOL) {
+        abortf("wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
+    }
+
+    if (expr->bool.value != expected) {
+        abortf("wrong boolean value: expected %d, got %d\n", expected, expr->bool.value);
+    }
+
+    char * expected_str = expected ? "true" : "false";
+    if (strcmp(expr->bool.token.literal, expected_str) != 0) {
+        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->bool.token.literal);
+    }
 }
 
 void test_boolean_expression_parsing() {
@@ -278,22 +291,20 @@ void test_infix_expression_parsing() {
         char *input;
         expression_value left_value;
         char *operator;
-        expression_value right_value;
-        expression_type type;
-        
+        expression_value right_value;        
     } test;
     test tests[] = {
-       {"5 + 5", {5}, "+", {5}, EXPR_INT},
-       {"5 - 5", {5}, "-", {5}, EXPR_INT},
-       {"5 * 5", {5}, "*", {5}, EXPR_INT},
-       {"5 / 5", {5}, "/", {5}, EXPR_INT},
-       {"5 > 5", {5}, ">", {5}, EXPR_INT},
-       {"5 < 5", {5}, "<", {5}, EXPR_INT},
-       {"5 == 5", {5}, "==", {5}, EXPR_INT},
-       {"5 != 5", {5}, "!=", {5}, EXPR_INT},
-       {"true == true", {1}, "==", {1}, EXPR_BOOL},
-       {"true != false", {1}, "!=", {0}, EXPR_BOOL},
-       {"false == false", {0}, "==", {0}, EXPR_BOOL},
+       {"5 + 5", {5}, "+", {5}},
+       {"5 - 5", {5}, "-", {5}},
+       {"5 * 5", {5}, "*", {5}},
+       {"5 / 5", {5}, "/", {5}},
+       {"5 > 5", {5}, ">", {5}},
+       {"5 < 5", {5}, "<", {5}},
+       {"5 == 5", {5}, "==", {5}},
+       {"5 != 5", {5}, "!=", {5}},
+       {"true == true", {1}, "==", {1}},
+       {"true != false", {1}, "!=", {0}},
+       {"false == false", {0}, "==", {0}},
     };
     test t;
 
@@ -307,13 +318,18 @@ void test_infix_expression_parsing() {
         assert_program_size(&p, 1);
         statement stmt = p.statements[0];
 
-        test_expression(stmt.value->left, t.left_value);
-        if (strncmp(stmt.value->operator, tests[i].operator, 2) != 0) {
-            abortf("wrong operator: expected %s, got %s\n", tests[i].operator, stmt.value->operator);
+        if (stmt.value->type != EXPR_INFIX) {
+            abortf("wrong expression type. expected %d, got %d\n", EXPR_INFIX, stmt.value->type);
         }
-        test_expression(stmt.value->right, t.right_value);
+
+        test_expression(stmt.value->infix.left, t.left_value);
+        if (strncmp(stmt.value->infix.operator, tests[i].operator, 2) != 0) {
+            abortf("wrong operator: expected %s, got %s\n", tests[i].operator, stmt.value->infix.operator);
+        }
+        test_expression(stmt.value->infix.right, t.right_value);
     }
 }
+
 
 void test_prefix_expression_parsing() {
     typedef struct test {
@@ -339,11 +355,15 @@ void test_prefix_expression_parsing() {
         assert_program_size(&p, 1);
         statement stmt = p.statements[0];
 
-        if (strncmp(stmt.value->operator, t.operator, 2) != 0) {
-            abortf("wrong operator. expected %s, got %s\n", t.operator, stmt.value->operator);
+        if (stmt.value->type != EXPR_PREFIX) {
+            abortf("wrong expression type. expected %d, got %d\n", EXPR_PREFIX, stmt.value->type);
+        }
+
+        if (strncmp(stmt.value->prefix.operator, t.operator, 2) != 0) {
+            abortf("wrong operator. expected %s, got %s\n", t.operator, stmt.value->prefix.operator);
         }   
 
-        test_expression(stmt.value->right, t.value);        
+        test_expression(stmt.value->prefix.right, t.value);        
     }
 }
 
@@ -383,7 +403,7 @@ void test_operator_precedence_parsing() {
         
         char *program_str = program_to_str(&p);
         if (strncmp(program_str, tests[i].expected, 48) != 0) {
-            abortf("incorrect program string: expected %s, got %s\n", tests[i].expected, program_str);
+            abortf("wrong program string: expected %s, got %s\n", tests[i].expected, program_str);
         }
     }
 }
@@ -394,9 +414,9 @@ int main() {
     test_program_string();
     test_identifier_expression_parsing();
     test_integer_expression_parsing();
+    test_boolean_expression_parsing();
     test_prefix_expression_parsing();
     test_infix_expression_parsing();
     test_operator_precedence_parsing();
-    test_boolean_expression_parsing();
     printf("\x1b[32mAll tests passed!\n");
 }
