@@ -128,6 +128,7 @@ void test_program_string() {
     };
     struct statement statements[2] = {
         {
+            .type = STMT_LET,
             .token = {
                 .type = LET,
                 .literal = "let",
@@ -142,6 +143,7 @@ void test_program_string() {
             .value = &e1,
         }, 
         {
+            .type = STMT_RETURN,
             .token = {
                 .type = RETURN,
                 .literal = "return",

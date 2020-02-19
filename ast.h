@@ -15,12 +15,18 @@ enum {
 };
 
 enum expression_type {
-    EXPR_INFIX,
+    EXPR_INFIX = 1,
     EXPR_PREFIX,
     EXPR_INT,
     EXPR_IDENT,
     EXPR_BOOL,
     EXPR_IF,
+};
+
+enum statement_type {
+    STMT_LET = 1,
+    STMT_RETURN,
+    STMT_EXPR,
 };
 
 struct bool_expression {
@@ -51,9 +57,31 @@ struct infix_expression {
     struct expression *right;
 };
 
+// TODO: Duplicate of identifier_expression
 struct identifier {
     struct token token; 
     char value[MAX_IDENT_LENGTH];
+};
+
+struct statement {
+    enum statement_type type;
+    struct token token;
+    struct identifier name;
+    struct expression *value;
+};
+
+struct block_statement {
+    struct token token;
+    unsigned int size;
+    unsigned int cap;
+    struct statement *statements;
+};
+
+struct if_expression {
+    struct token token;
+    struct expression *condition;
+    struct block_statement *consequence;
+    struct block_statement *alternative;
 };
 
 struct expression {
@@ -64,29 +92,9 @@ struct expression {
         struct integer_expression _int;
         struct prefix_expression prefix;
         struct infix_expression infix;
-
-        // TODO: Fix this
-        struct if_expression *_if;
+        struct if_expression _if;
     };
 } expression;
-
-struct statement {
-    struct token token;
-    struct identifier name;
-    struct expression * value;
-};
-
-struct block_statement {
-    struct token token;
-    struct statement *statements;
-};
-
-struct if_expression {
-    struct token token;
-    struct expression condition;
-    struct block_statement *consequence;
-    struct block_statement *alternative;
-};
 
 struct program {
     struct statement * statements;
@@ -104,12 +112,13 @@ struct parser {
     char error_messages[8][128];
 };
 
-static struct expression * parse_expression(struct parser *p, int precedence);
 static int get_token_precedence(struct token t);
 static void next_token(struct parser * p);
 static int current_token_is(struct parser *p, enum token_type t);
 static int next_token_is(struct parser *p, enum token_type t) ;
 static int expect_next_token(struct parser *p, enum token_type t);
+static char * expression_to_str(struct expression *expr);
+static struct expression * parse_expression(struct parser *p, int precedence);
 
 struct parser new_parser(struct lexer *l) {
     struct parser p = {
@@ -146,6 +155,7 @@ static int expect_next_token(struct parser *p, enum token_type t) {
 }
 
 static int parse_let_statement(struct parser *p, struct statement *s) {
+    s->type = STMT_LET;
     s->token = p->current_token;
 
      if (!expect_next_token(p, IDENT)) {
@@ -173,11 +183,13 @@ static int parse_let_statement(struct parser *p, struct statement *s) {
 }
 
 static int parse_return_statement(struct parser *p, struct statement *s) {
+    s->type = STMT_RETURN;
     s->token = p->current_token;
 
     next_token(p);
 
     // TODO: Parse expression
+    s->value = NULL;
 
     while (!current_token_is(p, SEMICOLON)) {
         next_token(p);
@@ -301,6 +313,7 @@ static int get_token_precedence(struct token t) {
 };
 
 static int parse_expression_statement(struct parser *p, struct statement *s) {
+    s->type = STMT_EXPR;
     s->token = p->current_token;
     s->value = parse_expression(p, LOWEST);
 
@@ -314,7 +327,7 @@ static int parse_expression_statement(struct parser *p, struct statement *s) {
 static int parse_statement(struct parser *p, struct statement *s) {
     switch (p->current_token.type) {
         case LET: return parse_let_statement(p, s); break;
-        case RETURN: return parse_return_statement(p ,s); break;
+        case RETURN: return parse_return_statement(p, s); break;
         default: return parse_expression_statement(p, s); break;
     }
   
@@ -330,13 +343,13 @@ extern struct program parse_program(struct parser *parser) {
 
     struct statement s;
     while (parser->current_token.type != EOF) {
+        
         // if an error occured, skip token & continue
         if (parse_statement(parser, &s) == -1) {
             next_token(parser);
             continue;
         }
-
-        // add to program statements
+        
         prog.statements[prog.size++] = s;
 
         // increase program capacity if needed (by doubling it)
@@ -352,15 +365,34 @@ extern struct program parse_program(struct parser *parser) {
     return prog;
 }
 
-static char * let_statement_to_str(struct statement s) {
-    char * str = malloc(sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value->ident.token.literal) + 16);
-    sprintf(str, "%s %s = %s;", s.token.literal, s.name.token.literal, s.value->ident.token.literal);
+static char * let_statement_to_str(struct statement *s) {
+    char * str = malloc(sizeof(s->token.literal) + sizeof(s->name.token.literal) + sizeof(s->value->ident.token.literal) + 16);
+    sprintf(str, "%s %s = %s;", s->token.literal, s->name.token.literal, s->value->ident.token.literal);
     return str;
 }
 
-static char * return_statement_to_str(struct statement s) {
-    char * str = malloc(sizeof(s.token.literal) + sizeof(s.value->ident.token.literal) + 16);
-    sprintf(str, "%s %s;", s.token.literal, s.value->ident.token.literal);
+static char * return_statement_to_str(struct statement *s) {
+    char * str = malloc(sizeof(s->token.literal) + sizeof(s->value->ident.token.literal) + 16);
+    sprintf(str, "%s %s;", s->token.literal, s->value->ident.token.literal);
+    return str;
+}
+
+static char * statement_to_str(struct statement *s) {
+
+    switch (s->type) {
+        case STMT_LET: return let_statement_to_str(s); break;
+        case STMT_RETURN: return return_statement_to_str(s); break;
+        case STMT_EXPR: return expression_to_str(s->value); break;
+    }
+
+    return "";
+}
+
+static char * block_statement_to_str(struct block_statement *b) {
+    char * str = malloc(1024);
+    for (int i=0; i < b->size; i++) {
+        strcat(str, statement_to_str(&b->statements[i]));
+    }
     return str;
 }
 
@@ -384,8 +416,10 @@ static char * expression_to_str(struct expression *expr) {
             sprintf(str, "%d", expr->_int.value);
         break;
         case EXPR_IF:
-            //sprintf(str, "if %s %s");
-            // TODO
+            sprintf(str, "if %s %s", expression_to_str(expr->_if.condition), block_statement_to_str(expr->_if.consequence));
+            if (expr->_if.alternative) {
+                 sprintf(str, "else %s", block_statement_to_str(expr->_if.alternative));
+            }
         break;
     }
 
@@ -394,23 +428,12 @@ static char * expression_to_str(struct expression *expr) {
 
 char * program_to_str(struct program *p) {
     char * str = malloc(256);
+
+    // empty string 
     *str = '\0';
 
-    struct statement s;
-    for (int i = 0; i < p->size; i++) {
-        s = p->statements[i];
-               
-        switch (s.token.type) {
-            case LET: 
-                strcat(str, let_statement_to_str(s)); 
-            break;
-            case RETURN: 
-                strcat(str, return_statement_to_str(s)); 
-            break;
-            default:
-                strcat(str, expression_to_str(s.value));
-            break;
-        }
+    for (int i = 0; i < p->size; i++) {  
+        strcat(str, statement_to_str(&p->statements[i]));
         
         if (i < p->size -1) {
             str = realloc(str, sizeof str + 256);
