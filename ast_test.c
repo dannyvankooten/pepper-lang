@@ -453,7 +453,7 @@ void test_if_expression_parsing() {
 
 void test_if_else_expression_parsing() {
     char *input = "if (x < y) { x } else { 5 }";
-    struct lexer lexer = {input};
+    struct lexer lexer = {input, 0};
     struct parser parser = new_parser(&lexer);
     struct program program = parse_program(&parser);
     assert_parser_errors(&parser);
@@ -494,6 +494,45 @@ void test_if_else_expression_parsing() {
     }
 }
 
+void test_function_literal_parsing() {
+    char *input = "fn(x, y) { x + y; }";
+    struct lexer lexer = {input, 0};
+    struct parser parser = new_parser(&lexer);
+    struct program program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(&program, 1);
+
+    struct statement stmt = program.statements[0];
+    if (stmt.type != STMT_EXPR) {
+        abortf("invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
+    }
+
+    struct expression *expr = stmt.value;
+    if (expr->type != EXPR_FUNCTION) {
+        abortf("invalid expression type: expected EXPR_FUNCTION, got %d\n", expr->type);
+    }
+
+    if (expr->function.parameters.size != 2) {
+        abortf("invalid param size: expected %d, got %d\n", 2, expr->function.parameters.size);
+    }
+
+    if (strcmp(expr->function.parameters.values[0].value, "x") != 0) {
+        abortf("invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[0].value);
+    }
+    if (strcmp(expr->function.parameters.values[1].value, "y") != 0) {
+        abortf("invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[1].value);
+    }
+
+    if (expr->function.body->size != 1) {
+        abortf("invalid body size: expected %d, got %d\n", 1, expr->function.body->size);
+    }
+    
+    expression_value left = {.str_value = "x"};
+    char *op = "+";
+    expression_value right = {.str_value = "x"};
+    test_infix_expression(expr->function.body->statements[0].value, left, op, right);
+}
+
 int main() {
     test_let_statements();
     test_return_statements();
@@ -506,5 +545,6 @@ int main() {
     test_operator_precedence_parsing();
     test_if_expression_parsing();
     test_if_else_expression_parsing();
+    test_function_literal_parsing();
     printf("\x1b[32mAll tests passed!\n");
 }

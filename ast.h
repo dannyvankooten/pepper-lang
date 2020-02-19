@@ -21,6 +21,7 @@ enum expression_type {
     EXPR_IDENT,
     EXPR_BOOL,
     EXPR_IF,
+    EXPR_FUNCTION,
 };
 
 enum statement_type {
@@ -52,10 +53,15 @@ struct infix_expression {
     struct expression *right;
 };
 
-// TODO: Duplicate of identifier_expression
 struct identifier {
     struct token token; 
     char value[MAX_IDENT_LENGTH];
+};
+
+struct identifiers {
+    struct identifier *values;
+    unsigned int size;
+    unsigned int cap;
 };
 
 struct statement {
@@ -81,7 +87,7 @@ struct if_expression {
 
 struct function_literal {
     struct token token;
-    struct identifier *parameters;
+    struct identifiers parameters;
     struct block_statement *body;
 };
 
@@ -323,6 +329,67 @@ struct expression *parse_if_expression(struct parser *p) {
     return expr;
 }
 
+struct identifiers parse_function_parameters(struct parser *p) {
+    struct identifiers params = {
+        .size = 0,
+        .cap = 16,
+    };
+    params.values = malloc(sizeof (struct identifier) * params.cap);
+
+    if (next_token_is(p, RPAREN)) {
+        next_token(p);
+        return params;
+    }
+
+    next_token(p);
+    struct identifier i;
+    i.token = p->current_token;
+    strcpy(i.value, i.token.literal);
+    params.values[params.size++] = i;
+
+    while (next_token_is(p, COMMA)) {
+        next_token(p);
+        next_token(p);
+
+        struct identifier i;
+        i.token = p->current_token;
+        strcpy(i.value, i.token.literal);
+        params.values[params.size++] = i;
+
+        if (params.size >= params.cap) {
+            params.cap *= 2;
+            params.values = realloc(params.values, params.cap * sizeof (struct identifier));
+        }
+    }
+
+    if (!expect_next_token(p, RPAREN)) {
+        free(params.values);
+        return params;
+    }
+
+    return params;
+}
+
+struct expression *parse_function_literal(struct parser *p) {
+    struct expression *expr = malloc(sizeof (struct expression));
+    expr->type = EXPR_FUNCTION;
+    expr->function.token = p->current_token;
+
+    if (!expect_next_token(p, LPAREN)) {
+        free(expr);
+        return NULL;
+    }
+
+    expr->function.parameters = parse_function_parameters(p);
+    if (!expect_next_token(p, LBRACE)) {
+        free(expr);
+        return NULL;
+    }
+
+    expr->function.body = parse_block_statement(p);
+    return expr;
+}
+
 static struct expression *parse_expression(struct parser *p, int precedence) {
     struct expression *left;
     switch (p->current_token.type) {
@@ -345,7 +412,10 @@ static struct expression *parse_expression(struct parser *p, int precedence) {
             break;
         case IF:
             left = parse_if_expression(p);
-        break;    
+        break; 
+        case FUNCTION:
+            left = parse_function_literal(p);
+        break;   
         default: 
             sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
             return NULL;
@@ -488,6 +558,16 @@ static char * expression_to_str(struct expression *expr) {
             if (expr->ifelse.alternative) {
                  sprintf(str, "else %s", block_statement_to_str(expr->ifelse.alternative));
             }
+        break;
+        case EXPR_FUNCTION:
+            sprintf(str, "%s(", expr->function.token.literal);
+            for (int i=0; i < expr->function.parameters.size; i++) {
+                strcat(str, expr->function.parameters.values[i].token.literal);
+                if (i < expr->function.parameters.size-1) {
+                    strcat(str, ", ");
+                }
+            }
+            sprintf(str, ") %s", block_statement_to_str(expr->function.body));
         break;
         default: 
             sprintf(str, "Missing to_str implementation for expression type %d", expr->type);
