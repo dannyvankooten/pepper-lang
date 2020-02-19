@@ -72,9 +72,9 @@ struct statement {
 
 struct block_statement {
     struct token token;
+    struct statement *statements;
     unsigned int size;
     unsigned int cap;
-    struct statement *statements;
 };
 
 struct if_expression {
@@ -97,7 +97,7 @@ struct expression {
 } expression;
 
 struct program {
-    struct statement * statements;
+    struct statement *statements;
     unsigned int cap;
     unsigned int size;
 };
@@ -119,6 +119,7 @@ static int next_token_is(struct parser *p, enum token_type t) ;
 static int expect_next_token(struct parser *p, enum token_type t);
 static char * expression_to_str(struct expression *expr);
 static struct expression * parse_expression(struct parser *p, int precedence);
+static int parse_statement(struct parser *p, struct statement *s);
 
 struct parser new_parser(struct lexer *l) {
     struct parser p = {
@@ -257,6 +258,69 @@ struct expression *parse_grouped_expression(struct parser *p) {
     return expr;
 }
 
+struct block_statement *parse_block_statement(struct parser *p) {
+    struct block_statement *b = malloc(sizeof (struct block_statement));
+    b->cap = 16;
+    b->size = 0;
+
+    b->statements = malloc(b->cap * sizeof (struct statement));
+    next_token(p);
+
+    while (!current_token_is(p, RBRACE) && !current_token_is(p, EOF)) {
+        struct statement s;
+        if (parse_statement(p, &s) > -1) {
+            b->statements[b->size++] = s;
+
+            if (b->size >= b->cap) {
+                b->cap *= 2;
+                b->statements = realloc(b->statements, b->cap * sizeof (struct statement));
+            }
+        }
+        next_token(p);
+    }
+
+    return b;
+}
+
+struct expression *parse_if_expression(struct parser *p) {
+    struct expression *expr = malloc(sizeof (struct expression));
+    expr->type = EXPR_IF;
+    expr->_if.token = p->current_token;
+
+    if (!expect_next_token(p, LPAREN)) {
+        free(expr);
+        return NULL;
+    }
+
+    next_token(p);
+    expr->_if.condition = parse_expression(p, LOWEST);
+
+    if (!expect_next_token(p, RPAREN)) {
+        free(expr);
+        return NULL;
+    }
+
+    if (!expect_next_token(p, LBRACE)) {
+        free(expr);
+        return NULL;
+    }
+
+    expr->_if.consequence = parse_block_statement(p);
+
+    if (next_token_is(p, ELSE)) {
+        next_token(p);
+
+        if (!expect_next_token(p, LBRACE)) {
+            free(expr);
+            return NULL;
+        }
+
+        expr->_if.alternative = parse_block_statement(p);
+    }
+
+    return expr;
+}
+
 static struct expression *parse_expression(struct parser *p, int precedence) {
     struct expression *left;
     switch (p->current_token.type) {
@@ -277,6 +341,9 @@ static struct expression *parse_expression(struct parser *p, int precedence) {
         case LPAREN:
             left = parse_grouped_expression(p);
             break;
+        case IF:
+            left = parse_if_expression(p);
+        break;    
         default: 
             sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
             return NULL;
@@ -354,8 +421,8 @@ extern struct program parse_program(struct parser *parser) {
 
         // increase program capacity if needed (by doubling it)
         if (prog.size >= prog.cap) {
-            prog.statements = realloc(prog.statements, sizeof (struct statement) * prog.cap * 2);
             prog.cap *= 2;
+            prog.statements = realloc(prog.statements, sizeof (struct statement) * prog.cap);
         }
 
         // keep going

@@ -288,6 +288,18 @@ void test_expression(struct expression *e, expression_value expected) {
     }
 }
 
+void test_infix_expression(struct expression *expr, expression_value left_value, char *operator, expression_value right_value) {
+    if (expr->type != EXPR_INFIX) {
+        abortf("wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
+    }
+
+    test_expression(expr->infix.left, left_value);
+    if (strncmp(expr->infix.operator, operator, MAX_OPERATOR_LENGTH) != 0) {
+        abortf("wrong operator: expected %s, got %s\n", operator, expr->infix.operator);
+    }
+    test_expression(expr->infix.right, right_value);
+}
+
 void test_infix_expression_parsing() {
     typedef struct {
         char *input;
@@ -320,18 +332,9 @@ void test_infix_expression_parsing() {
         assert_program_size(&p, 1);
         struct statement stmt = p.statements[0];
 
-        if (stmt.value->type != EXPR_INFIX) {
-            abortf("wrong expression type. expected %d, got %d\n", EXPR_INFIX, stmt.value->type);
-        }
-
-        test_expression(stmt.value->infix.left, t.left_value);
-        if (strncmp(stmt.value->infix.operator, tests[i].operator, 2) != 0) {
-            abortf("wrong operator: expected %s, got %s\n", tests[i].operator, stmt.value->infix.operator);
-        }
-        test_expression(stmt.value->infix.right, t.right_value);
+        test_infix_expression(stmt.value, t.left_value, t.operator, t.right_value);
     }
 }
-
 
 void test_prefix_expression_parsing() {
     typedef struct test {
@@ -410,6 +413,87 @@ void test_operator_precedence_parsing() {
     }
 }
 
+void test_if_expression_parsing() {
+    char *input = "if (x < y) { x }";
+    struct lexer lexer = {input};
+    struct parser parser = new_parser(&lexer);
+    struct program program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(&program, 1);
+
+    struct statement stmt = program.statements[0];
+    struct expression *expr = stmt.value;
+    if (expr->type != EXPR_IF) {
+        abortf("invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
+    }
+
+    expression_value left = {.str_value = "x"};
+    expression_value right = {.str_value = "y"};
+    test_infix_expression(expr->_if.condition, left, "<", right);
+
+    struct block_statement *consequence = expr->_if.consequence;
+    if (!consequence) {
+        abortf("expected consequence block statement, got NULL\n");
+    }
+
+    if (consequence->size != 1) {
+        abortf("invalid consequence size: expected %d, got %d\n", 1, consequence->size);
+    }
+
+    if (consequence->statements[0].type != STMT_EXPR) {
+        abortf("statements[0] is not a statement expression, got %d\n", consequence->statements[0].type);
+    }
+
+    test_identifier_expression(consequence->statements[0].value, "x");
+
+    if (expr->_if.alternative) {
+        abortf("expected NULL, got alternative block statement\n");
+    }
+}
+
+void test_if_else_expression_parsing() {
+    char *input = "if (x < y) { x } else { 5 }";
+    struct lexer lexer = {input};
+    struct parser parser = new_parser(&lexer);
+    struct program program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(&program, 1);
+
+    struct statement stmt = program.statements[0];
+    struct expression *expr = stmt.value;
+    if (expr->type != EXPR_IF) {
+        abortf("invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
+    }
+
+    expression_value left = {.str_value = "x"};
+    expression_value right = {.str_value = "y"};
+    test_infix_expression(expr->_if.condition, left, "<", right);
+
+    struct block_statement *consequence = expr->_if.consequence;
+    if (!consequence) {
+        abortf("expected consequence block statement, got NULL\n");
+    }
+
+    if (consequence->size != 1) {
+        abortf("invalid consequence size: expected %d, got %d\n", 1, consequence->size);
+    }
+
+    if (consequence->statements[0].type != STMT_EXPR) {
+        abortf("statements[0] is not a statement expression, got %d", consequence->statements[0].type);
+    }
+
+    test_identifier_expression(consequence->statements[0].value, "x");
+
+    struct block_statement *alternative = expr->_if.alternative;
+    if (alternative == NULL) {
+        abortf("alternative was NULL");
+    }
+
+    if (alternative->size != 1) {
+        abortf("invalid alternative size: expected %d, got %d\n", 1, alternative->size);
+    }
+}
+
 int main() {
     test_let_statements();
     test_return_statements();
@@ -420,5 +504,7 @@ int main() {
     test_prefix_expression_parsing();
     test_infix_expression_parsing();
     test_operator_precedence_parsing();
+    test_if_expression_parsing();
+    test_if_else_expression_parsing();
     printf("\x1b[32mAll tests passed!\n");
 }
