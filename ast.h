@@ -319,9 +319,9 @@ static int parse_statement(parser *p, statement *s) {
 extern program parse_program(parser *parser) {
     program prog = {
         .size = 0,
-        .cap = 1,
+        .cap = 32, 
+        .statements = malloc(sizeof (statement) * 32),
     };
-    prog.statements = malloc(sizeof (statement));
 
     statement s;
     while (parser->current_token.type != EOF) {
@@ -334,12 +334,13 @@ extern program parse_program(parser *parser) {
         // add to program statements
         prog.statements[prog.size++] = s;
 
-        // increase program capacity if needed
+        // increase program capacity if needed (by doubling it)
         if (prog.size >= prog.cap) {
             prog.statements = realloc(prog.statements, sizeof (statement) * prog.cap * 2);
             prog.cap *= 2;
         }
 
+        // keep going
         next_token(parser);        
     }
 
