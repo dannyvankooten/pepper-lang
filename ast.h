@@ -18,6 +18,7 @@ typedef enum {
     EXPR_PREFIX,
     EXPR_INT,
     EXPR_IDENT,
+    EXPR_BOOL,
 } expression_type;
 
 // TODO: Make better union struct for this
@@ -25,9 +26,11 @@ typedef struct expression {
     expression_type type;
     token token; // token.IDENT
     char operator[3]; // 2 for operator + 1 for null terminator
+
     union {
         long int_value;
         char str_value[128];
+        unsigned char bool_value;
     };
 
     struct expression *right;
@@ -61,7 +64,7 @@ typedef struct parser {
     char error_messages[8][128];
 } parser;
 
-expression * parse_expression(parser *p, int precedence);
+static expression * parse_expression(parser *p, int precedence);
 static int get_token_precedence(token t);
 
 static void next_token(parser * p) {
@@ -128,19 +131,16 @@ static int parse_return_statement(parser *p, statement *s) {
     return 1;
 }
 
-static int parse_identifier_expression(parser *p, expression *e) {
+static void parse_identifier_expression(parser *p, expression *e) {
     e->token = p->current_token;
     e->type = EXPR_IDENT;
     strcpy(e->str_value, p->current_token.literal);
-    return 1;
 }
 
-static int parse_int_expression(parser *p, expression *e) {
+static void parse_int_expression(parser *p, expression *e) {
     e->token = p->current_token;
     e->type = EXPR_INT;
     e->int_value =  atoi(p->current_token.literal);
-    // TODO: Signal errors?
-    return 1;
 }
 
 static expression * parse_prefix_expression(parser *p, expression *expr) {
@@ -157,20 +157,36 @@ static expression * parse_infix_expression(parser *p, expression *left) {
     expr->left = left;
     expr->type = EXPR_INFIX;
     expr->token = p->current_token;
-    strncpy(expr->operator, p->current_token.literal, 2);
+    strncpy(expr->operator, p->current_token.literal, 4);
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
     expr->right =  parse_expression(p, precedence);
     return expr;
 }
 
-expression * parse_expression(parser *p, int precedence) {
+static void parse_boolean_expression(parser *p, expression *expr) {
+    expr->type = EXPR_BOOL;
+    expr->token = p->current_token;
+    expr->bool_value = current_token_is(p, TRUE);
+}
+
+static expression * parse_expression(parser *p, int precedence) {
     expression * left = malloc(sizeof (expression));
     switch (p->current_token.type) {
-        case IDENT: parse_identifier_expression(p, left); break;
-        case INT: parse_int_expression(p, left); break;
+        case IDENT: 
+            parse_identifier_expression(p, left); 
+            break;
+        case INT: 
+            parse_int_expression(p, left); 
+            break;
         case BANG:
-        case MINUS: parse_prefix_expression(p, left); break;
+        case MINUS: 
+            parse_prefix_expression(p, left);
+             break;
+        case TRUE:
+        case FALSE: 
+            parse_boolean_expression(p, left); 
+            break;
         default: 
             sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
             return NULL;
@@ -300,6 +316,9 @@ static char * expression_to_str(expression *expr) {
         case EXPR_IDENT:
             strcpy(str, expr->str_value);
         break;
+        case EXPR_BOOL:
+            strcpy(str, expr->bool_value ? "true" : "false");
+            break;
         case EXPR_INT:
             strcpy(str, expr->token.literal);
         break;

@@ -189,9 +189,5 @@ int main() {
             printf("[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
             abort();
         }
-
-
     }
-
-
 }
