@@ -66,6 +66,21 @@ typedef struct parser {
 
 static expression * parse_expression(parser *p, int precedence);
 static int get_token_precedence(token t);
+static void next_token(parser * p);
+static int current_token_is(parser *p, int t);
+static int next_token_is(parser *p, int t) ;
+static int expect_next_token(parser *p, int t);
+
+parser new_parser(lexer *l) {
+    parser p = {
+        .lexer = l,
+    };
+   
+    // read two tokens so that both current_token and next_token are set
+    next_token(&p);
+    next_token(&p);
+    return p;
+}
 
 static void next_token(parser * p) {
     p->current_token = p->next_token;
@@ -131,19 +146,24 @@ static int parse_return_statement(parser *p, statement *s) {
     return 1;
 }
 
-static void parse_identifier_expression(parser *p, expression *e) {
-    e->token = p->current_token;
-    e->type = EXPR_IDENT;
-    strcpy(e->value.str_value, p->current_token.literal);
+expression *parse_identifier_expression(parser *p) {
+    expression *expr = malloc(sizeof (expression));
+    expr->token = p->current_token;
+    expr->type = EXPR_IDENT;
+    strcpy(expr->value.str_value, p->current_token.literal);
+    return expr;
 }
 
-static void parse_int_expression(parser *p, expression *e) {
-    e->token = p->current_token;
-    e->type = EXPR_INT;
-    e->value.int_value =  atoi(p->current_token.literal);
+expression *parse_int_expression(parser *p) {
+    expression *expr = malloc(sizeof (expression));
+    expr->token = p->current_token;
+    expr->type = EXPR_INT;
+    expr->value.int_value =  atoi(p->current_token.literal);
+    return expr;
 }
 
-static expression * parse_prefix_expression(parser *p, expression *expr) {
+expression *parse_prefix_expression(parser *p) {
+    expression *expr = malloc(sizeof (expression));
     expr->token = p->current_token;
     expr->type = EXPR_PREFIX;
     strncpy(expr->operator, p->current_token.literal, 2);
@@ -152,7 +172,7 @@ static expression * parse_prefix_expression(parser *p, expression *expr) {
     return expr;
 }
 
-static expression * parse_infix_expression(parser *p, expression *left) {
+static expression *parse_infix_expression(parser *p, expression *left) {
     expression * expr = malloc(sizeof (expression));
     expr->left = left;
     expr->type = EXPR_INFIX;
@@ -164,28 +184,46 @@ static expression * parse_infix_expression(parser *p, expression *left) {
     return expr;
 }
 
-static void parse_boolean_expression(parser *p, expression *expr) {
+expression *parse_boolean_expression(parser *p) {
+    expression *expr = malloc(sizeof (expression));
     expr->type = EXPR_BOOL;
     expr->token = p->current_token;
     expr->value.bool_value = current_token_is(p, TRUE);
+    return expr;
 }
 
-static expression * parse_expression(parser *p, int precedence) {
-    expression * left = malloc(sizeof (expression));
+expression *parse_grouped_expression(parser *p) {
+    next_token(p);
+    
+    expression *expr = parse_expression(p, LOWEST);
+
+    if (!expect_next_token(p, RPAREN)) {
+        free(expr);
+        return NULL;
+    }
+
+    return expr;
+}
+
+static expression *parse_expression(parser *p, int precedence) {
+    expression *left;
     switch (p->current_token.type) {
         case IDENT: 
-            parse_identifier_expression(p, left); 
+            left = parse_identifier_expression(p); 
             break;
         case INT: 
-            parse_int_expression(p, left); 
+            left = parse_int_expression(p); 
             break;
         case BANG:
         case MINUS: 
-            parse_prefix_expression(p, left);
+            left = parse_prefix_expression(p);
              break;
         case TRUE:
         case FALSE: 
-            parse_boolean_expression(p, left); 
+            left = parse_boolean_expression(p); 
+            break;
+        case LPAREN:
+            left = parse_grouped_expression(p);
             break;
         default: 
             sprintf(p->error_messages[p->errors++], "no prefix parse function found for %s", token_to_str(p->current_token.type));
@@ -272,16 +310,6 @@ extern program parse_program(parser *parser) {
     return prog;
 }
 
-parser new_parser(lexer *l) {
-    parser p = {
-        .lexer = l,
-    };
-   
-    // read two tokens so that both current_token and next_token are set
-    next_token(&p);
-    next_token(&p);
-    return p;
-}
 
 static char * let_statement_to_str(statement s) {
     char * str = malloc(sizeof(s.token.literal) + sizeof(s.name.token.literal) + sizeof(s.value->token.literal) + 16);
