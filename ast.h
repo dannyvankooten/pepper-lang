@@ -3,6 +3,7 @@
 
 #define MAX_IDENT_LENGTH 32
 #define MAX_OPERATOR_LENGTH 3
+
 enum {
     LOWEST = 1,
     EQUALS,         // ==
@@ -19,36 +20,41 @@ typedef enum {
     EXPR_INT,
     EXPR_IDENT,
     EXPR_BOOL,
-   // EXPR_IF,
+    EXPR_IF,
 } expression_type;
 
-typedef struct {
+typedef struct bool_expression {
     token token;
     char value;
 } bool_expression;
 
-typedef struct {
+typedef struct identifier_expression {
     token token;
     char value[MAX_IDENT_LENGTH];
 } identifier_expression;
 
-typedef struct {
+typedef struct integer_expression {
     token token;
     int value;
 } integer_expression;
 
-typedef struct {
+typedef struct prefix_expression {
     token token;
     char operator[MAX_OPERATOR_LENGTH];
     struct expression *right;
 } prefix_expression;
 
-typedef struct {
+typedef struct infix_expression {
     token token;
     char operator[MAX_OPERATOR_LENGTH];
     struct expression *left;
     struct expression *right;
 } infix_expression;
+
+typedef struct identifier {
+    token token; 
+    char value[MAX_IDENT_LENGTH];
+} identifier;
 
 typedef struct expression {
     expression_type type;
@@ -58,26 +64,24 @@ typedef struct expression {
         integer_expression _int;
         prefix_expression prefix;
         infix_expression infix;
+
+        // TODO: Fix this
+        if_expression _if;
     };
 } expression;
 
-typedef struct {
-    token token; 
-    char value[MAX_IDENT_LENGTH];
-} identifier;
-
-typedef struct {
+typedef struct statement {
     token token;
     identifier name;
     expression * value;
 } statement;
 
-typedef struct {
+typedef struct block_statement {
     token token;
     statement *statements;
 } block_statement;
 
-typedef struct {
+typedef struct if_expression {
     token token;
     expression condition;
     block_statement *consequence;
@@ -377,6 +381,10 @@ static char * expression_to_str(expression *expr) {
             break;
         case EXPR_INT:
             sprintf(str, "%d", expr->_int.value);
+        break;
+        case EXPR_IF:
+            sprintf(str, "if %s %s");
+            if (expr->_if->)
         break;
     }
 
