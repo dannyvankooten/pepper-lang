@@ -5,7 +5,7 @@
 #undef EOF
 
 int main() {
-    char * input = "let five = 5;\n"
+    char *input = "let five = 5;\n"
         "let ten = 10;\n"
         "let add = fn(x, y) {\n"
         "\tx + y;\n"

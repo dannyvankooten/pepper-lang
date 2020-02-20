@@ -4,7 +4,7 @@
 #undef EOF
 
 struct lexer {
-    char * input;
+    char *input;
     unsigned int pos;
 };
 
@@ -124,8 +124,6 @@ int gettoken(struct lexer *l, struct token *t) {
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
-
-
 
         default:
             if (is_letter(ch)) {    

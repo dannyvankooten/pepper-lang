@@ -111,7 +111,7 @@ struct program {
 };
 
 struct parser {
-    struct lexer * lexer;
+    struct lexer *lexer;
     struct token current_token;
     struct token next_token;
 
@@ -125,9 +125,10 @@ static void next_token(struct parser * p);
 static int current_token_is(struct parser *p, enum token_type t);
 static int next_token_is(struct parser *p, enum token_type t) ;
 static int expect_next_token(struct parser *p, enum token_type t);
-static char * expression_to_str(struct expression *expr);
+static void expression_to_str(char *str, struct expression *expr);
 static struct expression * parse_expression(struct parser *p, int precedence);
 static int parse_statement(struct parser *p, struct statement *s);
+static void free_expression(struct expression *expr);
 
 struct parser new_parser(struct lexer *l) {
     struct parser p = {
@@ -183,6 +184,7 @@ static int parse_let_statement(struct parser *p, struct statement *s) {
     }
 
     // TODO: Read expression here, for now we just skip forward until semicolon
+    s->value = NULL;
 
     while (!current_token_is(p, SEMICOLON)) {
         next_token(p);
@@ -197,7 +199,7 @@ static int parse_return_statement(struct parser *p, struct statement *s) {
 
     next_token(p);
 
-    // TODO: Parse expression
+    // TODO: Read expression here, for now we just skip forward until semicolon
     s->value = NULL;
 
     while (!current_token_is(p, SEMICOLON)) {
@@ -219,7 +221,7 @@ static struct expression *parse_int_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_INT;
     expr->integer.token = p->current_token;
-    expr->integer.value =  atoi(p->current_token.literal);
+    expr->integer.value = atoi(p->current_token.literal);
     return expr;
 }
 
@@ -241,7 +243,7 @@ static struct expression *parse_infix_expression(struct parser *p, struct expres
     strncpy(expr->infix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
-    expr->infix.right =  parse_expression(p, precedence);
+    expr->infix.right = parse_expression(p, precedence);
     return expr;
 }
 
@@ -304,11 +306,13 @@ struct expression *parse_if_expression(struct parser *p) {
     expr->ifelse.condition = parse_expression(p, LOWEST);
 
     if (!expect_next_token(p, RPAREN)) {
+        free(expr->ifelse.condition);
         free(expr);
         return NULL;
     }
 
     if (!expect_next_token(p, LBRACE)) {
+         free(expr->ifelse.condition);
         free(expr);
         return NULL;
     }
@@ -319,6 +323,8 @@ struct expression *parse_if_expression(struct parser *p) {
         next_token(p);
 
         if (!expect_next_token(p, LBRACE)) {
+            free(expr->ifelse.consequence);
+            free(expr->ifelse.condition);
             free(expr);
             return NULL;
         }
@@ -332,7 +338,7 @@ struct expression *parse_if_expression(struct parser *p) {
 struct identifiers parse_function_parameters(struct parser *p) {
     struct identifiers params = {
         .size = 0,
-        .cap = 16,
+        .cap = 4,
     };
     params.values = malloc(sizeof (struct identifier) * params.cap);
 
@@ -504,87 +510,100 @@ extern struct program parse_program(struct parser *parser) {
     return prog;
 }
 
-static char * let_statement_to_str(struct statement *s) {
-    char * str = malloc(sizeof(s->token.literal) + sizeof(s->name.token.literal) + sizeof(s->value->ident.token.literal) + 16);
-    sprintf(str, "%s %s = %s;", s->token.literal, s->name.token.literal, s->value->ident.token.literal);
-    return str;
+static void let_statement_to_str(char *str, struct statement *stmt) {    
+    strcat(str, stmt->token.literal);
+    strcat(str, " ");
+    strcat(str, stmt->name.value);
+    strcat(str, " = ");
+    strcat(str, stmt->value->ident.value);
+    strcat(str, ";");
 }
 
-static char * return_statement_to_str(struct statement *s) {
-    char * str = malloc(sizeof(s->token.literal) + sizeof(s->value->ident.token.literal) + 16);
-    sprintf(str, "%s %s;", s->token.literal, s->value->ident.token.literal);
-    return str;
+static void return_statement_to_str(char *str, struct statement *stmt) {
+    strcat(str, stmt->token.literal);
+    strcat(str, " ");
+    strcat(str, stmt->value->ident.token.literal);
+    strcat(str, ";");
 }
 
-static char * statement_to_str(struct statement *s) {
-    switch (s->type) {
-        case STMT_LET: return let_statement_to_str(s); break;
-        case STMT_RETURN: return return_statement_to_str(s); break;
-        case STMT_EXPR: return expression_to_str(s->value); break;
+static void  statement_to_str(char *str, struct statement *stmt) {
+    switch (stmt->type) {
+        case STMT_LET: return let_statement_to_str(str, stmt); break;
+        case STMT_RETURN: return return_statement_to_str(str, stmt); break;
+        case STMT_EXPR: return expression_to_str(str, stmt->value); break;
     }
 
-    return "Error: missing to_str implementation for statement type";
+    // TODO: Signal error
 }
 
-static char * block_statement_to_str(struct block_statement *b) {
-    char * str = malloc(1024);
+static void block_statement_to_str(char *str, struct block_statement *b) {
     for (int i=0; i < b->size; i++) {
-        strcat(str, statement_to_str(&b->statements[i]));
+        statement_to_str(str, &b->statements[i]);
     }
-    return str;
 }
 
-static char * expression_to_str(struct expression *expr) {
-    char * str = malloc(256);
-
+static void expression_to_str(char *str, struct expression *expr) {
     switch (expr->type) {
         case EXPR_PREFIX: 
-            sprintf(str, "(%s%s)", expr->prefix.operator, expression_to_str(expr->prefix.right)); 
+            strcat(str, "(");
+            strcat(str, expr->prefix.operator);
+            expression_to_str(str, expr->prefix.right);
+            strcat(str, ")");
         break;
         case EXPR_INFIX: 
-            sprintf(str, "(%s %s %s)", expression_to_str(expr->infix.left), expr->infix.operator, expression_to_str(expr->infix.right));
+            strcat(str, "(");
+            expression_to_str(str, expr->infix.left);
+            strcat(str, " ");
+            strcat(str, expr->prefix.operator);
+            strcat(str, " ");
+            expression_to_str(str, expr->infix.right);
+            strcat(str, ")");
         break;
         case EXPR_IDENT:
-            strcpy(str, expr->ident.value);
+            strcat(str, expr->ident.value);
         break;
         case EXPR_BOOL:
-            strcpy(str, expr->bool.value ? "true" : "false");
+            strcat(str, expr->bool.value ? "true" : "false");
             break;
         case EXPR_INT:
-            sprintf(str, "%d", expr->integer.value);
+            strcat(str, expr->integer.token.literal);
         break;
         case EXPR_IF:
-            sprintf(str, "if %s %s", expression_to_str(expr->ifelse.condition), block_statement_to_str(expr->ifelse.consequence));
+            strcat(str, "if ");
+            expression_to_str(str, expr->ifelse.condition);
+            strcat(str, " ");
+            block_statement_to_str(str, expr->ifelse.consequence);
             if (expr->ifelse.alternative) {
-                 sprintf(str, "else %s", block_statement_to_str(expr->ifelse.alternative));
+                strcat(str, "else ");
+                block_statement_to_str(str, expr->ifelse.alternative);
             }
         break;
         case EXPR_FUNCTION:
-            sprintf(str, "%s(", expr->function.token.literal);
+            strcat(str, expr->function.token.literal);
+            strcat(str, "(");
             for (int i=0; i < expr->function.parameters.size; i++) {
                 strcat(str, expr->function.parameters.values[i].token.literal);
                 if (i < expr->function.parameters.size-1) {
                     strcat(str, ", ");
                 }
             }
-            sprintf(str, ") %s", block_statement_to_str(expr->function.body));
+            strcat(str, ") ");
+            block_statement_to_str(str, expr->function.body);
         break;
         default: 
-            sprintf(str, "Missing to_str implementation for expression type %d", expr->type);
+            // TODO: Signal missing to_str implementation
         break;
     }
 
-    return str;
 }
 
-char * program_to_str(struct program *p) {
-    char * str = malloc(256);
-
-    // empty string 
+char *program_to_str(struct program *p) {
+    // TODO: Use some kind of buffer here that dynamically grows
+    char *str = malloc(256);
     *str = '\0';
 
     for (int i = 0; i < p->size; i++) {  
-        strcat(str, statement_to_str(&p->statements[i]));
+        statement_to_str(str, &p->statements[i]);
         
         if (i < p->size -1) {
             str = realloc(str, sizeof str + 256);
@@ -592,4 +611,57 @@ char * program_to_str(struct program *p) {
     }    
 
     return str;
+}
+
+static void free_statements(struct statement *stmts, unsigned int size) {
+    for (int i=0; i < size; i++) {
+        struct statement stmt = stmts[i];
+        free_expression(stmt.value);
+    }
+    
+    free(stmts);
+}
+
+static void free_expression(struct expression *expr) {
+    if (!expr) {
+        return;
+    }
+
+    switch (expr->type) {
+        case EXPR_INFIX:
+            free_expression(expr->infix.left);
+            free_expression(expr->infix.right);
+        break;
+
+        case EXPR_FUNCTION:
+            free(expr->function.parameters.values);
+            free_statements(expr->function.body->statements, expr->function.body->size);
+            free(expr->function.body);
+        break;
+
+        case EXPR_IF:
+            free_expression(expr->ifelse.condition);
+
+            free_statements(expr->ifelse.consequence->statements, expr->ifelse.consequence->size);
+            free(expr->ifelse.consequence);
+
+            if (expr->ifelse.alternative) {
+                free_statements(expr->ifelse.alternative->statements, expr->ifelse.alternative->size);
+                free(expr->ifelse.alternative);
+            }
+        break;
+
+        case EXPR_PREFIX: 
+            free_expression(expr->prefix.right);
+        break;
+
+        default: 
+        break;
+    }
+
+    free(expr);
+}
+
+void free_program(struct program *p) {
+    free_statements(p->statements, p->size);
 }
