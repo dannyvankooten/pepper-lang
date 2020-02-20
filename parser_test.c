@@ -20,6 +20,8 @@ typedef union {
     char *str_value;
 } expression_value;
 
+void test_expression(struct expression *e, expression_value expected);
+
 void assert_parser_errors(struct parser *p) {
     if (p->errors > 0) {
         printf("parser has %d errors: \n", p->errors);
@@ -40,8 +42,8 @@ void assert_program_size(struct program *p, unsigned expected_size) {
 void test_let_statements() {
     char *input = ""
         "let x = 5;\n"
-        "let y = 10;\n"
-        "let foo = 838383;\n";
+        "let y = true;\n"
+        "let foo = y;\n";
 
     struct lexer l = {input, 0 };
     struct parser parser = new_parser(&l);
@@ -53,10 +55,11 @@ void test_let_statements() {
     struct test {
         char *literal;
         char *name;
+        expression_value value;
     } tests[3] = {
-        {"let", "x"},
-        {"let", "y"},
-        {"let", "foo"}
+        {"let", "x", {.int_value = 5}},
+        {"let", "y", {.bool_value = 1}},
+        {"let", "foo", {.str_value = "y"}}
     };
 
     for (int i = 0; i < 3; i++) {
@@ -72,6 +75,8 @@ void test_let_statements() {
         if (strcmp(stmt.name.token.literal, tests[i].name) != 0) {
             abortf("wrong name literal. expected %s, got %s", tests[i].name, stmt.token.literal);
         }
+
+        test_expression(stmt.value, tests[i].value);
     }
 
     free_program(&program);
@@ -81,8 +86,8 @@ void test_let_statements() {
 void test_return_statements() {
     char *input = ""
         "return 5;\n"
-        "return 10;\n"
-        "return 993322;\n";
+        "return true;\n"
+        "return x;\n";
 
     struct lexer l = {input, 0 };
     struct parser parser = new_parser(&l);
@@ -94,10 +99,11 @@ void test_return_statements() {
     struct test {
         char *literal;
         char *name;
+        expression_value value;
     } tests[3] = {
-        {"return", ""},
-        {"return", ""},
-        {"return", ""}
+        {"return", "", {.int_value = 5}},
+        {"return", "", {.bool_value = 1}},
+        {"return", "", {.str_value = "x"}}
     };
 
     for (int i = 0; i < 3; i++) {
@@ -106,7 +112,7 @@ void test_return_statements() {
             abortf("wrong literal. expected %s, got %s\n", tests[i].literal, stmt.token.literal);
         }
 
-        // TODO: Test expression too
+        test_expression(stmt.value, tests[i].value);
     }
 
     free_program(&program);
@@ -230,7 +236,7 @@ void test_integer_expression(struct expression *expr, int expected) {
 
 
 void test_integer_expression_parsing() {
-    char * input = "5;";
+    char *input = "5;";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
     struct program program = parse_program(&parser);
@@ -263,7 +269,7 @@ void test_boolean_expression(struct expression * expr, char expected) {
         abortf("wrong boolean value: expected %d, got %d\n", expected, expr->bool.value);
     }
 
-    char * expected_str = expected ? "true" : "false";
+    char *expected_str = expected ? "true" : "false";
     if (strcmp(expr->bool.token.literal, expected_str) != 0) {
         abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->bool.token.literal);
     }
@@ -293,9 +299,11 @@ void test_boolean_expression_parsing() {
 }
 
 void test_expression(struct expression *e, expression_value expected) {
+    // TODO: Add way more types here
     switch (e->type) {
         case EXPR_BOOL: return test_boolean_expression(e, expected.bool_value); break;
         case EXPR_INT: return test_integer_expression(e, expected.int_value); break;
+        case EXPR_IDENT: return test_identifier_expression(e, expected.str_value); break;
         default: break;
     }
 }
@@ -554,7 +562,7 @@ void test_function_literal_parsing() {
     
     expression_value left = {.str_value = "x"};
     char *op = "+";
-    expression_value right = {.str_value = "x"};
+    expression_value right = {.str_value = "y"};
     test_infix_expression(expr->function.body->statements[0].value, left, op, right);
     free_program(&program);
 }

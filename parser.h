@@ -182,11 +182,11 @@ static int parse_let_statement(struct parser *p, struct statement *s) {
     s->type = STMT_LET;
     s->token = p->current_token;
 
-     if (!expect_next_token(p, IDENT)) {
+    if (!expect_next_token(p, IDENT)) {
         return -1;
     }
 
-    // parse name
+    // parse identifier
     struct identifier id = {
         .token = p->current_token,
     };
@@ -197,10 +197,10 @@ static int parse_let_statement(struct parser *p, struct statement *s) {
         return -1;
     }
 
-    // TODO: Read expression here, for now we just skip forward until semicolon
-    s->value = NULL;
-
-    while (!current_token_is(p, SEMICOLON)) {
+    // parse expression
+    next_token(p);
+    s->value = parse_expression(p, LOWEST);
+    if (next_token_is(p, SEMICOLON)) {
         next_token(p);
     }
 
@@ -211,12 +211,11 @@ static int parse_return_statement(struct parser *p, struct statement *s) {
     s->type = STMT_RETURN;
     s->token = p->current_token;
 
+    // parse expression
     next_token(p);
+    s->value = parse_expression(p, LOWEST);
 
-    // TODO: Read expression here, for now we just skip forward until semicolon
-    s->value = NULL;
-
-    while (!current_token_is(p, SEMICOLON)) {
+    if (next_token_is(p, SEMICOLON)) {
         next_token(p);
     }
 
