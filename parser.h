@@ -134,6 +134,8 @@ struct parser {
     char error_messages[8][128];
 };
 
+typedef char operator[MAX_OPERATOR_LENGTH] ;
+
 static enum precedence get_token_precedence(struct token t);
 static void next_token(struct parser * p);
 static int current_token_is(struct parser *p, enum token_type t);

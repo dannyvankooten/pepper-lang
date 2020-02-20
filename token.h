@@ -57,7 +57,7 @@ void get_ident(struct token *t) {
     }
 }
 
-const char * token_to_str(enum token_type type) {
+const char *token_to_str(enum token_type type) {
     switch (type) {
         case ILLEGAL: return "ILLEGAL"; break;
         case EOF: return "EOF"; break;

@@ -15,7 +15,6 @@ int main(int argc, char **argv)
     struct lexer lexer;
     struct parser parser;
     struct program program;
-    struct object obj;
 
     while (1)
     {
@@ -38,14 +37,15 @@ int main(int argc, char **argv)
         }
 
         // evaluate program into buffer
-        obj = eval_program(&program);
-        object_to_str(output, &obj);
+        struct object *obj = eval_program(&program);
+        object_to_str(output, obj);
         printf("%s\n", output);
 
         // clear output buffer
         output[0] = '\0';
 
         free(input);
+        free(obj);
         free_program(&program);
     }
 
