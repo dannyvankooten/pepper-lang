@@ -412,6 +412,9 @@ void test_operator_precedence_parsing() {
        {"2 / ( 5 + 5)", "(2 / (5 + 5))"},
        {"-(5 + 5)", "(-(5 + 5))"},
        {"!(true == true)", "(!(true == true))"},
+       {"a + add(b * c) +d", "((a + add((b * c))) + d)"},
+       {"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7* 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+       {"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"}
     };
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
@@ -556,6 +559,40 @@ void test_function_literal_parsing() {
     free_program(&program);
 }
 
+void test_call_expression_parsing() {
+    char *input = "add(1, 2 * 3, 4 + 5);";
+    struct lexer lexer = {input, 0};
+    struct parser parser = new_parser(&lexer);
+    struct program program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(&program, 1);
+
+    struct statement stmt = program.statements[0];
+    if (stmt.type != STMT_EXPR) {
+        abortf("invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
+    }
+
+    struct expression *expr = stmt.value;
+    if (expr->type != EXPR_CALL) {
+        abortf("invalid expression type: expected EXPR_CALL, got %d\n", expr->type);
+    }
+
+    test_identifier_expression(expr->call.function, "add");
+
+    if (expr->call.arguments.size != 3) {
+        abortf("expected 3 arguments, got %d\n", expr->call.arguments.size);
+    }
+
+    expression_value left = {.int_value = 2};
+    expression_value right = {.int_value = 3};
+    test_infix_expression(&expr->call.arguments.values[1], left, "*", right);
+    test_infix_expression(&expr->call.arguments.values[2], (expression_value) 4, "+", (expression_value) 5);
+    free_program(&program);
+}
+
+// TODO: Add test for argument parsing
+// TODO: Add test for parameter parsing
+
 int main() {
     test_let_statements();
     test_return_statements();
@@ -569,5 +606,6 @@ int main() {
     test_if_expression_parsing();
     test_if_else_expression_parsing();
     test_function_literal_parsing();
+    test_call_expression_parsing();
     printf("\x1b[32mAll tests passed!\n");
 }
