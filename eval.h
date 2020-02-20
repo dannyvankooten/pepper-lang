@@ -45,6 +45,7 @@ struct object obj_false = {
 const char *object_type_to_str(enum object_type t);
 struct object *eval_expression(struct expression *expr);
 struct object *eval_block_statement(struct block_statement *block);
+void free_object(struct object *obj);
 
 struct object *make_boolean_object(char value) {
     return value ? &obj_true : &obj_false;
@@ -160,8 +161,6 @@ struct object *eval_if_expression(struct if_expression *expr) {
         return eval_block_statement(expr->alternative);
     }
 
-    // TODO: Free up integer objects
-
     return &obj_null;
 }
 
@@ -178,17 +177,18 @@ struct object *eval_expression(struct expression *expr) {
         case EXPR_PREFIX: 
             right = eval_expression(expr->prefix.right);
             result = eval_prefix_expression(expr->prefix.operator, right);
+            free_object(right);
             return result;
         case EXPR_INFIX:
             left = eval_expression(expr->infix.left);
             right = eval_expression(expr->infix.right);
             result = eval_infix_expression(expr->infix.operator, left, right);
+            free_object(left);
+            free_object(right);
             return result;
         case EXPR_IF:
             return eval_if_expression(&expr->ifelse);
     }
-
-    // TODO: Free pointers (to integer objects only)
 
     return &obj_null;
 }
@@ -197,6 +197,7 @@ struct object *eval_expression(struct expression *expr) {
 
 struct object *eval_statement(struct statement *stmt) {
     struct object *result;
+    
     switch (stmt->type) {
         case STMT_EXPR:
             return eval_expression(stmt->value);
@@ -247,7 +248,7 @@ void object_to_str(char *str, struct object *obj) {
             strcat(str, "NULL");
             break;
         case OBJ_INT:
-            sprintf(tmp, "%d", obj->integer.value);
+            sprintf(tmp, "%ld", obj->integer.value);
             strcat(str, tmp);
             break;
         case OBJ_BOOL:
@@ -263,4 +264,12 @@ const char *object_type_to_str(enum object_type t) {
         case OBJ_NULL: return "OBJ_NULL";
         default: return "Invalid object type";
     }
+}
+
+void free_object(struct object *obj) {
+    if (obj == NULL || obj == &obj_false || obj == &obj_true || obj == &obj_null) {
+        return;
+    }
+
+    free(obj);
 }

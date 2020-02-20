@@ -1,7 +1,8 @@
-CFLAGS = -std=c99 -Wall -ledit
+CFLAGS = -std=c99 -Wall
 TESTFLAGS = $(CFLAGS) -g 
+
 repl: .dist
-	$(CC) $(CFLAGS) repl.c -o .dist/repl
+	$(CC) $(CFLAGS) repl.c  -ledit -o .dist/repl
 	.dist/repl
 
 test: .dist lexer_test parser_test eval_test

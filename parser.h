@@ -1,5 +1,5 @@
-#include "lexer.h"
 #include <stdlib.h>
+#include "lexer.h"
 
 #define MAX_IDENT_LENGTH 32
 #define MAX_OPERATOR_LENGTH 3
@@ -184,7 +184,7 @@ static int parse_let_statement(struct parser *p, struct statement *s) {
     s->type = STMT_LET;
     s->token = p->current_token;
 
-    if (!expect_next_token(p, IDENT)) {
+    if (!expect_next_token(p, TOKEN_IDENT)) {
         return -1;
     }
 
@@ -195,14 +195,14 @@ static int parse_let_statement(struct parser *p, struct statement *s) {
     strcpy(id.value, p->current_token.literal);
     s->name = id;
 
-    if (!expect_next_token(p, ASSIGN)) {
+    if (!expect_next_token(p, TOKEN_ASSIGN)) {
         return -1;
     }
 
     // parse expression
     next_token(p);
     s->value = parse_expression(p, LOWEST);
-    if (next_token_is(p, SEMICOLON)) {
+    if (next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
     }
 
@@ -217,7 +217,7 @@ static int parse_return_statement(struct parser *p, struct statement *s) {
     next_token(p);
     s->value = parse_expression(p, LOWEST);
 
-    if (next_token_is(p, SEMICOLON)) {
+    if (next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
     }
 
@@ -268,7 +268,7 @@ struct expression_list parse_call_arguments(struct parser *p) {
         .cap = 0,
     };
 
-    if (next_token_is(p, RPAREN)) {
+    if (next_token_is(p, TOKEN_RPAREN)) {
         next_token(p);
         return list;
     }
@@ -280,7 +280,7 @@ struct expression_list parse_call_arguments(struct parser *p) {
     next_token(p);
     list.values[list.size++] = *parse_expression(p, LOWEST);
 
-    while (next_token_is(p, COMMA)) {
+    while (next_token_is(p, TOKEN_COMMA)) {
         next_token(p);
         next_token(p);
 
@@ -293,7 +293,7 @@ struct expression_list parse_call_arguments(struct parser *p) {
         }
     }
 
-    if (!expect_next_token(p, RPAREN)) {
+    if (!expect_next_token(p, TOKEN_RPAREN)) {
         free(list.values);
         return list;
     }
@@ -334,7 +334,7 @@ struct expression *parse_boolean_expression(struct parser *p) {
 
     expr->type = EXPR_BOOL;
     expr->bool.token = p->current_token;
-    expr->bool.value = current_token_is(p, TRUE);
+    expr->bool.value = current_token_is(p, TOKEN_TRUE);
     return expr;
 }
 
@@ -343,7 +343,7 @@ struct expression *parse_grouped_expression(struct parser *p) {
     
     struct expression *expr = parse_expression(p, LOWEST);
 
-    if (!expect_next_token(p, RPAREN)) {
+    if (!expect_next_token(p, TOKEN_RPAREN)) {
         free(expr);
         return NULL;
     }
@@ -363,7 +363,7 @@ struct block_statement *parse_block_statement(struct parser *p) {
     b->statements = malloc(b->cap * sizeof (struct statement));
     next_token(p);
 
-    while (!current_token_is(p, RBRACE) && !current_token_is(p, EOF)) {
+    while (!current_token_is(p, TOKEN_RBRACE) && !current_token_is(p, TOKEN_EOF)) {
         struct statement s;
         if (parse_statement(p, &s) > -1) {
             b->statements[b->size++] = s;
@@ -388,7 +388,7 @@ struct expression *parse_if_expression(struct parser *p) {
     expr->type = EXPR_IF;
     expr->ifelse.token = p->current_token;
 
-    if (!expect_next_token(p, LPAREN)) {
+    if (!expect_next_token(p, TOKEN_LPAREN)) {
         free(expr);
         return NULL;
     }
@@ -396,13 +396,13 @@ struct expression *parse_if_expression(struct parser *p) {
     next_token(p);
     expr->ifelse.condition = parse_expression(p, LOWEST);
 
-    if (!expect_next_token(p, RPAREN)) {
+    if (!expect_next_token(p, TOKEN_RPAREN)) {
         free(expr->ifelse.condition);
         free(expr);
         return NULL;
     }
 
-    if (!expect_next_token(p, LBRACE)) {
+    if (!expect_next_token(p, TOKEN_LBRACE)) {
         free(expr->ifelse.condition);
         free(expr);
         return NULL;
@@ -410,10 +410,10 @@ struct expression *parse_if_expression(struct parser *p) {
 
     expr->ifelse.consequence = parse_block_statement(p);
 
-    if (next_token_is(p, ELSE)) {
+    if (next_token_is(p, TOKEN_ELSE)) {
         next_token(p);
 
-        if (!expect_next_token(p, LBRACE)) {
+        if (!expect_next_token(p, TOKEN_LBRACE)) {
             free(expr->ifelse.consequence);
             free(expr->ifelse.condition);
             free(expr);
@@ -436,7 +436,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
         return params;
     }
 
-    if (next_token_is(p, RPAREN)) {
+    if (next_token_is(p, TOKEN_RPAREN)) {
         next_token(p);
         return params;
     }
@@ -447,7 +447,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
     strcpy(i.value, i.token.literal);
     params.values[params.size++] = i;
 
-    while (next_token_is(p, COMMA)) {
+    while (next_token_is(p, TOKEN_COMMA)) {
         next_token(p);
         next_token(p);
 
@@ -462,7 +462,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
         }
     }
 
-    if (!expect_next_token(p, RPAREN)) {
+    if (!expect_next_token(p, TOKEN_RPAREN)) {
         free(params.values);
         return params;
     }
@@ -479,13 +479,13 @@ struct expression *parse_function_literal(struct parser *p) {
     expr->type = EXPR_FUNCTION;
     expr->function.token = p->current_token;
 
-    if (!expect_next_token(p, LPAREN)) {
+    if (!expect_next_token(p, TOKEN_LPAREN)) {
         free(expr);
         return NULL;
     }
 
     expr->function.parameters = parse_function_parameters(p);
-    if (!expect_next_token(p, LBRACE)) {
+    if (!expect_next_token(p, TOKEN_LBRACE)) {
         free(expr);
         return NULL;
     }
@@ -497,27 +497,27 @@ struct expression *parse_function_literal(struct parser *p) {
 static struct expression *parse_expression(struct parser *p, int precedence) {
     struct expression *left;
     switch (p->current_token.type) {
-        case IDENT: 
+        case TOKEN_IDENT: 
             left = parse_identifier_expression(p); 
             break;
-        case INT: 
+        case TOKEN_INT: 
             left = parse_int_expression(p); 
             break;
-        case BANG:
-        case MINUS: 
+        case TOKEN_BANG:
+        case TOKEN_MINUS: 
             left = parse_prefix_expression(p);
              break;
-        case TRUE:
-        case FALSE: 
+        case TOKEN_TRUE:
+        case TOKEN_FALSE: 
             left = parse_boolean_expression(p); 
             break;
-        case LPAREN:
+        case TOKEN_LPAREN:
             left = parse_grouped_expression(p);
             break;
-        case IF:
+        case TOKEN_IF:
             left = parse_if_expression(p);
         break; 
-        case FUNCTION:
+        case TOKEN_FUNCTION:
             left = parse_function_literal(p);
         break;   
         default: 
@@ -526,12 +526,12 @@ static struct expression *parse_expression(struct parser *p, int precedence) {
         break;
     }
 
-    while (!next_token_is(p, SEMICOLON) && precedence < get_token_precedence(p->next_token)) {
+    while (!next_token_is(p, TOKEN_SEMICOLON) && precedence < get_token_precedence(p->next_token)) {
         enum token_type type = p->next_token.type;
-        if (type == PLUS || type == MINUS || type == ASTERISK || type == SLASH || type == EQ || type == NOT_EQ || type == LT || type == GT) {
+        if (type == TOKEN_PLUS || type == TOKEN_MINUS || type == TOKEN_ASTERISK || type == TOKEN_SLASH || type == TOKEN_EQ || type == TOKEN_NOT_EQ || type == TOKEN_LT || type == TOKEN_GT) {
             next_token(p);
             left = parse_infix_expression(p, left);
-        } else if (type == LPAREN) {
+        } else if (type == TOKEN_LPAREN) {
             next_token(p);
             left = parse_call_expression(p, left);
         } else {
@@ -544,15 +544,15 @@ static struct expression *parse_expression(struct parser *p, int precedence) {
 
 static enum precedence get_token_precedence(struct token t) {
     switch (t.type) {
-        case EQ: return EQUALS;
-        case NOT_EQ: return EQUALS;
-        case LT: return LESSGREATER;
-        case GT: return LESSGREATER;
-        case PLUS: return SUM;
-        case MINUS: return SUM;
-        case SLASH: return PRODUCT;
-        case ASTERISK: return PRODUCT;
-        case LPAREN: return CALL;
+        case TOKEN_EQ: return EQUALS;
+        case TOKEN_NOT_EQ: return EQUALS;
+        case TOKEN_LT: return LESSGREATER;
+        case TOKEN_GT: return LESSGREATER;
+        case TOKEN_PLUS: return SUM;
+        case TOKEN_MINUS: return SUM;
+        case TOKEN_SLASH: return PRODUCT;
+        case TOKEN_ASTERISK: return PRODUCT;
+        case TOKEN_LPAREN: return CALL;
         default: return LOWEST;
     }
 
@@ -564,7 +564,7 @@ static int parse_expression_statement(struct parser *p, struct statement *s) {
     s->token = p->current_token;
     s->value = parse_expression(p, LOWEST);
 
-    if (next_token_is(p, SEMICOLON)) {
+    if (next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
     } 
 
@@ -573,28 +573,29 @@ static int parse_expression_statement(struct parser *p, struct statement *s) {
 
 static int parse_statement(struct parser *p, struct statement *s) {
     switch (p->current_token.type) {
-        case LET: return parse_let_statement(p, s); break;
-        case RETURN: return parse_return_statement(p, s); break;
+        case TOKEN_LET: return parse_let_statement(p, s); break;
+        case TOKEN_RETURN: return parse_return_statement(p, s); break;
         default: return parse_expression_statement(p, s); break;
     }
   
    return -1;
 }
 
-struct program parse_program(struct parser *parser) {
-    struct program prog = {
-        .size = 0,
-        .cap = 32, 
-        .statements = malloc(sizeof (struct statement) * 32),
-    };
+struct program *parse_program(struct parser *parser) {
+    struct program *program = malloc(sizeof (struct program));
+    if (program == NULL) {
+        return NULL;
+    }
 
-    // handle malloc failures
-    if (!prog.statements) {
-        return prog;
+    program->size = 0;
+    program->cap = 32;
+    program->statements = malloc(program->cap * sizeof (struct statement));
+    if (NULL == program->statements) {
+        return program;
     }
 
     struct statement s;
-    while (parser->current_token.type != EOF) {
+    while (parser->current_token.type != TOKEN_EOF) {
         
         // if an error occured, skip token & continue
         if (parse_statement(parser, &s) == -1) {
@@ -602,18 +603,18 @@ struct program parse_program(struct parser *parser) {
             continue;
         }
         
-        prog.statements[prog.size++] = s;
+        program->statements[program->size++] = s;
 
         // double program capacity if needed
-        if (prog.size >= prog.cap) {
-            prog.cap *= 2;
-            prog.statements = realloc(prog.statements, sizeof (struct statement) * prog.cap);
+        if (program->size >= program->cap) {
+            program->cap *= 2;
+            program->statements = realloc(program->statements, sizeof (struct statement) * program->cap);
         }
 
         next_token(parser);        
     }
 
-    return prog;
+    return program;
 }
 
 static void let_statement_to_str(char *str, struct statement *stmt) {    
@@ -743,11 +744,15 @@ static void free_statements(struct statement *stmts, unsigned int size) {
 }
 
 static void free_expression(struct expression *expr) {
-    if (!expr) {
+    if (expr == NULL) {
         return;
     }
 
     switch (expr->type) {
+        case EXPR_PREFIX: 
+            free_expression(expr->prefix.right);
+        break;
+
         case EXPR_INFIX:
             free_expression(expr->infix.left);
             free_expression(expr->infix.right);
@@ -771,10 +776,6 @@ static void free_expression(struct expression *expr) {
             }
         break;
 
-        case EXPR_PREFIX: 
-            free_expression(expr->prefix.right);
-        break;
-
         case EXPR_CALL:
             free_expression(expr->call.arguments.values);
             free_expression(expr->call.function);
@@ -789,4 +790,5 @@ static void free_expression(struct expression *expr) {
 
 void free_program(struct program *p) {
     free_statements(p->statements, p->size);
+    free(p);
 }

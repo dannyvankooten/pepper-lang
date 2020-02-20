@@ -31,96 +31,96 @@ int gettoken(struct lexer *l, struct token *t) {
     switch (ch) {
         case '=':
             if (ch_next == '=') {
-                t->type = EQ;
+                t->type = TOKEN_EQ;
                 strcpy(t->literal, "==");
                 l->pos++;
             } else {
-                t->type = ASSIGN;
+                t->type = TOKEN_ASSIGN;
                 t->literal[0] = ch;
                 t->literal[1] = '\0';
             }
         break;
 
         case ';':
-            t->type = SEMICOLON;
+            t->type = TOKEN_SEMICOLON;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '(':
-            t->type = LPAREN;
+            t->type = TOKEN_LPAREN;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
         
         case ')':
-            t->type = RPAREN;
+            t->type = TOKEN_RPAREN;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case ',':
-            t->type = COMMA;
+            t->type = TOKEN_COMMA;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '+':
-            t->type = PLUS;
+            t->type = TOKEN_PLUS;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '-':
-            t->type = MINUS;
+            t->type = TOKEN_MINUS;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '!':
             if (ch_next == '=') {
-                t->type = NOT_EQ;
+                t->type = TOKEN_NOT_EQ;
                 strcpy(t->literal, "!=");
                 l->pos++;
             } else {
-                t->type = BANG;
+                t->type = TOKEN_BANG;
                 t->literal[0] = ch;
                 t->literal[1] = '\0';
             }
         break;
 
         case '/':
-            t->type = SLASH;
+            t->type = TOKEN_SLASH;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '*':
-            t->type = ASTERISK;
+            t->type = TOKEN_ASTERISK;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '<':
-            t->type = LT;
+            t->type = TOKEN_LT;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '>':
-            t->type = GT;
+            t->type = TOKEN_GT;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '{':
-            t->type = LBRACE;
+            t->type = TOKEN_LBRACE;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
 
         case '}':
-            t->type = RBRACE;
+            t->type = TOKEN_RBRACE;
             t->literal[0] = ch;
             t->literal[1] = '\0';
         break;
@@ -144,18 +144,18 @@ int gettoken(struct lexer *l, struct token *t) {
                     ch = l->input[l->pos++];
                 }
                 t->literal[i++] = '\0';
-                t->type = INT;
+                t->type = TOKEN_INT;
 
                 // return last character to input 
                 l->pos--;
             } else {
-                t->type = ILLEGAL;
+                t->type = TOKEN_ILLEGAL;
                 t->literal[0] = ch;  
             }            
             break;
 
             case '\0':
-                t->type = EOF;
+                t->type = TOKEN_EOF;
                 t->literal[0] = '\0';
                 return -1; // signal DONE
             break;

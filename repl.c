@@ -11,14 +11,18 @@ int main(int argc, char **argv)
     puts("Monkey-C Version 0.0.1");
     puts("Press Ctrl+c to Exit\n");
     char *output = malloc(1024);
+    if (!output) {
+        puts("Failed to allocate memory for output buffer");
+        exit(1);
+    }
 
     struct lexer lexer;
     struct parser parser;
-    struct program program;
+    struct program *program;
 
     while (1)
     {
-        char * input = readline("monkey> ");
+        char *input = readline("monkey> ");
         add_history(input);
 
         lexer = new_lexer(input);
@@ -37,7 +41,7 @@ int main(int argc, char **argv)
         }
 
         // evaluate program into buffer
-        struct object *obj = eval_program(&program);
+        struct object *obj = eval_program(program);
         object_to_str(output, obj);
         printf("%s\n", output);
 
@@ -45,11 +49,10 @@ int main(int argc, char **argv)
         output[0] = '\0';
 
         free(input);
-        free(obj);
-        free_program(&program);
+        free_object(obj);
+        free_program(program);
     }
 
     free(output);
-
     return 0;
 }
