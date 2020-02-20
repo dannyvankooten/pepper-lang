@@ -26,6 +26,7 @@ struct object {
         struct integer integer;
         struct null null;
     };
+    unsigned char return_value;
 };
 
 struct object obj_null = {
@@ -53,6 +54,7 @@ struct object *make_integer_object(int value) {
     struct object *result = malloc(sizeof (struct object));
     result->type = OBJ_INT;
     result->integer.value = value;
+    result->return_value = 0;
     return result;
 }
 
@@ -184,7 +186,6 @@ struct object *eval_expression(struct expression *expr) {
             return result;
         case EXPR_IF:
             return eval_if_expression(&expr->ifelse);
-            break;
     }
 
     // TODO: Free pointers (to integer objects only)
@@ -195,11 +196,14 @@ struct object *eval_expression(struct expression *expr) {
 
 
 struct object *eval_statement(struct statement *stmt) {
+    struct object *result;
     switch (stmt->type) {
         case STMT_EXPR:
             return eval_expression(stmt->value);
-            break;
-
+        case STMT_RETURN:
+            result = eval_expression(stmt->value);
+            result->return_value = 1;
+            return result;
     }
 
     return &obj_null;
@@ -210,6 +214,11 @@ struct object *eval_block_statement(struct block_statement *block) {
 
     for (int i=0; i < block->size; i++) {
         obj = eval_statement(&block->statements[i]);
+
+        // TODO: This is buggy because it modifies the re-used objects instead of wrapping them somehow
+        if (obj->return_value) {
+            return obj;
+        }
     }
 
     return obj;
@@ -220,7 +229,13 @@ struct object *eval_program(struct program *prog) {
 
     for (int i=0; i < prog->size; i++) {
         obj = eval_statement(&prog->statements[i]);
+
+        if (obj->return_value) {
+            obj->return_value = 0;
+            return obj;
+        }
     }
+
     return obj;
 }
 

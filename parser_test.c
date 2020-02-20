@@ -4,15 +4,7 @@
 #include <stdarg.h> 
 
 #include "parser.h"
-
-void abortf(char *format, ...) {
-   va_list args;
-   va_start(args, format);
-   vprintf(format, args);
-   va_end(args);
-
-   exit(1);
-}
+#include "test_helpers.h"
 
 typedef union {
     int int_value;
@@ -64,18 +56,9 @@ void test_let_statements() {
 
     for (int i = 0; i < 3; i++) {
         struct statement stmt = program.statements[i];
-        if (strcmp(stmt.token.literal, tests[i].literal) != 0) {
-            abortf("wrong literal. expected %s, got %s\n", tests[i].literal, stmt.token.literal);
-        }
-
-        if (strcmp(stmt.name.value, tests[i].name) != 0) {
-            abortf("wrong name value. expected %s, got %s\n", tests[i].name, stmt.name.value);
-        }
-
-        if (strcmp(stmt.name.token.literal, tests[i].name) != 0) {
-            abortf("wrong name literal. expected %s, got %s", tests[i].name, stmt.token.literal);
-        }
-
+        assertf(strcmp(stmt.token.literal, tests[i].literal) == 0, "wrong literal. expected %s, got %s\n", tests[i].literal, stmt.token.literal);
+        assertf(strcmp(stmt.name.value, tests[i].name) == 0, "wrong name value. expected %s, got %s\n", tests[i].name, stmt.name.value);
+        assertf(strcmp(stmt.name.token.literal, tests[i].name) == 0, "wrong name literal. expected %s, got %s", tests[i].name, stmt.token.literal);
         test_expression(stmt.value, tests[i].value);
     }
 
@@ -108,10 +91,7 @@ void test_return_statements() {
 
     for (int i = 0; i < 3; i++) {
         struct statement stmt = program.statements[i];
-        if (strcmp(stmt.token.literal, tests[i].literal) != 0) {
-            abortf("wrong literal. expected %s, got %s\n", tests[i].literal, stmt.token.literal);
-        }
-
+        assertf(strcmp(stmt.token.literal, tests[i].literal) == 0, "wrong literal. expected %s, got %s\n", tests[i].literal, stmt.token.literal);
         test_expression(stmt.value, tests[i].value);
     }
 
@@ -119,7 +99,6 @@ void test_return_statements() {
 }
 
 void test_program_string() {
-
     struct expression e1 = {
         .type = EXPR_INT,
         .integer = {
@@ -188,26 +167,14 @@ void test_program_string() {
 
     char *str = program_to_str(&program);
     char *expected = "let myVar = anotherVar;return (5 + foo);";
-
-    if (strcmp(str, expected) != 0) {
-        abortf("wrong program string. expected \"%s\", got \"%s\"\n", expected, str);
-    }
-
+    assertf(strcmp(str, expected) == 0, "wrong program string. expected \"%s\", got \"%s\"\n", expected, str);
     free(str);
 }
 
 void test_identifier_expression(struct expression *e, char *expected) {
-    if (e->type != EXPR_IDENT) {
-        abortf("wrong expression type: expected %d, got %d\n", EXPR_IDENT, e->type);
-    }
-
-    if (strcmp(e->ident.token.literal, expected) != 0) {
-        abortf("wrong token literal: expected \"%s\", got \"%s\"\n", expected, e->ident.token.literal);
-    }
-
-    if (strcmp(e->ident.value, expected) != 0) {
-        abortf("wrong expression value: expected \"%s\", got \"%s\"\n", expected, e->ident.value);
-    }
+    assertf(e->type == EXPR_IDENT, "wrong expression type: expected %d, got %d\n", EXPR_IDENT, e->type);
+    assertf(strcmp(e->ident.token.literal, expected) == 0, "wrong token literal: expected \"%s\", got \"%s\"\n", expected, e->ident.token.literal);
+    assertf(strcmp(e->ident.value, expected) == 0, "wrong expression value: expected \"%s\", got \"%s\"\n", expected, e->ident.value);
 }
 
 
@@ -216,39 +183,23 @@ void test_identifier_expression_parsing() {
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
     struct program program = parse_program(&parser);
-
     assert_program_size(&program, 1);
 
     struct statement stmt = program.statements[0];
-
-    if (stmt.token.type != IDENT) {
-        abortf("wrong token type: expected %s, got %s\n", token_to_str(IDENT), stmt.token.type);
-    }
-
-    if (strcmp(stmt.token.literal, "foobar") != 0) {
-        abortf("wrong token literal: expected %s, got %s\n", "foobar", stmt.token.literal);
-    }
-
+    assertf(stmt.token.type == IDENT, "wrong token type: expected %s, got %s\n", token_to_str(IDENT), stmt.token.type);
+    assertf(strcmp(stmt.token.literal, "foobar") == 0, "wrong token literal: expected %s, got %s\n", "foobar", stmt.token.literal);
     test_identifier_expression(stmt.value, "foobar");
-
     free_program(&program);
 }
 
 
 void test_integer_expression(struct expression *expr, int expected) {
-    if (expr->type != EXPR_INT) {
-        abortf("wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
-    }
-
-    if (expr->integer.value != expected) {
-        abortf("wrong integer value: expected %d, got %d\n", expected, expr->integer.value);
-    }
+    assertf(expr->type == EXPR_INT, "wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
+    assertf(expr->integer.value == expected, "wrong integer value: expected %d, got %d\n", expected, expr->integer.value);
 
     char expected_str[8];
     sprintf(expected_str, "%d", expected);
-    if (strcmp(expr->integer.token.literal, expected_str) != 0) {
-        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->integer.token.literal);
-    }
+    assertf(strcmp(expr->integer.token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->integer.token.literal);
 }
 
 
@@ -257,39 +208,23 @@ void test_integer_expression_parsing() {
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
     struct program program = parse_program(&parser);
-
     assert_parser_errors(&parser);
     assert_program_size(&program, 1);
 
     struct statement stmt = program.statements[0];
-
-    if (stmt.token.type != INT) {
-        abortf("wroken token type: expected %s, got %s", token_to_str(INT), stmt.token.type);
-    }
-
-    if (strcmp(stmt.token.literal, "5") != 0) {
-        abortf("wrong token literal: expected %s, got %s", "foobar", stmt.token.literal);
-    }
-
+    assertf(stmt.token.type == INT, "wroken token type: expected %s, got %s", token_to_str(INT), stmt.token.type);
+    assertf (strcmp(stmt.token.literal, "5") == 0, "wrong token literal: expected %s, got %s", "foobar", stmt.token.literal);
     test_integer_expression(stmt.value, 5);
-
     free_program(&program);
 }
 
 
 void test_boolean_expression(struct expression * expr, char expected) {
-    if (expr->type != EXPR_BOOL) {
-        abortf("wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
-    }
-
-    if (expr->bool.value != expected) {
-        abortf("wrong boolean value: expected %d, got %d\n", expected, expr->bool.value);
-    }
-
+    assertf(expr->type == EXPR_BOOL, "wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
+    assertf(expr->bool.value == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->bool.value);
+    
     char *expected_str = expected ? "true" : "false";
-    if (strcmp(expr->bool.token.literal, expected_str) != 0) {
-        abortf("wrong token literal: expected %s, got %s\n", expected_str, expr->bool.token.literal);
-    }
+    assertf(strcmp(expr->bool.token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->bool.token.literal);
 }
 
 void test_boolean_expression_parsing() {
@@ -316,7 +251,6 @@ void test_boolean_expression_parsing() {
 }
 
 void test_expression(struct expression *e, expression_value expected) {
-    // TODO: Add way more types here
     switch (e->type) {
         case EXPR_BOOL: return test_boolean_expression(e, expected.bool_value); break;
         case EXPR_INT: return test_integer_expression(e, expected.int_value); break;
@@ -326,25 +260,20 @@ void test_expression(struct expression *e, expression_value expected) {
 }
 
 void test_infix_expression(struct expression *expr, expression_value left_value, char *operator, expression_value right_value) {
-    if (expr->type != EXPR_INFIX) {
-        abortf("wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
-    }
-
+    assertf(expr->type == EXPR_INFIX, "wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
     test_expression(expr->infix.left, left_value);
-    if (strncmp(expr->infix.operator, operator, MAX_OPERATOR_LENGTH) != 0) {
-        abortf("wrong operator: expected %s, got %s\n", operator, expr->infix.operator);
-    }
+    assertf(strncmp(expr->infix.operator, operator, MAX_OPERATOR_LENGTH) == 0, "wrong operator: expected %s, got %s\n", operator, expr->infix.operator);
     test_expression(expr->infix.right, right_value);
 }
 
 void test_infix_expression_parsing() {
-    typedef struct {
+    struct test{
         char *input;
         expression_value left_value;
         char *operator;
         expression_value right_value;        
     } test;
-    test tests[] = {
+    struct test tests[] = {
        {"5 + 5", {5}, "+", {5}},
        {"5 - 5", {5}, "-", {5}},
        {"5 * 5", {5}, "*", {5}},
@@ -357,20 +286,16 @@ void test_infix_expression_parsing() {
        {"true != false", {1}, "!=", {0}},
        {"false == false", {0}, "==", {0}},
     };
-    test t;
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
-        t = tests[i];
-        struct lexer l = {tests[i].input, 0};
+        struct test t = tests[i];
+        struct lexer l = new_lexer(t.input);
         struct parser parser = new_parser(&l);
         struct program program = parse_program(&parser);
-
         assert_parser_errors(&parser);
         assert_program_size(&program, 1);
         struct statement stmt = program.statements[0];
-
         test_infix_expression(stmt.value, t.left_value, t.operator, t.right_value);
-
         free_program(&program);   
     }
 }
@@ -399,14 +324,8 @@ void test_prefix_expression_parsing() {
         assert_program_size(&program, 1);
         struct statement stmt = program.statements[0];
 
-        if (stmt.value->type != EXPR_PREFIX) {
-            abortf("wrong expression type. expected %d, got %d\n", EXPR_PREFIX, stmt.value->type);
-        }
-
-        if (strncmp(stmt.value->prefix.operator, t.operator, 2) != 0) {
-            abortf("wrong operator. expected %s, got %s\n", t.operator, stmt.value->prefix.operator);
-        }   
-
+        assertf(stmt.value->type == EXPR_PREFIX, "wrong expression type. expected %d, got %d\n", EXPR_PREFIX, stmt.value->type);
+        assertf(strncmp(stmt.value->prefix.operator, t.operator, 2) == 0, "wrong operator. expected %s, got %s\n", t.operator, stmt.value->prefix.operator);
         test_expression(stmt.value->prefix.right, t.value); 
         free_program(&program);       
     }
@@ -446,14 +365,10 @@ void test_operator_precedence_parsing() {
         struct lexer l = {tests[i].input, 0};
         struct parser parser = new_parser(&l);
         struct program program = parse_program(&parser);
-
         assert_parser_errors(&parser);
         
         char *program_str = program_to_str(&program);
-        if (strncmp(program_str, tests[i].expected, 48) != 0) {
-            abortf("wrong program string: expected %s, got %s\n", tests[i].expected, program_str);
-        }
-        
+        assertf(strncmp(program_str, tests[i].expected, 48) == 0, "wrong program string: expected %s, got %s\n", tests[i].expected, program_str);        
         free(program_str);
         free_program(&program);
     }
@@ -469,33 +384,18 @@ void test_if_expression_parsing() {
 
     struct statement stmt = program.statements[0];
     struct expression *expr = stmt.value;
-    if (expr->type != EXPR_IF) {
-        abortf("invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
-    }
+    assertf (expr->type == EXPR_IF, "invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
 
     expression_value left = {.str_value = "x"};
     expression_value right = {.str_value = "y"};
     test_infix_expression(expr->ifelse.condition, left, "<", right);
 
     struct block_statement *consequence = expr->ifelse.consequence;
-    if (!consequence) {
-        abortf("expected consequence block statement, got NULL\n");
-    }
-
-    if (consequence->size != 1) {
-        abortf("invalid consequence size: expected %d, got %d\n", 1, consequence->size);
-    }
-
-    if (consequence->statements[0].type != STMT_EXPR) {
-        abortf("statements[0] is not a statement expression, got %d\n", consequence->statements[0].type);
-    }
-
+    assertf(!!consequence, "expected consequence block statement, got NULL\n");
+    assertf(consequence->size == 1, "invalid consequence size: expected %d, got %d\n", 1, consequence->size);
+    assertf(consequence->statements[0].type == STMT_EXPR, "statements[0] is not a statement expression, got %d\n", consequence->statements[0].type);
     test_identifier_expression(consequence->statements[0].value, "x");
-
-    if (expr->ifelse.alternative) {
-        abortf("expected NULL, got alternative block statement\n");
-    }
-
+    assertf(!expr->ifelse.alternative, "expected NULL, got alternative block statement\n");
     free_program(&program);
 }
 
@@ -509,38 +409,21 @@ void test_if_else_expression_parsing() {
 
     struct statement stmt = program.statements[0];
     struct expression *expr = stmt.value;
-    if (expr->type != EXPR_IF) {
-        abortf("invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
-    }
+    assertf(expr->type == EXPR_IF, "invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
 
     expression_value left = {.str_value = "x"};
     expression_value right = {.str_value = "y"};
     test_infix_expression(expr->ifelse.condition, left, "<", right);
 
     struct block_statement *consequence = expr->ifelse.consequence;
-    if (!consequence) {
-        abortf("expected consequence block statement, got NULL\n");
-    }
-
-    if (consequence->size != 1) {
-        abortf("invalid consequence size: expected %d, got %d\n", 1, consequence->size);
-    }
-
-    if (consequence->statements[0].type != STMT_EXPR) {
-        abortf("statements[0] is not a statement expression, got %d", consequence->statements[0].type);
-    }
-
+    assertf(!!consequence, "expected consequence block statement, got NULL\n");
+    assertf(consequence->size == 1, "invalid consequence size: expected %d, got %d\n", 1, consequence->size);
+    assertf(consequence->statements[0].type == STMT_EXPR, "statements[0] is not a statement expression, got %d", consequence->statements[0].type);
     test_identifier_expression(consequence->statements[0].value, "x");
 
     struct block_statement *alternative = expr->ifelse.alternative;
-    if (alternative == NULL) {
-        abortf("alternative was NULL");
-    }
-
-    if (alternative->size != 1) {
-        abortf("invalid alternative size: expected %d, got %d\n", 1, alternative->size);
-    }
-
+    assertf(alternative != NULL, "expected alternative, got NULL");
+    assertf(alternative->size == 1, "invalid alternative size: expected %d, got %d\n", 1, alternative->size);
     free_program(&program);
 }
 
@@ -553,29 +436,15 @@ void test_function_literal_parsing() {
     assert_program_size(&program, 1);
 
     struct statement stmt = program.statements[0];
-    if (stmt.type != STMT_EXPR) {
-        abortf("invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
-    }
+    assertf(stmt.type == STMT_EXPR, "invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
 
     struct expression *expr = stmt.value;
-    if (expr->type != EXPR_FUNCTION) {
-        abortf("invalid expression type: expected EXPR_FUNCTION, got %d\n", expr->type);
-    }
-
-    if (expr->function.parameters.size != 2) {
-        abortf("invalid param size: expected %d, got %d\n", 2, expr->function.parameters.size);
-    }
-
-    if (strcmp(expr->function.parameters.values[0].value, "x") != 0) {
-        abortf("invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[0].value);
-    }
-    if (strcmp(expr->function.parameters.values[1].value, "y") != 0) {
-        abortf("invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[1].value);
-    }
-
-    if (expr->function.body->size != 1) {
-        abortf("invalid body size: expected %d, got %d\n", 1, expr->function.body->size);
-    }
+    assertf(expr->type == EXPR_FUNCTION, "invalid expression type: expected EXPR_FUNCTION, got %d\n", expr->type);
+    
+    assertf(expr->function.parameters.size == 2, "invalid param size: expected %d, got %d\n", 2, expr->function.parameters.size);
+    assertf(strcmp(expr->function.parameters.values[0].value, "x") == 0, "invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[0].value);
+    assertf(strcmp(expr->function.parameters.values[1].value, "y") == 0, "invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[1].value);
+    assertf(expr->function.body->size == 1, "invalid body size: expected %d, got %d\n", 1, expr->function.body->size);
     
     expression_value left = {.str_value = "x"};
     char *op = "+";
@@ -593,20 +462,12 @@ void test_call_expression_parsing() {
     assert_program_size(&program, 1);
 
     struct statement stmt = program.statements[0];
-    if (stmt.type != STMT_EXPR) {
-        abortf("invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
-    }
+    assertf(stmt.type == STMT_EXPR, "invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
 
     struct expression *expr = stmt.value;
-    if (expr->type != EXPR_CALL) {
-        abortf("invalid expression type: expected EXPR_CALL, got %d\n", expr->type);
-    }
-
+    assertf(expr->type == EXPR_CALL, "invalid expression type: expected EXPR_CALL, got %d\n", expr->type);
     test_identifier_expression(expr->call.function, "add");
-
-    if (expr->call.arguments.size != 3) {
-        abortf("expected 3 arguments, got %d\n", expr->call.arguments.size);
-    }
+    assertf(expr->call.arguments.size == 3, "expected 3 arguments, got %d\n", expr->call.arguments.size);
 
     expression_value left = {.int_value = 2};
     expression_value right = {.int_value = 3};
