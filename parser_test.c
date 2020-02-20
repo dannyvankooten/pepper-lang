@@ -119,24 +119,41 @@ void test_return_statements() {
 }
 
 void test_program_string() {
+
     struct expression e1 = {
-        .type = EXPR_IDENT,
-        .ident = {
+        .type = EXPR_INT,
+        .integer = {
+            .value = 5,
             .token = {
-                .type = IDENT,
-                .literal = "anotherVar",
-            },
-            .value = "anotherVar"
+                .literal = "5",
+                .type = INT,
+            }
         }
     };
     struct expression e2 = {
-        .type = EXPR_INT,
-        .integer = {
-            .token = {
-                .type = INT,
-                .literal = "5",
-            },
-            .value = 5
+        .type = EXPR_IDENT,
+        .ident = {
+            .value = "foo"
+        },
+    };
+    struct expression expressions[] = {
+        {
+            .type = EXPR_IDENT,
+            .ident = {
+                .token = {
+                    .type = IDENT,
+                    .literal = "anotherVar",
+                },
+                .value = "anotherVar"
+            }
+        },
+        {
+            .type = EXPR_INFIX,
+            .infix = {
+                .operator = "+",
+                .left = &e1,
+                .right = &e2,
+            }
         }
     };
     struct statement statements[] = {
@@ -153,7 +170,7 @@ void test_program_string() {
                 },
                 .value = "myVar",
             },
-            .value = &e1,
+            .value = &expressions[0],
         }, 
         {
             .type = STMT_RETURN,
@@ -161,7 +178,7 @@ void test_program_string() {
                 .type = RETURN,
                 .literal = "return",
             },
-            .value = &e2
+            .value = &expressions[1]
         }, 
     };
     struct program program = {
@@ -170,7 +187,7 @@ void test_program_string() {
     };
 
     char *str = program_to_str(&program);
-    char *expected = "let myVar = anotherVar;return 5;";
+    char *expected = "let myVar = anotherVar;return (5 + foo);";
 
     if (strcmp(str, expected) != 0) {
         abortf("wrong program string. expected \"%s\", got \"%s\"\n", expected, str);

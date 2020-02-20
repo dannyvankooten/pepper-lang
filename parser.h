@@ -616,14 +616,14 @@ static void let_statement_to_str(char *str, struct statement *stmt) {
     strcat(str, " ");
     strcat(str, stmt->name.value);
     strcat(str, " = ");
-    strcat(str, stmt->value->ident.value);
+    expression_to_str(str, stmt->value);
     strcat(str, ";");
 }
 
 static void return_statement_to_str(char *str, struct statement *stmt) {
     strcat(str, stmt->token.literal);
     strcat(str, " ");
-    strcat(str, stmt->value->ident.token.literal);
+    expression_to_str(str, stmt->value);
     strcat(str, ";");
 }
 
