@@ -632,5 +632,5 @@ int main() {
     test_if_else_expression_parsing();
     test_function_literal_parsing();
     test_call_expression_parsing();
-    printf("\x1b[32mAll tests passed!\n");
+    printf("\x1b[32mAll parsing tests passed!\033[0m\n");
 }

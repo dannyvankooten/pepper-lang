@@ -163,3 +163,8 @@ int gettoken(struct lexer *l, struct token *t) {
 
     return 1;
 }
+
+extern struct lexer new_lexer(char *input) {
+    struct lexer lexer = {input, 0};
+    return lexer;
+}

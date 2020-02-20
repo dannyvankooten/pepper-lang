@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "parser.h"
+#include "eval.h"
 
 // TODO: perhaps mock this in case it's not installed, since it's not super necessary
 #include <editline/readline.h>
@@ -10,31 +10,46 @@ int main(int argc, char **argv)
 {
     puts("Monkey-C Version 0.0.1");
     puts("Press Ctrl+c to Exit\n");
+    char *output = malloc(1024);
+
+    struct lexer lexer;
+    struct parser parser;
+    struct program program;
+    struct object obj;
 
     while (1)
     {
         char * input = readline("monkey> ");
         add_history(input);
 
-        struct lexer l = {input, 0};
-        struct parser parser = new_parser(&l);
-        struct program program = parse_program(&parser);
+        lexer = new_lexer(input);
+        parser = new_parser(&lexer);
+        program = parse_program(&parser);
 
         if (parser.errors > 0) {
+            printf("Whoops! Parsing error:\n");
             for (int i = 0; i < parser.errors; i++) {
-                printf("\t%s\n", parser.error_messages[i]);
+                printf("- %s\n", parser.error_messages[i]);
             }
 
             free(input);
             free_program(&program);
             continue;
         }
-        
-        printf("%s\n", program_to_str(&program));
+
+        // evaluate program into buffer
+        obj = eval_program(&program);
+        object_to_str(output, &obj);
+        printf("%s\n", output);
+
+        // clear output buffer
+        output[0] = '\0';
 
         free(input);
         free_program(&program);
     }
+
+    free(output);
 
     return 0;
 }

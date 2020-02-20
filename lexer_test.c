@@ -113,4 +113,6 @@ int main() {
             abort();
         }
     }
+
+    printf("\x1b[32mAll lexing tests passed!\033[0m\n");
 }

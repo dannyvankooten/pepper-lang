@@ -263,8 +263,7 @@ static struct expression *parse_prefix_expression(struct parser *p) {
 struct expression_list parse_call_arguments(struct parser *p) {
     struct expression_list list = {
         .size = 0,
-        .cap = 4,
-        .values = malloc(4 * sizeof(struct expression)),
+        .cap = 0,
     };
 
     if (next_token_is(p, RPAREN)) {
@@ -272,7 +271,9 @@ struct expression_list parse_call_arguments(struct parser *p) {
         return list;
     }
 
-    // TODO: Allocate here instead of above
+    // allocate memory here, so we do not need an alloc for calls without any arguments
+    list.cap = 4;
+    list.values = malloc(list.cap * sizeof(struct expression));
     
     next_token(p);
     list.values[list.size++] = *parse_expression(p, LOWEST);
@@ -283,6 +284,7 @@ struct expression_list parse_call_arguments(struct parser *p) {
 
         list.values[list.size++] = *parse_expression(p, LOWEST);
 
+        // double capacity if needed
         if (list.size >= list.cap) {
             list.cap *= 2;
             list.values = realloc(list.values, list.cap * sizeof(struct expression));
@@ -291,6 +293,7 @@ struct expression_list parse_call_arguments(struct parser *p) {
 
     if (!expect_next_token(p, RPAREN)) {
         free(list.values);
+        return list;
     }
 
     return list;
