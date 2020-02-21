@@ -1,7 +1,6 @@
 #include "token.h"
 #include <string.h>
 #include <stdio.h>
-#undef EOF
 
 struct lexer {
     char *input;
@@ -22,7 +21,7 @@ int gettoken(struct lexer *l, struct token *t) {
     char ch = l->input[l->pos++];
     
     // skip whitespace
-    while (ch == ' ' || ch == '\n' || ch == '\t') {
+    while (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
         ch = l->input[l->pos++];
     }
 

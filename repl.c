@@ -19,6 +19,7 @@ int main(int argc, char **argv)
     struct lexer lexer;
     struct parser parser;
     struct program *program;
+    struct environment *env = make_environment(256);
 
     while (1)
     {
@@ -36,23 +37,24 @@ int main(int argc, char **argv)
             }
 
             free(input);
-            free_program(&program);
+            free_program(program);
             continue;
         }
 
         // evaluate program into buffer
-        struct object *obj = eval_program(program);
-        object_to_str(output, obj);
-        printf("%s\n", output);
-
+        struct object *obj = eval_program(program, env);
+        if (obj->type != OBJ_FUNCTION) {
+            object_to_str(output, obj);
+            printf("%s\n", output);
+        }
+       
         // clear output buffer
         output[0] = '\0';
 
         free(input);
-        free_object(obj);
-        free_program(program);
     }
 
+    free_environment(env);
     free(output);
     return 0;
 }

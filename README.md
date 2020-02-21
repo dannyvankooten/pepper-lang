@@ -5,3 +5,25 @@
 Interpreter for the [Monkey programming language](https://monkeylang.org), written in C.
 
 This is my first C project, so expect very few best practices.
+
+### Usage
+
+Build the REPL: 
+```
+make repl
+```
+
+Build the interpreter: 
+```
+make monkey
+```
+
+Build & run the tests: 
+```
+make tests
+```
+
+Interpret a Monkey script: 
+```
+./bin/monkey fibonacci.monkey
+```

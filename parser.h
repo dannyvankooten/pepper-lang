@@ -359,7 +359,6 @@ struct block_statement *parse_block_statement(struct parser *p) {
 
     b->cap = 16;
     b->size = 0;
-
     b->statements = malloc(b->cap * sizeof (struct statement));
     next_token(p);
 
@@ -633,19 +632,26 @@ static void return_statement_to_str(char *str, struct statement *stmt) {
     strcat(str, ";");
 }
 
-static void  statement_to_str(char *str, struct statement *stmt) {
+static void statement_to_str(char *str, struct statement *stmt) {
     switch (stmt->type) {
         case STMT_LET: return let_statement_to_str(str, stmt); break;
         case STMT_RETURN: return return_statement_to_str(str, stmt); break;
         case STMT_EXPR: return expression_to_str(str, stmt->value); break;
     }
-
-    // TODO: Signal error
 }
 
-static void block_statement_to_str(char *str, struct block_statement *b) {
+void block_statement_to_str(char *str, struct block_statement *b) {
     for (int i=0; i < b->size; i++) {
         statement_to_str(str, &b->statements[i]);
+    }
+}
+
+void identifier_list_to_str(char *str, struct identifier_list *identifiers) {
+    for (int i=0; i < identifiers->size; i++) {
+        strcat(str, identifiers->values[i].value);
+        if (i < (identifiers->size - 1)) {
+            strcat(str, ", ");
+        }
     }
 }
 
@@ -688,12 +694,7 @@ static void expression_to_str(char *str, struct expression *expr) {
         case EXPR_FUNCTION:
             strcat(str, expr->function.token.literal);
             strcat(str, "(");
-            for (int i=0; i < expr->function.parameters.size; i++) {
-                strcat(str, expr->function.parameters.values[i].token.literal);
-                if (i < expr->function.parameters.size-1) {
-                    strcat(str, ", ");
-                }
-            }
+            identifier_list_to_str(str, &expr->function.parameters);
             strcat(str, ") ");
             block_statement_to_str(str, expr->function.body);
         break;
