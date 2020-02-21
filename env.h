@@ -33,6 +33,7 @@ struct environment *make_environment(unsigned int cap) {
     env->cap = cap;
     env->size = 0;
     env->table = (struct node **) malloc(sizeof(struct node) * cap);
+    env->outer = NULL;
     for (int i = 0; i < env->cap; i++)
     {
         env->table[i] = NULL;
@@ -92,8 +93,14 @@ void environment_set(struct environment *env, char *key, void *value) {
 };
 
 void free_environment(struct environment *env) {
+    
+    if (!env) {
+        return;
+    }
+
     struct node *node;
     struct node *next;
+
 
     for (int i=0; i < env->size; i++) {
         node = env->table[i];
@@ -103,7 +110,10 @@ void free_environment(struct environment *env) {
 
         while (node) {
             next = node->next;
-            free(node->key);
+            if (node->key) {
+                free(node->key);
+            }
+
             free(node);
             node = next;
         }
@@ -113,7 +123,10 @@ void free_environment(struct environment *env) {
         free_environment(env->outer);
     }
 
-    free(env->table);
+    if (env->table) {
+        free(env->table);
+    }
+
     free(env);
 }
 

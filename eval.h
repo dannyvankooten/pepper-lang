@@ -15,29 +15,11 @@ enum object_type
 };
 
 static const char *object_names[] = {
-    "OBJ_NULL",
-    "OBJ_BOOL",
-    "OBJ_INT",
-    "OBJ_ERROR",
-    "OBJ_FUNCTION",
-};
-
-struct boolean
-{
-    unsigned char value;
-};
-
-struct integer
-{
-    long value;
-};
-
-struct null
-{
-};
-
-struct error {
-    char *message;
+    "NULL",
+    "BOOLEAN",
+    "INTEGER",
+    "ERROR",
+    "FUNCTION",
 };
 
 struct function {
@@ -50,10 +32,9 @@ struct object
 {
     enum object_type type;
     union {
-        struct boolean boolean;
-        struct integer integer;
-        struct null null;
-        struct error error;
+        unsigned char boolean;
+        long integer;
+        char *error;
         struct function function;
     };
     unsigned char return_value;
@@ -75,22 +56,22 @@ struct object obj_null_return = {
 };
 struct object obj_true = {
     .type = OBJ_BOOL,
-    .boolean = {.value = 1},
+    .boolean = 1,
     .return_value = 0
 };
 struct object obj_false = {
     .type = OBJ_BOOL,
-    .boolean = {.value = 0},
+    .boolean = 0,
     .return_value = 0
 };
 struct object obj_true_return = {
     .type = OBJ_BOOL,
-    .boolean = {.value = 1},
+    .boolean = 1,
     .return_value = 1
 };
 struct object obj_false_return = {
     .type = OBJ_BOOL,
-    .boolean = {.value = 0},
+    .boolean = 0,
     .return_value = 1
 };
 
@@ -104,23 +85,30 @@ struct object *make_boolean_object(char value)
     return value ? &obj_true : &obj_false;
 }
 
-struct object *make_integer_object(int value)
+struct object *make_integer_object(long value)
 {
     struct object *result = malloc(sizeof(struct object));
     result->type = OBJ_INT;
-    result->integer.value = value;
+    result->integer = value;
     result->return_value = 0;
     return result;
 }
 
-struct object *make_error_object(char *format, ...) {
+struct object *make_error_object(struct object *obj, char *format, ...) {
     va_list args;
-    struct object *obj = malloc(sizeof(struct object));
+
+    // try to re-use discarded object here
+    if (!obj || obj->type == OBJ_BOOL || obj->type == OBJ_NULL) {
+        obj = malloc(sizeof(struct object));
+        obj->error = malloc(256);
+    } else if (obj->type == OBJ_INT) {
+        obj->error = malloc(256);
+    }
+
     obj->type = OBJ_ERROR;
     obj->return_value = 0;
-    va_start(args, format);
-    obj->error.message = malloc(256);
-    vsnprintf(obj->error.message, 256, format, args);
+    va_start(args, format);  
+    vsnprintf(obj->error, 256, format, args);
     va_end(args);
     return obj;
 };
@@ -140,7 +128,7 @@ struct object *eval_bang_operator_expression(struct object *obj)
     switch (obj->type)
     {
     case OBJ_BOOL:
-        return !obj->boolean.value ? &obj_true : &obj_false;
+        return obj == &obj_false ? &obj_true : &obj_false;
         break;
     case OBJ_NULL:
         return &obj_true;
@@ -155,12 +143,11 @@ struct object *eval_minus_prefix_operator_expression(struct object *right)
 {
     if (right->type != OBJ_INT)
     {
-        return make_error_object("unknown operator: -%s", object_type_to_str(right->type));
+        return make_error_object(right, "unknown operator: -%s", object_type_to_str(right->type));
     }
 
-    // TODO: Replace object here?
-
-    return make_integer_object(-right->integer.value);
+    right->integer = -right->integer;
+    return right;
 }
 
 struct object *eval_prefix_expression(operator operator, struct object *right)
@@ -176,7 +163,7 @@ struct object *eval_prefix_expression(operator operator, struct object *right)
         break;
 
     default: 
-        return make_error_object("unknown operator: %s%s", operator, object_type_to_str(right->type));    
+        return make_error_object(right, "unknown operator: %s%s", operator, object_type_to_str(right->type));    
     }
 
     return &obj_null;
@@ -187,27 +174,27 @@ struct object *eval_integer_infix_expression(operator operator, struct object *l
     switch (operator[0])
     {
     case '+':
-        return make_integer_object(left->integer.value + right->integer.value);
+        return make_integer_object(left->integer + right->integer);
     case '-':
-        return make_integer_object(left->integer.value - right->integer.value);
+        return make_integer_object(left->integer - right->integer);
     case '*':
-        return make_integer_object(left->integer.value * right->integer.value);
+        return make_integer_object(left->integer * right->integer);
     case '/':
-        return make_integer_object(left->integer.value / right->integer.value);
+        return make_integer_object(left->integer / right->integer);
     case '<':
-        return make_boolean_object(left->integer.value < right->integer.value);
+        return make_boolean_object(left->integer < right->integer);
     case '>':
-        return make_boolean_object(left->integer.value > right->integer.value);
+        return make_boolean_object(left->integer > right->integer);
     case '=':
         if (operator[1] == '=')
         {
-            return make_boolean_object(left->integer.value == right->integer.value);
+            return make_boolean_object(left->integer == right->integer);
         }
         return &obj_null;
     case '!':
         if (operator[1] == '=')
         {
-            return make_boolean_object(left->integer.value != right->integer.value);
+            return make_boolean_object(left->integer != right->integer);
         }
         return &obj_null;
     default:
@@ -219,7 +206,7 @@ struct object *eval_integer_infix_expression(operator operator, struct object *l
 struct object *eval_infix_expression(operator operator, struct object *left, struct object *right)
 {
     if (left->type != right->type) {
-        return make_error_object("type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+        return make_error_object(left, "type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
     }
 
     if (left->type == OBJ_INT && right->type == OBJ_INT)
@@ -240,7 +227,7 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
         }
     }
 
-    return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+    return make_error_object(left, "unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
 }
 
 unsigned char is_object_truthy(struct object *obj)
@@ -279,7 +266,7 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
 struct object *eval_identifier(struct identifier *ident, struct environment *env) {
     void *value = environment_get(env, ident->value);
     if (value == NULL) {
-        return make_error_object("identifier not found: %s", ident->value);
+        return make_error_object(NULL, "identifier not found: %s", ident->value);
     }
 
     return (struct object *) value;;
@@ -309,7 +296,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
 
 struct object *apply_function(struct object *obj, struct object_list *args) {
     if (obj->type != OBJ_FUNCTION) {
-        return make_error_object("not a function: %s", object_type_to_str(obj->type));
+        return make_error_object(NULL, "not a function: %s", object_type_to_str(obj->type));
     }
 
     struct environment *env = make_closed_environment(obj->function.env, 16);
@@ -472,14 +459,14 @@ void object_to_str(char *str, struct object *obj)
         strcat(str, "NULL");
         break;
     case OBJ_INT:
-        sprintf(tmp, "%ld", obj->integer.value);
+        sprintf(tmp, "%ld", obj->integer);
         strcat(str, tmp);
         break;
     case OBJ_BOOL:
         strcat(str, obj == &obj_true ? "true" : "false");
         break;
     case OBJ_ERROR: 
-        strcat(str, obj->error.message);
+        strcat(str, obj->error);
         break;   
     case OBJ_FUNCTION: 
         strcat(str, "fn(");
@@ -493,19 +480,22 @@ void object_to_str(char *str, struct object *obj)
 
 const char *object_type_to_str(enum object_type t)
 {
-    return object_names[t];
+    return object_names[t] ?: "UNKOWN";
 }
 
 void free_object(struct object *obj)
-{
-    if (!obj || (obj->type != OBJ_INT && obj->type != OBJ_ERROR))
-    {
+{   
+    if (!obj) {
         return;
     }
 
-    if (obj->type == OBJ_ERROR) {
-        free(obj->error.message);
+    if (obj->type == OBJ_ERROR && obj->error) {
+        free(obj->error);
     }
 
-    free(obj);
+    if (obj->type == OBJ_INT || obj->type == OBJ_ERROR)
+    {
+        free(obj);
+    }
+
 }

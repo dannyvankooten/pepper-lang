@@ -29,6 +29,9 @@ int main(int argc, char *argv[]) {
     output[0] = '\0';
     object_to_str(output, obj);
     puts(output);
+
+    free_program(program);
+    free_environment(env);
 }
 
 char *read_file(char *filename) {

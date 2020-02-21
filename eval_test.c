@@ -21,13 +21,40 @@ struct object *test_eval(char *input)
 void test_integer_object(struct object *obj, int expected)
 {
     assertf(obj->type == OBJ_INT, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_INT), object_type_to_str(obj->type));
-    assertf(obj->integer.value == expected, "wrong integer value: expected %d, got %d", expected, obj->integer.value);
+    assertf(obj->integer == expected, "wrong integer value: expected %d, got %d", expected, obj->integer);
 }
 
 void test_boolean_object(struct object *obj, char expected)
 {
     assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type));
-    assertf(obj->boolean.value == expected, "wrong boolean value: expected %d, got %d", expected, obj->boolean.value);
+    assertf(obj->boolean == expected, "wrong boolean value: expected %d, got %d", expected, obj->boolean);
+}
+
+union object_value {
+    int integer;
+    char null;
+    char bool;
+    char *message;
+};
+
+void test_error_object(struct object *obj, char *expected) {
+    assertf(obj->type == OBJ_ERROR, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_ERROR), object_type_to_str(obj->type));
+    assertf(strcmp(obj->error, expected) == 0, "invalid error message: expected %s, got %s", expected, obj->error);
+}
+
+void test_object(struct object *obj, enum object_type type, union object_value value)
+{
+    switch (obj->type)
+    {
+    case OBJ_BOOL:
+        return test_boolean_object(obj, value.bool);
+    case OBJ_INT:
+        return test_integer_object(obj, value.integer);
+    case OBJ_ERROR:
+        return test_error_object(obj, value.message);    
+    default:
+        break;
+    }
 }
 
 void test_eval_integer_expressions()
@@ -117,28 +144,6 @@ void test_bang_operator()
     {
         struct object *obj = test_eval(tests[i].input);
         test_boolean_object(obj, tests[i].expected);
-    }
-}
-
-union object_value {
-    int integer;
-    char null;
-    char bool;
-    char *message;
-};
-
-void test_object(struct object *obj, enum object_type type, union object_value value)
-{
-    assertf(obj->type == type, "invalid object type: expected %s, got %s", object_type_to_str(type), object_type_to_str(obj->type));
-
-    switch (obj->type)
-    {
-    case OBJ_BOOL:
-        return test_boolean_object(obj, value.bool);
-    case OBJ_INT:
-        return test_integer_object(obj, value.integer);
-    default:
-        break;
     }
 }
 

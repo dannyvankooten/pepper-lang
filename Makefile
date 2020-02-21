@@ -1,6 +1,7 @@
-CFLAGS = -std=c99 -Wall
+CFLAGS = -std=c99 -Wall 
 TESTFLAGS = $(CFLAGS) -g 
 BINDIR := bin
+DATE=$(shell date '+%Y-%m-%d')
 
 all: monkey repl tests
 
@@ -9,6 +10,9 @@ repl: $(BINDIR)
 
 monkey: $(BINDIR)
 	$(CC) $(CFLAGS) monkey.c -o $(BINDIR)/monkey $(MAKEFLAGS)
+
+monkey_release: $(BINDIR) 
+	$(CC) $(CFLAGS) -O3 monkey.c -o $(BINDIR)/monkey $(MAKEFLAGS)
 
 tests: $(BINDIR) lexer_test parser_test env_test eval_test 
 
@@ -26,6 +30,11 @@ env_test:
 
 $(BINDIR):
 	mkdir -p $(BINDIR)
+
+bench: monkey_release 
+	echo "**$(shell date '+%Y-%m-%d %H:%M')** (fib 30)" >> benchmarks.md
+	/usr/bin/time --append -o benchmarks.md ./bin/monkey fibonacci.monkey
+	echo "" >> benchmarks.md
 
 clean:
 	rm -r $(BINDIR)

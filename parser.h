@@ -38,7 +38,7 @@ struct bool_expression {
 
 struct integer_literal {
     struct token token;
-    int value;
+    long value;
 };
 
 struct prefix_expression {
@@ -420,6 +420,8 @@ struct expression *parse_if_expression(struct parser *p) {
         }
 
         expr->ifelse.alternative = parse_block_statement(p);
+    } else {
+        expr->ifelse.alternative = NULL;
     }
 
     return expr;
