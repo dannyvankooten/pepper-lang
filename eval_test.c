@@ -277,16 +277,16 @@ void test_function_object() {
     struct object *obj = test_eval(input);
 
     assertf(obj->type == OBJ_FUNCTION, "wrong object type: expected OBJ_FUNCTION, got %s", object_type_to_str(obj->type));
-    assertf(obj->function.parameters->size == 1, "wrong parameter count: expected 1, got %d", obj->function.parameters->size);
+    assertf(obj->function->parameters->size == 1, "wrong parameter count: expected 1, got %d", obj->function->parameters->size);
 
     char tmp[64];
     tmp[0] = '\0';
-    identifier_list_to_str(tmp, obj->function.parameters);
+    identifier_list_to_str(tmp, obj->function->parameters);
     assertf(strcmp(tmp, "x") == 0, "parameter is not \"x\", got \"%s\"", tmp);
 
     tmp[0] = '\0';
     char *expected_body = "(x + 2)";
-    block_statement_to_str(tmp, obj->function.body);
+    block_statement_to_str(tmp, obj->function->body);
     assertf(strcmp(tmp, expected_body) == 0, "function body is not \"%s\", got \"%s\"", expected_body, tmp);
 }
 

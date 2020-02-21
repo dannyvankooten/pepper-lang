@@ -32,31 +32,27 @@ enum statement_type {
 };
 
 struct bool_expression {
-    struct token token;
     char value;
 };
 
 struct integer_literal {
-    struct token token;
     long value;
 };
 
 struct prefix_expression {
-    struct token token;
     char operator[MAX_OPERATOR_LENGTH];
     struct expression *right;
 };
 
 struct infix_expression {
-    struct token token;
     char operator[MAX_OPERATOR_LENGTH];
     struct expression *left;
     struct expression *right;
 };
 
 struct identifier {
-    struct token token; 
     char value[MAX_IDENT_LENGTH];
+    struct token token;
 };
 
 struct identifier_list {
@@ -80,14 +76,12 @@ struct block_statement {
 };
 
 struct if_expression {
-    struct token token;
     struct expression *condition;
     struct block_statement *consequence;
     struct block_statement *alternative;
 };
 
 struct function_literal {
-    struct token token;
     struct identifier_list parameters;
     struct block_statement *body;
 };
@@ -95,17 +89,17 @@ struct function_literal {
 struct expression_list {
     unsigned int size;
     unsigned int cap;
-    struct expression *values;
+    struct expression **values;
 };
 
 struct call_expresion {
-    struct token token;
     struct expression *function;
-    struct expression_list arguments;
+    struct expression_list *arguments;
 };
 
 struct expression {
     enum expression_type type;
+    struct token token;
     union {
         struct bool_expression bool;
         struct identifier ident;
@@ -243,7 +237,7 @@ static struct expression *parse_int_expression(struct parser *p) {
     }
 
     expr->type = EXPR_INT;
-    expr->integer.token = p->current_token;
+    expr->token = p->current_token;
     expr->integer.value = atoi(p->current_token.literal);
     return expr;
 }
@@ -255,18 +249,17 @@ static struct expression *parse_prefix_expression(struct parser *p) {
     }
 
     expr->type = EXPR_PREFIX;
-    expr->prefix.token = p->current_token;
+    expr->token = p->current_token;
     strncpy(expr->prefix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
     next_token(p);
     expr->prefix.right = parse_expression(p, PREFIX);
     return expr;
 }
 
-struct expression_list parse_call_arguments(struct parser *p) {
-    struct expression_list list = {
-        .size = 0,
-        .cap = 0,
-    };
+struct expression_list *parse_call_arguments(struct parser *p) {
+    struct expression_list *list = malloc(sizeof (struct expression_list));
+    list->size = 0;
+    list->cap = 0;
 
     if (next_token_is(p, TOKEN_RPAREN)) {
         next_token(p);
@@ -274,27 +267,27 @@ struct expression_list parse_call_arguments(struct parser *p) {
     }
 
     // allocate memory here, so we do not need an alloc for calls without any arguments
-    list.cap = 4;
-    list.values = malloc(list.cap * sizeof(struct expression));
+    list->cap = 4;
+    list->values = malloc(list->cap * sizeof(struct expression));
     
     next_token(p);
-    list.values[list.size++] = *parse_expression(p, LOWEST);
+    list->values[list->size++] = parse_expression(p, LOWEST);
 
     while (next_token_is(p, TOKEN_COMMA)) {
         next_token(p);
         next_token(p);
 
-        list.values[list.size++] = *parse_expression(p, LOWEST);
+        list->values[list->size++] = parse_expression(p, LOWEST);
 
         // double capacity if needed
-        if (list.size >= list.cap) {
-            list.cap *= 2;
-            list.values = realloc(list.values, list.cap * sizeof(struct expression));
+        if (list->size >= list->cap) {
+            list->cap *= 2;
+            list->values = realloc(list->values, list->cap * sizeof(struct expression));
         }
     }
 
     if (!expect_next_token(p, TOKEN_RPAREN)) {
-        free(list.values);
+        free(list->values);
         return list;
     }
 
@@ -304,7 +297,7 @@ struct expression_list parse_call_arguments(struct parser *p) {
 struct expression *parse_call_expression(struct parser *p, struct expression *left) {
     struct expression *expr = malloc(sizeof (struct expression));
     expr->type = EXPR_CALL;
-    expr->call.token = p->current_token;
+    expr->token = p->current_token;
     expr->call.function = left;
     expr->call.arguments = parse_call_arguments(p);
     return expr;
@@ -317,8 +310,8 @@ static struct expression *parse_infix_expression(struct parser *p, struct expres
     }
 
     expr->type = EXPR_INFIX;
+    expr->token = p->current_token;
     expr->infix.left = left;
-    expr->infix.token = p->current_token;
     strncpy(expr->infix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
@@ -333,7 +326,7 @@ struct expression *parse_boolean_expression(struct parser *p) {
     }
 
     expr->type = EXPR_BOOL;
-    expr->bool.token = p->current_token;
+    expr->token = p->current_token;
     expr->bool.value = current_token_is(p, TOKEN_TRUE);
     return expr;
 }
@@ -385,7 +378,7 @@ struct expression *parse_if_expression(struct parser *p) {
     }
 
     expr->type = EXPR_IF;
-    expr->ifelse.token = p->current_token;
+    expr->token = p->current_token;
 
     if (!expect_next_token(p, TOKEN_LPAREN)) {
         free(expr);
@@ -478,7 +471,7 @@ struct expression *parse_function_literal(struct parser *p) {
     }
 
     expr->type = EXPR_FUNCTION;
-    expr->function.token = p->current_token;
+    expr->token = p->current_token;
 
     if (!expect_next_token(p, TOKEN_LPAREN)) {
         free(expr);
@@ -681,7 +674,7 @@ static void expression_to_str(char *str, struct expression *expr) {
             strcat(str, expr->bool.value ? "true" : "false");
             break;
         case EXPR_INT:
-            strcat(str, expr->integer.token.literal);
+            strcat(str, expr->token.literal);
         break;
         case EXPR_IF:
             strcat(str, "if ");
@@ -694,7 +687,7 @@ static void expression_to_str(char *str, struct expression *expr) {
             }
         break;
         case EXPR_FUNCTION:
-            strcat(str, expr->function.token.literal);
+            strcat(str, expr->token.literal);
             strcat(str, "(");
             identifier_list_to_str(str, &expr->function.parameters);
             strcat(str, ") ");
@@ -703,9 +696,9 @@ static void expression_to_str(char *str, struct expression *expr) {
         case EXPR_CALL:
             expression_to_str(str, expr->call.function);
             strcat(str, "(");
-            for (int i=0; i < expr->call.arguments.size; i++){
-                expression_to_str(str, &expr->call.arguments.values[i]);
-                if (i < expr->call.arguments.size-1) {
+            for (int i=0; i < expr->call.arguments->size; i++){
+                expression_to_str(str, expr->call.arguments->values[i]);
+                if (i < expr->call.arguments->size-1) {
                     strcat(str, ", ");
                 }
             }
@@ -780,7 +773,10 @@ static void free_expression(struct expression *expr) {
         break;
 
         case EXPR_CALL:
-            free_expression(expr->call.arguments.values);
+            for (int i=0; i < expr->call.arguments->size; i++) {
+                free_expression(expr->call.arguments->values[i]);
+            }
+            free(expr->call.arguments);
             free_expression(expr->call.function);
         break;
 

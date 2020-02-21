@@ -101,13 +101,13 @@ void test_return_statements() {
 void test_program_string() {
     struct expression e1 = {
         .type = EXPR_INT,
+        .token = {
+            .literal = "5",
+            .type = TOKEN_INT,
+        },
         .integer = {
             .value = 5,
-            .token = {
-                .literal = "5",
-                .type = TOKEN_INT,
-            }
-        }
+        },
     };
     struct expression e2 = {
         .type = EXPR_IDENT,
@@ -200,7 +200,7 @@ void test_integer_expression(struct expression *expr, int expected) {
 
     char expected_str[8];
     sprintf(expected_str, "%d", expected);
-    assertf(strcmp(expr->integer.token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->integer.token.literal);
+    assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
 }
 
 
@@ -225,7 +225,7 @@ void test_boolean_expression(struct expression * expr, char expected) {
     assertf(expr->bool.value == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->bool.value);
     
     char *expected_str = expected ? "true" : "false";
-    assertf(strcmp(expr->bool.token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->bool.token.literal);
+    assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
 }
 
 void test_boolean_expression_parsing() {
@@ -468,12 +468,12 @@ void test_call_expression_parsing() {
     struct expression *expr = stmt.value;
     assertf(expr->type == EXPR_CALL, "invalid expression type: expected EXPR_CALL, got %d\n", expr->type);
     test_identifier_expression(expr->call.function, "add");
-    assertf(expr->call.arguments.size == 3, "expected 3 arguments, got %d\n", expr->call.arguments.size);
+    assertf(expr->call.arguments->size == 3, "expected 3 arguments, got %d\n", expr->call.arguments->size);
 
     expression_value left = {.int_value = 2};
     expression_value right = {.int_value = 3};
-    test_infix_expression(&expr->call.arguments.values[1], left, "*", right);
-    test_infix_expression(&expr->call.arguments.values[2], (expression_value) 4, "+", (expression_value) 5);
+    test_infix_expression(expr->call.arguments->values[1], left, "*", right);
+    test_infix_expression(expr->call.arguments->values[2], (expression_value) 4, "+", (expression_value) 5);
     free_program(program);
 }
 

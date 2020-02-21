@@ -1,5 +1,6 @@
 #include <string.h> 
 #include <stdlib.h> 
+#include <err.h>
 
 struct node {
     char *key;
@@ -33,6 +34,10 @@ struct environment *make_environment(unsigned int cap) {
     env->cap = cap;
     env->size = 0;
     env->table = (struct node **) malloc(sizeof(struct node) * cap);
+    if (!env->table) {
+        errx(EXIT_FAILURE, "out of memory");
+    }
+    
     env->outer = NULL;
     for (int i = 0; i < env->cap; i++)
     {
@@ -85,7 +90,7 @@ void environment_set(struct environment *env, char *key, void *value) {
     // add new node to start of list
     node = (struct node *) malloc(sizeof (struct node));
     node->next = list;
-    node->key = (char *) malloc(32);
+    node->key = (char *) malloc(strlen(key) + 1);
     strcpy(node->key, key);
     node->value = value;
     env->table[pos] = node;
@@ -101,7 +106,6 @@ void free_environment(struct environment *env) {
     struct node *node;
     struct node *next;
 
-
     for (int i=0; i < env->size; i++) {
         node = env->table[i];
         if (!node) {
@@ -110,10 +114,7 @@ void free_environment(struct environment *env) {
 
         while (node) {
             next = node->next;
-            if (node->key) {
-                free(node->key);
-            }
-
+            free(node->key);
             free(node);
             node = next;
         }
@@ -127,6 +128,8 @@ void free_environment(struct environment *env) {
         free(env->table);
     }
 
-    free(env);
+    if (env) {
+        free(env);
+    }
 }
 
