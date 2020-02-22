@@ -267,9 +267,11 @@ struct object *eval_expression(struct expression *expr, struct environment *env,
             return result;
         case EXPR_IDENT: 
             result = eval_identifier(&expr->ident, env);    
-            //gc_add(gc, result);
+            gc_add(gc, result);
             return result;
         case EXPR_FUNCTION: 
+            // TODO: We need to copy the current environment here, not point to it
+            // As it may change underneath it
             result = make_function_object(&expr->function.parameters, expr->function.body, env);
             gc_add(gc, result);
             return result;

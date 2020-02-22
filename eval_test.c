@@ -373,7 +373,7 @@ int main()
     test_function_object();
     test_function_calls();
     test_closing_environments();
-    test_closures();
-    //test_recursive_function();
+    // test_closures();
+    test_recursive_function();
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }
