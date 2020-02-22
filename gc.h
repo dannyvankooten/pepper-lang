@@ -37,11 +37,13 @@ void gc_mark_obj(struct gc *gc, struct object *obj) {
 }
 
 void gc_sweep(struct gc *gc) {
-
     unsigned int marked[100];
 
     int j = 0;
     for (int i=0; i < 100; i++) {
+        if (gc->objects[i] == NULL) {
+            continue;
+        }
 
         // don't free marked objects
         if (gc->objects[i]->gc_mark) {
@@ -49,16 +51,16 @@ void gc_sweep(struct gc *gc) {
             marked[j++] = i;
             continue;
         } else {
-            free_object(gc->objects[i]);
+            //free_object(gc->objects[i]);
         }
     }
 
     gc->size = j;
-    for (int i=0, j=0; i < 100; i++, j++) {
-        if (j < gc->size) {
-            gc->objects[j] = gc->objects[marked[j]];  
+    for (int i=0; i < 100; i++) {
+        if (i < gc->size) {
+            gc->objects[i] = gc->objects[marked[i]];  
         } else {
-            gc->objects[j] = NULL;
+            gc->objects[i] = NULL;
         }
     }
 

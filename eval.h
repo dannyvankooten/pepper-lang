@@ -10,10 +10,8 @@
 #include "parser.h"
 #include "env.h"
     
-struct gc gc = {.size = 0};
-struct object *eval_expression(struct expression *expr, struct environment *env);
-struct object *eval_block_statement(struct block_statement *block, struct environment *env);
-
+struct object *eval_expression(struct expression *expr, struct environment *env, struct gc *gc);
+struct object *eval_block_statement(struct block_statement *block, struct environment *env, struct gc *gc);
 
 struct object *eval_bang_operator_expression(struct object *obj)
 {
@@ -151,17 +149,17 @@ unsigned char is_object_error(struct object *obj) {
     return obj && obj->type == OBJ_ERROR;
 }
 
-struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
+struct object *eval_if_expression(struct if_expression *expr, struct environment *env, struct gc *gc)
 {
-    struct object *obj = eval_expression(expr->condition, env);
+    struct object *obj = eval_expression(expr->condition, env, gc);
     if (is_object_error(obj)) {
         return obj;
     }
 
     if (is_object_truthy(obj)) {
-        return eval_block_statement(expr->consequence, env);
+        return eval_block_statement(expr->consequence, env, gc);
     } else if (expr->alternative) {
-        return eval_block_statement(expr->alternative, env);
+        return eval_block_statement(expr->alternative, env, gc);
     }
 
     return &obj_null;
@@ -176,7 +174,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
     return obj;
 };
 
-struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
+struct object_list *eval_expression_list(struct expression_list *list, struct environment *env, struct gc *gc) {
     struct object_list *result = malloc(sizeof (struct object_list));
     if (!result) {
         errx(EXIT_FAILURE, "out of memory");
@@ -190,7 +188,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
    
     struct object *obj;
     for (int i = 0; i < list->size; i++) {
-        obj = eval_expression(list->values[i], env);
+        obj = eval_expression(list->values[i], env, gc);
         result->values[result->size++] = obj;
 
         if (is_object_error(obj)) {
@@ -204,7 +202,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
     return result;
 };
 
-struct object *apply_function(struct object *obj, struct object_list *args) {
+struct object *apply_function(struct object *obj, struct object_list *args, struct gc *gc) {
     if (obj->type != OBJ_FUNCTION) {
         return make_error_object("not a function: %s", object_type_to_str(obj->type));
     }
@@ -214,16 +212,19 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
         environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
     }
 
-    struct object *result = eval_block_statement(obj->function.body, env);
-    result->return_value = 0;
-
+    struct object *result = eval_block_statement(obj->function.body, env, gc);
     free(args->values);
     free(args);
     free_environment(env);
+
+    if (!result) {
+        return NULL;
+    }
+    result->return_value = 0;   
     return result;
 };
 
-struct object *eval_expression(struct expression *expr, struct environment *env)
+struct object *eval_expression(struct expression *expr, struct environment *env, struct gc *gc)
 {
     struct object *left = NULL;
     struct object *right = NULL;
@@ -234,51 +235,58 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
     {
         case EXPR_INT:
             result = make_integer_object(expr->integer.value);
-            gc_add(&gc, result);
+            gc_add(gc, result);
             return result;
         case EXPR_BOOL:
             return make_boolean_object(expr->bool.value);
         case EXPR_PREFIX:
-            right = eval_expression(expr->prefix.right, env);
+            right = eval_expression(expr->prefix.right, env, gc);
             if (is_object_error(right)) {
                 return right;
             }
             result = eval_prefix_expression(expr->prefix.operator, right);
-            gc_add(&gc, result);
+            gc_add(gc, result);
             return result;
         case EXPR_INFIX:
-            left = eval_expression(expr->infix.left, env);
+            left = eval_expression(expr->infix.left, env, gc);
             if (is_object_error(left)) {
                 return left;
             }
 
-            right = eval_expression(expr->infix.right, env);
+            right = eval_expression(expr->infix.right, env, gc);
             if (is_object_error(right)) {
                 return right;
             }
 
             result = eval_infix_expression(expr->infix.operator, left, right);
-            gc_add(&gc, result);
+            gc_add(gc, result);
             return result;
         case EXPR_IF:
-            return eval_if_expression(&expr->ifelse, env);
+            result = eval_if_expression(&expr->ifelse, env, gc);
+            gc_add(gc, result);
+            return result;
         case EXPR_IDENT: 
-            return eval_identifier(&expr->ident, env);    
+            result = eval_identifier(&expr->ident, env);    
+            //gc_add(gc, result);
+            return result;
         case EXPR_FUNCTION: 
-            return make_function_object(&expr->function.parameters, expr->function.body, env);
+            result = make_function_object(&expr->function.parameters, expr->function.body, env);
+            gc_add(gc, result);
+            return result;
         case EXPR_CALL: 
-            left = eval_expression(expr->call.function, env);
+            left = eval_expression(expr->call.function, env, gc);
+            gc_add(gc, left);
             if (is_object_error(result)) {
                 return result;
             }
 
-            args = eval_expression_list(expr->call.arguments, env);
+            args = eval_expression_list(expr->call.arguments, env, gc);
             if (args->size >= 1 && is_object_error(args->values[0])) {
                 return args->values[0];
             }
 
-            result = apply_function(left, args);
-            gc_add(&gc, result);
+            result = apply_function(left, args, gc);
+            gc_add(gc, result);
             return result;
     }
     
@@ -309,26 +317,26 @@ struct object *make_return_object(struct object *obj)
     return obj;
 }
 
-struct object *eval_statement(struct statement *stmt, struct environment *env)
+struct object *eval_statement(struct statement *stmt, struct environment *env, struct gc *gc)
 {
     struct object *result;
 
-    if (gc.size >= 100) {
-        gc_mark_env(&gc, env);
-        gc_sweep(&gc);
+    if (gc->size >= 100) {
+        gc_mark_env(gc, env);
+        gc_sweep(gc);
     }
 
     switch (stmt->type)
     {
     case STMT_EXPR:
-        result = eval_expression(stmt->value, env);
+        result = eval_expression(stmt->value, env, gc);
         return result;
     case STMT_LET: 
-        result = eval_expression(stmt->value, env);
+        result = eval_expression(stmt->value, env, gc);
         environment_set(env, stmt->name.value, result);
         return result;
     case STMT_RETURN:
-        result = eval_expression(stmt->value, env);
+        result = eval_expression(stmt->value, env, gc);
         make_return_object(result);
         return result;
     }
@@ -336,13 +344,16 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
     return &obj_null;
 };
 
-struct object *eval_block_statement(struct block_statement *block, struct environment *env)
+struct object *eval_block_statement(struct block_statement *block, struct environment *env, struct gc *gc)
 {
-    struct object *obj;
+    if (block->size == 0) {
+        return NULL;
+    }
 
+    struct object *obj;
     for (int i = 0; i < block->size; i++)
     {
-        obj = eval_statement(&block->statements[i], env);
+        obj = eval_statement(&block->statements[i], env, gc);
         if (obj->return_value || obj->type == OBJ_ERROR)
         {
             return obj;
@@ -354,12 +365,17 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
 
 struct object *eval_program(struct program *prog, struct environment *env)
 {
+    if (prog->size == 0) {
+        return NULL;
+    }
+
+    struct gc gc = {.size = 0};
     struct object *obj;
 
     for (int i = 0; i < prog->size; i++)
     {
-        obj = eval_statement(&prog->statements[i], env);
-        if (obj->return_value || obj->type == OBJ_ERROR)
+        obj = eval_statement(&prog->statements[i], env, &gc);
+        if (obj && (obj->return_value || obj->type == OBJ_ERROR))
         {
             return obj;
         }

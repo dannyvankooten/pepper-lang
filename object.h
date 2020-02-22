@@ -94,12 +94,12 @@ struct object *make_boolean_object(char value)
 
 struct object *make_integer_object(long value)
 {
-    struct object *obj = NULL;
-    obj = malloc(sizeof (struct object));
+    struct object *obj = malloc(sizeof (struct object));
     if (!obj) {
         errx(EXIT_FAILURE, "out of memory");
     }
     
+    obj->gc_mark = 0;
     obj->type = OBJ_INT;
     obj->integer = value;
     obj->return_value = 0;
@@ -118,6 +118,7 @@ struct object *make_error_object(char *format, ...) {
         errx(EXIT_FAILURE, "out of memory");
     }
 
+    obj->gc_mark = 0;
     obj->type = OBJ_ERROR;
     obj->return_value = 0;
     va_start(args, format);  
@@ -132,6 +133,7 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
         errx(EXIT_FAILURE, "out of memory");
     }
 
+    obj->gc_mark = 0;
     obj->type = OBJ_FUNCTION;
     obj->return_value = 0;
     obj->function.parameters = parameters;
