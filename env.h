@@ -122,9 +122,6 @@ void free_environment(struct environment *env) {
 
         while (node) {
             next = node->next;
-            if (node->value) {
-                free_object(node->value);
-            }
             free(node->key);
             free(node);
             node = next;

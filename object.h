@@ -39,6 +39,7 @@ struct object
         char *error;
         struct function function;
     };
+    unsigned char gc_mark;
     unsigned char return_value;
 };
 
@@ -108,8 +109,7 @@ struct object *make_integer_object(long value)
 struct object *make_error_object(char *format, ...) {
     va_list args;
 
-    struct object *obj = NULL;
-    obj = malloc(sizeof (struct object));
+    struct object *obj = malloc(sizeof (struct object));
     if (!obj) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -127,8 +127,7 @@ struct object *make_error_object(char *format, ...) {
 };
 
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
-    struct object *obj = NULL;
-    obj = malloc(sizeof (struct object));
+    struct object *obj = malloc(sizeof (struct object));
     if (!obj) {
         errx(EXIT_FAILURE, "out of memory");
     }

@@ -6,9 +6,11 @@
 #include <stdarg.h>
 #include <err.h>
 
+#include "gc.h"
 #include "parser.h"
 #include "env.h"
-
+    
+struct gc gc = {.size = 0};
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);
 
@@ -231,7 +233,9 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
     switch (expr->type)
     {
         case EXPR_INT:
-            return make_integer_object(expr->integer.value);
+            result = make_integer_object(expr->integer.value);
+            gc_add(&gc, result);
+            return result;
         case EXPR_BOOL:
             return make_boolean_object(expr->bool.value);
         case EXPR_PREFIX:
@@ -240,7 +244,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
                 return right;
             }
             result = eval_prefix_expression(expr->prefix.operator, right);
-            free_object(right);
+            gc_add(&gc, result);
             return result;
         case EXPR_INFIX:
             left = eval_expression(expr->infix.left, env);
@@ -254,8 +258,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
             }
 
             result = eval_infix_expression(expr->infix.operator, left, right);
-            free_object(left);
-            free_object(right);
+            gc_add(&gc, result);
             return result;
         case EXPR_IF:
             return eval_if_expression(&expr->ifelse, env);
@@ -275,7 +278,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
             }
 
             result = apply_function(left, args);
-            free_object(left);
+            gc_add(&gc, result);
             return result;
     }
     
@@ -310,10 +313,16 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
 {
     struct object *result;
 
+    if (gc.size >= 100) {
+        gc_mark_env(&gc, env);
+        gc_sweep(&gc);
+    }
+
     switch (stmt->type)
     {
     case STMT_EXPR:
-        return eval_expression(stmt->value, env);
+        result = eval_expression(stmt->value, env);
+        return result;
     case STMT_LET: 
         result = eval_expression(stmt->value, env);
         environment_set(env, stmt->name.value, result);
@@ -333,10 +342,6 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
 
     for (int i = 0; i < block->size; i++)
     {
-        if (i > 0) {
-            free_object(obj);
-        }
-
         obj = eval_statement(&block->statements[i], env);
         if (obj->return_value || obj->type == OBJ_ERROR)
         {
@@ -353,10 +358,6 @@ struct object *eval_program(struct program *prog, struct environment *env)
 
     for (int i = 0; i < prog->size; i++)
     {
-        if (i > 0) {
-            free_object(obj);
-        }
-
         obj = eval_statement(&prog->statements[i], env);
         if (obj->return_value || obj->type == OBJ_ERROR)
         {
