@@ -105,9 +105,7 @@ void test_program_string() {
             .literal = "5",
             .type = TOKEN_INT,
         },
-        .integer = {
-            .value = 5,
-        },
+        .integer = 5,
     };
     struct expression e2 = {
         .type = EXPR_IDENT,
@@ -196,7 +194,7 @@ void test_identifier_expression_parsing() {
 
 void test_integer_expression(struct expression *expr, int expected) {
     assertf(expr->type == EXPR_INT, "wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
-    assertf(expr->integer.value == expected, "wrong integer value: expected %d, got %d\n", expected, expr->integer.value);
+    assertf(expr->integer == expected, "wrong integer value: expected %d, got %d\n", expected, expr->integer);
 
     char expected_str[8];
     sprintf(expected_str, "%d", expected);
@@ -222,7 +220,7 @@ void test_integer_expression_parsing() {
 
 void test_boolean_expression(struct expression * expr, char expected) {
     assertf(expr->type == EXPR_BOOL, "wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
-    assertf(expr->bool.value == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->bool.value);
+    assertf(expr->bool == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->bool);
     
     char *expected_str = expected ? "true" : "false";
     assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);

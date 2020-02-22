@@ -39,7 +39,6 @@ struct object
         char *error;
         struct function function;
     };
-    unsigned char gc_mark;
     unsigned char return_value;
 };
 
@@ -86,7 +85,6 @@ const char *object_type_to_str(enum object_type t)
     return object_names[t] ?: "UNKOWN";
 }
 
-
 struct object *make_boolean_object(char value)
 {
     return value ? &obj_true : &obj_false;
@@ -99,7 +97,6 @@ struct object *make_integer_object(long value)
         errx(EXIT_FAILURE, "out of memory");
     }
     
-    obj->gc_mark = 0;
     obj->type = OBJ_INT;
     obj->integer = value;
     obj->return_value = 0;
@@ -113,16 +110,17 @@ struct object *make_error_object(char *format, ...) {
     if (!obj) {
         errx(EXIT_FAILURE, "out of memory");
     }
-    obj->error = malloc(strlen(format) * 2);
+
+    size_t l = strlen(format);
+    obj->error = malloc(l + 16);
     if (!obj->error) {
         errx(EXIT_FAILURE, "out of memory");
     }
 
-    obj->gc_mark = 0;
     obj->type = OBJ_ERROR;
     obj->return_value = 0;
     va_start(args, format);  
-    vsnprintf(obj->error, strlen(format) * 2, format, args);
+    vsnprintf(obj->error, l + 16, format, args);
     va_end(args);
     return obj;
 };
@@ -133,7 +131,6 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
         errx(EXIT_FAILURE, "out of memory");
     }
 
-    obj->gc_mark = 0;
     obj->type = OBJ_FUNCTION;
     obj->return_value = 0;
     obj->function.parameters = parameters;
@@ -142,12 +139,28 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     return obj;
 }
 
-void free_object(struct object *obj)
-{   
-    if (!obj) {
-        return;
+struct object *copy_object(struct object *obj) {
+    switch (obj->type) {
+        case OBJ_BOOL:
+        case OBJ_NULL:
+            return obj;
+
+        case OBJ_INT:
+            return make_integer_object(obj->integer);
+
+        case OBJ_FUNCTION:
+            return make_function_object(obj->function.parameters, obj->function.body, obj->function.env);
+
+        case OBJ_ERROR: 
+            return obj;
     }
 
+    // TODO: This should not be reached, but also potential problem later on
+    return obj;
+}
+
+void free_object(struct object *obj)
+{   
     switch (obj->type) {
         case OBJ_NULL: 
         case OBJ_BOOL: 
@@ -160,13 +173,16 @@ void free_object(struct object *obj)
             break;
         
         case OBJ_FUNCTION:
+            free(obj);
+            break;
+
         case OBJ_INT:
             free(obj);
             break;
 
     }
 
-    obj = NULL;
+    
 }
 
 #endif

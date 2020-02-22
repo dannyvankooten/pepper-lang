@@ -58,8 +58,8 @@ struct environment *make_closed_environment(struct environment *parent, unsigned
     return env;
 };
 
-struct object *environment_get(struct environment *env, char *key) {
-    unsigned int pos = djb2(key) % env->cap;
+struct object *environment_get_with_hash(struct environment *env, char *key, unsigned long hash) {
+    unsigned int pos = hash % env->cap;
     struct node *node = env->table[pos];
 
     while (node) {
@@ -72,10 +72,15 @@ struct object *environment_get(struct environment *env, char *key) {
 
     // try parent environment (bubble up scope)
     if (env->outer) {
-        return environment_get(env->outer, key);
+        return environment_get_with_hash(env->outer, key, hash);
     }
 
     return NULL;
+};
+
+struct object *environment_get(struct environment *env, char *key) {
+   unsigned long hash = djb2(key);
+   return environment_get_with_hash(env, key, hash);
 };
 
 void environment_set(struct environment *env, char *key, struct object *value) {
@@ -86,6 +91,7 @@ void environment_set(struct environment *env, char *key, struct object *value) {
     // find existing node with that key
     while (node) {
         if (strncmp(node->key, key, MAX_KEY_LENGTH) == 0) {
+            free_object(node->value);
             node->value = value;
             return;
         }      
@@ -123,6 +129,7 @@ void free_environment(struct environment *env) {
         while (node) {
             next = node->next;
             free(node->key);
+            free_object(node->value);
             free(node);
             node = next;
         }

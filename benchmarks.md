@@ -18,7 +18,8 @@ Command terminated by signal 9
 **2020-02-22 05:20** (fib 35)
 10.04user 1.50system 0:11.57elapsed 99%CPU (0avgtext+0avgdata 4913484maxresident)k
 0inputs+0outputs (0major+1228077minor)pagefaults 0swaps
-**2020-02-22 07:10** (fib 30)
-Command terminated by signal 11
-0.00user 0.00system 0:00.22elapsed 0%CPU (0avgtext+0avgdata 1348maxresident)k
-0inputs+0outputs (0major+72minor)pagefaults 0swaps
+
+**2020-02-22 07:10** (fib 40)
+real    9m57.381s
+user    9m49.143s
+sys     0m7.160s

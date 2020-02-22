@@ -1,4 +1,4 @@
-CFLAGS = -std=c99 -Wall 
+CFLAGS = -std=c11 -Wall -Werror
 TESTFLAGS = $(CFLAGS) -g 
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')
@@ -12,7 +12,7 @@ monkey: $(BINDIR)
 	$(CC) $(CFLAGS) monkey.c -o $(BINDIR)/monkey $(MAKEFLAGS)
 
 monkey_release: $(BINDIR) 
-	$(CC) $(CFLAGS) -O3 monkey.c -o $(BINDIR)/monkey $(MAKEFLAGS)
+	$(CC) $(CFLAGS) -O3 --optimize monkey.c -o $(BINDIR)/monkey $(MAKEFLAGS)
 
 tests: $(BINDIR) lexer_test parser_test env_test eval_test 
 
