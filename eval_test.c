@@ -20,12 +20,14 @@ struct object *test_eval(char *input)
 
 void test_integer_object(struct object *obj, int expected)
 {
+    assertf(!!obj, "expected integer object, got null pointer");
     assertf(obj->type == OBJ_INT, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_INT), object_type_to_str(obj->type), obj->error);
     assertf(obj->integer == expected, "wrong integer value: expected %d, got %d", expected, obj->integer);
 }
 
 void test_boolean_object(struct object *obj, char expected)
 {
+    assertf(!!obj, "expected boolean object, got null pointer");
     assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type), obj->error);
     assertf(obj->boolean == expected, "wrong boolean value: expected %d, got %d", expected, obj->boolean);
 }
@@ -38,13 +40,14 @@ union object_value {
 };
 
 void test_error_object(struct object *obj, char *expected) {
+    assertf(!!obj, "expected error object, got null pointer");
     assertf(obj->type == OBJ_ERROR, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_ERROR), object_type_to_str(obj->type));
     assertf(strcmp(obj->error, expected) == 0, "invalid error message: expected %s, got %s", expected, obj->error);
 }
 
 void test_object(struct object *obj, enum object_type type, union object_value value)
 {
-    switch (obj->type)
+    switch (type)
     {
     case OBJ_BOOL:
         return test_boolean_object(obj, value.bool);
@@ -353,11 +356,11 @@ void test_recursive_function() {
                 return fibonacci(x-1) + fibonacci(x-2); \
             }                   \
         };                      \
-        fibonacci(10)        \
+        fibonacci(20)        \
     ";
     
     struct object *obj = test_eval(input);
-    test_integer_object(obj, 55);
+    test_integer_object(obj, 6765);
     //free_object(obj);
 }
 
@@ -373,7 +376,7 @@ int main()
     test_function_object();
     test_function_calls();
     test_closing_environments();
-    // test_closures();
+    //test_closures();
     test_recursive_function();
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }
