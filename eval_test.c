@@ -11,22 +11,20 @@ struct object *test_eval(char *input)
     struct environment *env = make_environment(16);
     struct object *obj = eval_program(program, env);
 
-    // TODO: Because we use statements inside the function object, we can't free the program here
-    // free_program(program);
-
+    free_program(program);
     free_environment(env);
     return obj;
 }
 
 void test_integer_object(struct object *obj, int expected)
 {
-    assertf(obj->type == OBJ_INT, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_INT), object_type_to_str(obj->type));
+    assertf(obj->type == OBJ_INT, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_INT), object_type_to_str(obj->type), obj->error);
     assertf(obj->integer == expected, "wrong integer value: expected %d, got %d", expected, obj->integer);
 }
 
 void test_boolean_object(struct object *obj, char expected)
 {
-    assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type));
+    assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type), obj->error);
     assertf(obj->boolean == expected, "wrong boolean value: expected %d, got %d", expected, obj->boolean);
 }
 
@@ -262,6 +260,7 @@ void test_let_statements() {
         {"let a = 5 * 5; a;", 25},
         {"let a = 5; let b = a; b;", 5},
         {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+        {"let a = 5; let b = 5; a + b; b + a;", 10},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
@@ -277,16 +276,16 @@ void test_function_object() {
     struct object *obj = test_eval(input);
 
     assertf(obj->type == OBJ_FUNCTION, "wrong object type: expected OBJ_FUNCTION, got %s", object_type_to_str(obj->type));
-    assertf(obj->function->parameters->size == 1, "wrong parameter count: expected 1, got %d", obj->function->parameters->size);
+    assertf(obj->function.parameters->size == 1, "wrong parameter count: expected 1, got %d", obj->function.parameters->size);
 
     char tmp[64];
     tmp[0] = '\0';
-    identifier_list_to_str(tmp, obj->function->parameters);
+    identifier_list_to_str(tmp, obj->function.parameters);
     assertf(strcmp(tmp, "x") == 0, "parameter is not \"x\", got \"%s\"", tmp);
 
     tmp[0] = '\0';
     char *expected_body = "(x + 2)";
-    block_statement_to_str(tmp, obj->function->body);
+    block_statement_to_str(tmp, obj->function.body);
     assertf(strcmp(tmp, expected_body) == 0, "function body is not \"%s\", got \"%s\"", expected_body, tmp);
 }
 

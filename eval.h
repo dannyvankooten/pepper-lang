@@ -1,3 +1,5 @@
+#ifndef EVAL_H
+#define EVAL_H
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -7,136 +9,9 @@
 #include "parser.h"
 #include "env.h"
 
-enum object_type
-{
-    OBJ_NULL,
-    OBJ_BOOL,
-    OBJ_INT,
-    OBJ_ERROR,
-    OBJ_FUNCTION,
-};
-
-static const char *object_names[] = {
-    "NULL",
-    "BOOLEAN",
-    "INTEGER",
-    "ERROR",
-    "FUNCTION",
-};
-
-struct function {
-    struct identifier_list *parameters;
-    struct block_statement *body;
-    struct environment *env;
-};
-
-struct object
-{
-    enum object_type type;
-    union {
-        unsigned char boolean;
-        long integer;
-        char *error;
-        struct function *function;
-    };
-    unsigned char return_value;
-};
-
-struct object_list {
-    struct object **values;
-    unsigned int size;
-    unsigned int cap;
-};
-
-struct object obj_null = {
-    .type = OBJ_NULL,
-    .return_value = 0
-};
-struct object obj_null_return = {
-    .type = OBJ_NULL,
-    .return_value = 1
-};
-struct object obj_true = {
-    .type = OBJ_BOOL,
-    .boolean = 1,
-    .return_value = 0
-};
-struct object obj_false = {
-    .type = OBJ_BOOL,
-    .boolean = 0,
-    .return_value = 0
-};
-struct object obj_true_return = {
-    .type = OBJ_BOOL,
-    .boolean = 1,
-    .return_value = 1
-};
-struct object obj_false_return = {
-    .type = OBJ_BOOL,
-    .boolean = 0,
-    .return_value = 1
-};
-
-const char *object_type_to_str(enum object_type t);
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);
-void free_object(struct object *obj);
 
-struct object *make_boolean_object(char value)
-{
-    return value ? &obj_true : &obj_false;
-}
-
-struct object *make_integer_object(long value)
-{
-    struct object *result = (struct object *) malloc(sizeof(struct object));
-    if (!result) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-    
-    result->type = OBJ_INT;
-    result->integer = value;
-    result->return_value = 0;
-    return result;
-}
-
-struct object *make_error_object(struct object *obj, char *format, ...) {
-    va_list args;
-
-    obj = malloc(sizeof (struct object));
-    if (!obj) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-    obj->error = malloc(strlen(format) * 2);
-    if (!obj->error) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-
-    obj->type = OBJ_ERROR;
-    obj->return_value = 0;
-    va_start(args, format);  
-    vsnprintf(obj->error, strlen(format) * 2, format, args);
-    va_end(args);
-    return obj;
-};
-
-struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
-    struct object *obj = malloc(sizeof(struct object));
-    if (!obj) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-
-    obj->type = OBJ_FUNCTION;
-    obj->return_value = 0;
-    obj->function = malloc(sizeof (struct function));
-    if (!obj->function) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-    obj->function->parameters = parameters;
-    obj->function->body = body;
-    obj->function->env = env;
-    return obj;
-}
 
 struct object *eval_bang_operator_expression(struct object *obj)
 {
@@ -158,14 +33,10 @@ struct object *eval_minus_prefix_operator_expression(struct object *right)
 {
     if (right->type != OBJ_INT)
     {
-        return make_error_object(right, "unknown operator: -%s", object_type_to_str(right->type));
+        return make_error_object("unknown operator: -%s", object_type_to_str(right->type));
     }
 
-    struct object *result = malloc(sizeof (struct object));
-    result->type = OBJ_INT;
-    result->integer = -right->integer;
-    result->return_value = 0;
-    return result;
+    return make_integer_object(-right->integer);
 }
 
 struct object *eval_prefix_expression(operator operator, struct object *right)
@@ -181,7 +52,7 @@ struct object *eval_prefix_expression(operator operator, struct object *right)
         break;
 
     default: 
-        return make_error_object(right, "unknown operator: %s%s", operator, object_type_to_str(right->type));    
+        return make_error_object("unknown operator: %s%s", operator, object_type_to_str(right->type));    
     }
 
     return &obj_null;
@@ -236,7 +107,7 @@ struct object *eval_integer_infix_expression(operator operator, struct object *l
 struct object *eval_infix_expression(operator operator, struct object *left, struct object *right)
 {
     if (left->type != right->type) {
-        return make_error_object(left, "type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+        return make_error_object("type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
     }
 
     if (left->type == OBJ_INT && right->type == OBJ_INT)
@@ -257,11 +128,15 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
         }
     }
 
-    return make_error_object(left, "unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+    return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
 }
 
 unsigned char is_object_truthy(struct object *obj)
 {
+    if (!obj) {
+        return 0;
+    }
+
     if (obj == &obj_null || obj == &obj_false)
     {
         return 0;
@@ -271,7 +146,7 @@ unsigned char is_object_truthy(struct object *obj)
 }
 
 unsigned char is_object_error(struct object *obj) {
-    return obj->type == OBJ_ERROR;
+    return obj && obj->type == OBJ_ERROR;
 }
 
 struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
@@ -281,14 +156,9 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
         return obj;
     }
 
-    if (is_object_truthy(obj))
-    {
-        free_object(obj);
+    if (is_object_truthy(obj)) {
         return eval_block_statement(expr->consequence, env);
-    }
-    else if (expr->alternative)
-    {
-        free_object(obj);
+    } else if (expr->alternative) {
         return eval_block_statement(expr->alternative, env);
     }
 
@@ -296,12 +166,12 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
 }
 
 struct object *eval_identifier(struct identifier *ident, struct environment *env) {
-    void *value = environment_get(env, ident->value);
-    if (value == NULL) {
-        return make_error_object(NULL, "identifier not found: %s", ident->value);
+    struct object *obj = environment_get(env, ident->value);
+    if (obj == NULL) {
+        return make_error_object("identifier not found: %s", ident->value);
     }
 
-    return (struct object *) value;;
+    return obj;
 };
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
@@ -322,8 +192,11 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
         result->values[result->size++] = obj;
 
         if (is_object_error(obj)) {
+            // TODO: Move obj to start of list
             return result;
         }
+
+        
     }
 
     return result;
@@ -331,20 +204,20 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
 
 struct object *apply_function(struct object *obj, struct object_list *args) {
     if (obj->type != OBJ_FUNCTION) {
-        return make_error_object(NULL, "not a function: %s", object_type_to_str(obj->type));
+        return make_error_object("not a function: %s", object_type_to_str(obj->type));
     }
 
-    struct environment *env = make_closed_environment(obj->function->env, 8);
-    for (int i=0; i < obj->function->parameters->size; i++) {
-        environment_set(env, obj->function->parameters->values[i].value, args->values[i]);
+    struct environment *env = make_closed_environment(obj->function.env, 8);
+    for (int i=0; i < obj->function.parameters->size; i++) {
+        environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
     }
 
-    // TODO: Not sure if necessary to reset return value here
-    struct object *result = eval_block_statement(obj->function->body, env);
+    struct object *result = eval_block_statement(obj->function.body, env);
     result->return_value = 0;
 
-    //free(obj);
-    //free_environment(env);
+    free(args->values);
+    free(args);
+    free_environment(env);
     return result;
 };
 
@@ -367,6 +240,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
                 return right;
             }
             result = eval_prefix_expression(expr->prefix.operator, right);
+            free_object(right);
             return result;
         case EXPR_INFIX:
             left = eval_expression(expr->infix.left, env);
@@ -380,6 +254,8 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
             }
 
             result = eval_infix_expression(expr->infix.operator, left, right);
+            free_object(left);
+            free_object(right);
             return result;
         case EXPR_IF:
             return eval_if_expression(&expr->ifelse, env);
@@ -388,17 +264,19 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
         case EXPR_FUNCTION: 
             return make_function_object(&expr->function.parameters, expr->function.body, env);
         case EXPR_CALL: 
-            result = eval_expression(expr->call.function, env);
+            left = eval_expression(expr->call.function, env);
             if (is_object_error(result)) {
                 return result;
             }
 
             args = eval_expression_list(expr->call.arguments, env);
-            if (args->size == 1 && is_object_error(args->values[0])) {
+            if (args->size >= 1 && is_object_error(args->values[0])) {
                 return args->values[0];
             }
 
-            return apply_function(result, args);
+            result = apply_function(left, args);
+            free_object(left);
+            return result;
     }
     
     return &obj_null;
@@ -455,7 +333,9 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
 
     for (int i = 0; i < block->size; i++)
     {
-        //free_object(obj);
+        if (i > 0) {
+            free_object(obj);
+        }
 
         obj = eval_statement(&block->statements[i], env);
         if (obj->return_value || obj->type == OBJ_ERROR)
@@ -473,7 +353,9 @@ struct object *eval_program(struct program *prog, struct environment *env)
 
     for (int i = 0; i < prog->size; i++)
     {
-        //free_object(obj);
+        if (i > 0) {
+            free_object(obj);
+        }
 
         obj = eval_statement(&prog->statements[i], env);
         if (obj->return_value || obj->type == OBJ_ERROR)
@@ -506,32 +388,13 @@ void object_to_str(char *str, struct object *obj)
         break;   
     case OBJ_FUNCTION: 
         strcat(str, "fn(");
-        identifier_list_to_str(str, obj->function->parameters);
+        identifier_list_to_str(str, obj->function.parameters);
         strcat(str, ") {\n");
-        block_statement_to_str(str, obj->function->body);
+        block_statement_to_str(str, obj->function.body);
         strcat(str, "\n}");
         break;
     }
 }
 
-const char *object_type_to_str(enum object_type t)
-{
-    return object_names[t] ?: "UNKOWN";
-}
 
-void free_object(struct object *obj)
-{   
-    if (!obj) {
-        return;
-    }
-
-    if (obj->type == OBJ_ERROR && obj->error) {
-        free(obj->error);
-    }
-
-    if (obj->type == OBJ_INT || obj->type == OBJ_ERROR)
-    {
-        free(obj);
-    }
-
-}
+#endif

@@ -11,12 +11,10 @@ Command terminated by signal 9
 1.06user 0.35system 0:01.42elapsed 99%CPU (0avgtext+0avgdata 1263656maxresident)k
 0inputs+0outputs (0major+315603minor)pagefaults 0swaps
 
-**2020-02-21 16:17** (fib 40)
-Command terminated by signal 9
-22.78user 8.50system 1:20.25elapsed 38%CPU (0avgtext+0avgdata 27585848maxresident)k
-243632inputs+0outputs (2830major+6897570minor)pagefaults 0swaps
-
-**2020-02-21 16:51** (fib 30)
+**2020-02-21 16:51** (fib 35)
 1.10user 0.30system 0:01.41elapsed 99%CPU (0avgtext+0avgdata 1263612maxresident)k
 0inputs+0outputs (0major+315601minor)pagefaults 0swaps
 
+**2020-02-22 05:20** (fib 35)
+10.04user 1.50system 0:11.57elapsed 99%CPU (0avgtext+0avgdata 4913484maxresident)k
+0inputs+0outputs (0major+1228077minor)pagefaults 0swaps

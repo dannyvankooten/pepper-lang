@@ -1,10 +1,16 @@
+#ifndef ENV_H 
+#define ENV_H 
+
+#define MAX_KEY_LENGTH 32
+
 #include <string.h> 
 #include <stdlib.h> 
 #include <err.h>
+#include "object.h"
 
 struct node {
     char *key;
-    void *value;
+    struct object *value;
     struct node *next;
 };
 
@@ -30,10 +36,10 @@ static unsigned long djb2(char *str)
 }
 
 struct environment *make_environment(unsigned int cap) {
-    struct environment *env = (struct environment*) malloc(sizeof(struct environment));
+    struct environment *env = malloc(sizeof(struct environment));
     env->cap = cap;
     env->size = 0;
-    env->table = (struct node **) malloc(sizeof(struct node) * cap);
+    env->table = malloc(sizeof(struct node) * cap);
     if (!env->table) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -52,12 +58,12 @@ struct environment *make_closed_environment(struct environment *parent, unsigned
     return env;
 };
 
-void *environment_get(struct environment *env, char *key) {
+struct object *environment_get(struct environment *env, char *key) {
     unsigned int pos = djb2(key) % env->cap;
     struct node *node = env->table[pos];
 
     while (node) {
-        if (strcmp(node->key, key) == 0) {
+        if (strncmp(node->key, key, MAX_KEY_LENGTH) == 0) {
             return node->value;
         }
 
@@ -72,14 +78,14 @@ void *environment_get(struct environment *env, char *key) {
     return NULL;
 };
 
-void environment_set(struct environment *env, char *key, void *value) {
+void environment_set(struct environment *env, char *key, struct object *value) {
     unsigned int pos = djb2(key) % env->cap;
     struct node *list = env->table[pos];
     struct node *node = list;
 
     // find existing node with that key
     while (node) {
-        if (strcmp(node->key, key) == 0) {
+        if (strncmp(node->key, key, MAX_KEY_LENGTH) == 0) {
             node->value = value;
             return;
         }      
@@ -88,9 +94,15 @@ void environment_set(struct environment *env, char *key, void *value) {
     }
 
     // add new node to start of list
-    node = (struct node *) malloc(sizeof (struct node));
+    node = malloc(sizeof (struct node));
+    if (!node) {
+        errx(EXIT_FAILURE, "out of memory");
+    }
     node->next = list;
-    node->key = (char *) malloc(strlen(key) + 1);
+    node->key = malloc(strlen(key) + 1);
+    if (!node->key) {
+        errx(EXIT_FAILURE, "out of memory");
+    }
     strcpy(node->key, key);
     node->value = value;
     env->table[pos] = node;
@@ -98,7 +110,6 @@ void environment_set(struct environment *env, char *key, void *value) {
 };
 
 void free_environment(struct environment *env) {
-    
     if (!env) {
         return;
     }
@@ -106,30 +117,22 @@ void free_environment(struct environment *env) {
     struct node *node;
     struct node *next;
 
-    for (int i=0; i < env->size; i++) {
+    for (int i=0; i < env->cap; i++) {
         node = env->table[i];
-        if (!node) {
-            continue;
-        }
 
         while (node) {
             next = node->next;
+            if (node->value) {
+                free_object(node->value);
+            }
             free(node->key);
             free(node);
             node = next;
         }
     }
 
-    if (env->outer) {
-        free_environment(env->outer);
-    }
-
-    if (env->table) {
-        free(env->table);
-    }
-
-    if (env) {
-        free(env);
-    }
+    free(env->table);
+    free(env);
 }
 
+#endif
