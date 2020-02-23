@@ -7,11 +7,19 @@
 #include <stdarg.h>
 #include <stdio.h> 
 
-struct pool {
+struct object_list_pool {
+    struct object_list *head;
+};
+
+struct object_list_pool object_list_pool = {
+    .head = NULL,
+};
+
+struct object_pool {
     struct object *head;
 };
 
-struct pool pool = {
+struct object_pool object_pool = {
     .head = NULL,
 };
 
@@ -56,6 +64,9 @@ struct object_list {
     struct object **values;
     unsigned int size;
     unsigned int cap;
+
+    // for linking in pool
+    struct object_list *next;
 };
 
 struct object obj_null = {
@@ -104,14 +115,14 @@ struct object *make_object() {
     struct object *obj;
 
     // try to get pre-allocated object from pool
-    if (!pool.head) {
+    if (!object_pool.head) {
         obj = malloc(sizeof (struct object));
         if (!obj) {
             errx(EXIT_FAILURE, "out of memory");
         }
     } else {
-        obj = pool.head;
-        pool.head = obj->next;
+        obj = object_pool.head;
+        object_pool.head = obj->next;
     }
 
     obj->next = NULL;
@@ -194,16 +205,16 @@ void free_object(struct object *obj)
         
         case OBJ_FUNCTION:
         case OBJ_INT:
-            obj->next = pool.head;
-            pool.head = obj;
-            // free(obj);
+            // return object to pool so future calls of make_object can use it
+            obj->next = object_pool.head;
+            object_pool.head = obj;
             break;
 
     }
 }
 
-void free_pool() {
-    struct object *obj = pool.head;
+void free_object_pool() {
+    struct object *obj = object_pool.head;
     while (obj) {
         free(obj);
         obj = obj->next;

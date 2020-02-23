@@ -179,21 +179,25 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 };
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
-    struct object_list *result = malloc(sizeof (struct object_list));
-    if (!result) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
+    struct object_list *result;
+    if (object_list_pool.head) {
+        result = object_list_pool.head;
+        object_list_pool.head = result->next;
 
-    if (list->size == 0) {
-        return result;
-    }
+        // TODO: Check capacity of values
+    } else {
+        result = malloc(sizeof (struct object_list));
+        if (!result) {
+            errx(EXIT_FAILURE, "out of memory");
+        }
 
-    result->values = malloc(sizeof (struct object) * list->size);
+        result->values = malloc(sizeof (struct object *) * list->size);
+        if (!result->values) {
+            errx(EXIT_FAILURE, "out of memory");
+        }
+    }
+    
     result->size = 0;
-    if (!result->values) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-   
     for (int i = 0; i < list->size; i++) {
         struct object *obj = eval_expression(list->values[i], env);
         result->values[result->size++] = obj;
@@ -226,10 +230,13 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     struct object *result = eval_block_statement(obj->function.body, env);
 
     // free args & function env
-    if (args->values) {
-        free(args->values);
-    }
-    free(args);
+    // if (args->values) {
+    //     free(args->values);
+    // }
+    // free(args);
+    args->next = object_list_pool.head;
+    object_list_pool.head = args;
+
     free_environment(env);
 
     if (!result) {

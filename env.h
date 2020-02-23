@@ -8,17 +8,22 @@
 #include <err.h>
 #include "object.h"
 
-// struct node {
-//     char *key;
-//     struct object *value;
-//     struct node *next;
-// };
+struct env_pool {
+    struct environment *head;
+};
+
+struct env_pool env_pool = {
+    .head = NULL,
+};
 
 struct environment {
     struct object **table;
     unsigned int size;
     unsigned int cap;
     struct environment *outer;
+
+    // for linking in env_pool
+    struct environment *next; 
 };
 
 static unsigned long djb2(char *str)
@@ -36,14 +41,31 @@ static unsigned long djb2(char *str)
 }
 
 struct environment *make_environment(unsigned int cap) {
-    struct environment *env = malloc(sizeof(struct environment));
-    env->cap = cap;
-    env->size = 0;
-    env->table = malloc(sizeof(struct object *) * cap);
-    if (!env->table) {
-        errx(EXIT_FAILURE, "out of memory");
+    struct environment *env;
+
+    // try to get pre-allocated object from pool
+    if (!env_pool.head) {
+        env = malloc(sizeof(struct environment));
+        if (!env) {
+            errx(EXIT_FAILURE, "out of memory");
+        }
+        env->table = malloc(sizeof(struct object *) * cap);
+        if (!env->table) {
+            errx(EXIT_FAILURE, "out of memory");
+        }
+
+        env->cap = cap;
+    } else {
+        env = env_pool.head;
+        env_pool.head = env->next;
+
+        // increase capacity of existing env if needed
+        if (env->cap < cap) {
+            env->table = realloc(env->table, sizeof(struct object *) * cap);
+        }
     }
     
+    env->size = 0;
     env->outer = NULL;
     for (int i = 0; i < env->cap; i++)
     {
@@ -121,9 +143,9 @@ void free_environment(struct environment *env) {
     struct object *node;
     struct object *next;
 
+    // free objects in env
     for (int i=0; i < env->cap; i++) {
         node = env->table[i];
-
         while (node) {
             next = node->next;
             free_object(node);
@@ -131,8 +153,9 @@ void free_environment(struct environment *env) {
         }
     }
 
-    free(env->table);
-    free(env);
+    // return env to pool so future calls of make_environment can use it
+    env->next = env_pool.head;
+    env_pool.head = env;
 }
 
 #endif
