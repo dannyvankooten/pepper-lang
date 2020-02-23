@@ -7,6 +7,22 @@
 #include <stdarg.h>
 #include <stdio.h> 
 
+struct object_list_pool {
+    struct object_list *head;
+};
+
+struct object_list_pool object_list_pool = {
+    .head = NULL,
+};
+
+struct object_pool {
+    struct object *head;
+};
+
+struct object_pool object_pool = {
+    .head = NULL,
+};
+
 enum object_type
 {
     OBJ_NULL,
@@ -33,6 +49,7 @@ struct function {
 struct object
 {
     enum object_type type;
+    char *name;
     union {
         unsigned char boolean;
         long integer;
@@ -40,12 +57,16 @@ struct object
         struct function function;
     };
     unsigned char return_value;
+    struct object *next;
 };
 
 struct object_list {
     struct object **values;
     unsigned int size;
     unsigned int cap;
+
+    // for linking in pool
+    struct object_list *next;
 };
 
 struct object obj_null = {
@@ -90,13 +111,27 @@ struct object *make_boolean_object(char value)
     return value ? &obj_true : &obj_false;
 }
 
+struct object *make_object() {
+    struct object *obj;
+
+    // try to get pre-allocated object from pool
+    if (!object_pool.head) {
+        obj = malloc(sizeof (struct object));
+        if (!obj) {
+            errx(EXIT_FAILURE, "out of memory");
+        }
+    } else {
+        obj = object_pool.head;
+        object_pool.head = obj->next;
+    }
+
+    obj->next = NULL;
+    return obj;
+}
+
 struct object *make_integer_object(long value)
 {
-    struct object *obj = malloc(sizeof (struct object));
-    if (!obj) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-    
+    struct object *obj = make_object();
     obj->type = OBJ_INT;
     obj->integer = value;
     obj->return_value = 0;
@@ -126,11 +161,7 @@ struct object *make_error_object(char *format, ...) {
 };
 
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
-    struct object *obj = malloc(sizeof (struct object));
-    if (!obj) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-
+    struct object *obj = make_object();
     obj->type = OBJ_FUNCTION;
     obj->return_value = 0;
     obj->function.parameters = parameters;
@@ -173,16 +204,21 @@ void free_object(struct object *obj)
             break;
         
         case OBJ_FUNCTION:
-            free(obj);
-            break;
-
         case OBJ_INT:
-            free(obj);
+            // return object to pool so future calls of make_object can use it
+            obj->next = object_pool.head;
+            object_pool.head = obj;
             break;
 
     }
+}
 
-    
+void free_object_pool() {
+    struct object *obj = object_pool.head;
+    while (obj) {
+        free(obj);
+        obj = obj->next;
+    }
 }
 
 #endif

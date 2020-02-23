@@ -1,5 +1,5 @@
-CFLAGS = -std=c11 -Wall -Werror
-TESTFLAGS = $(CFLAGS) -g 
+CFLAGS = -std=c11 -Wall 
+TESTFLAGS = $(CFLAGS) -g -D DEBUG
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')
 
@@ -38,3 +38,7 @@ bench: monkey_release
 
 clean:
 	rm -r $(BINDIR)
+
+valgrind: 
+	docker run -v $(PWD):/root/build -d -p 22021:22 messeb/valgrind	
+	ssh -p 22021 root@localhost

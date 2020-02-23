@@ -23,3 +23,9 @@ Command terminated by signal 9
 real    9m57.381s
 user    9m49.143s
 sys     0m7.160s
+
+**2020-02-23 11:35** (fib 40)
+real	2m22.102s
+user	2m21.870s
+sys	0m0.040s
+

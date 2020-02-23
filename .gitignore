@@ -1,2 +1,4 @@
 bin/
 vgcore.*
+*.out
+prof_*
