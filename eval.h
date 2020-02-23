@@ -110,12 +110,13 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
         return make_error_object("type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
     }
 
-    if (left->type == OBJ_INT && right->type == OBJ_INT)
+    // only check left type here as we know types are equal by now
+    if (left->type == OBJ_INT)
     {
         return eval_integer_infix_expression(operator, left, right);
     }
 
-    if (left->type == OBJ_BOOL && right->type == OBJ_BOOL)
+    if (left->type == OBJ_BOOL)
     {
         if (operator[0] == '=' && operator[1] == '=')
         {
@@ -145,14 +146,14 @@ unsigned char is_object_truthy(struct object *obj)
     return 1;
 }
 
-unsigned char is_object_error(struct object *obj) {
-    return obj != NULL && obj->type == OBJ_ERROR;
+unsigned char is_object_error(enum object_type type) {
+    return type == OBJ_ERROR;
 }
 
 struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
 {
     struct object *obj = eval_expression(expr->condition, env);
-    if (is_object_error(obj)) {
+    if (is_object_error(obj->type)) {
         return obj;
     }
 
@@ -197,7 +198,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
         struct object *obj = eval_expression(list->values[i], env);
         result->values[result->size++] = obj;
 
-        if (is_object_error(obj)) {
+        if (is_object_error(obj->type)) {
             if (result->size > 1) {
                 free_object(result->values[0]);
                 result->values[0] = result->values[result->size];
@@ -214,7 +215,9 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
         return make_error_object("not a function: %s", object_type_to_str(obj->type));
     }
 
+    #ifdef DEBUG
     assert(args->size == obj->function.parameters->size);
+    #endif 
     struct environment *env = make_closed_environment(obj->function.env, 8);
     for (int i=0; i < obj->function.parameters->size; i++) {
         environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
@@ -238,67 +241,68 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
 
 struct object *eval_expression(struct expression *expr, struct environment *env)
 {
-    struct object *left = NULL;
-    struct object *right = NULL;
-    struct object *result = NULL;
-    struct object_list *args = NULL;
-
     switch (expr->type)
     {
         case EXPR_INT:
-            result = make_integer_object(expr->integer);
-            return result;
+            return make_integer_object(expr->integer);
+            break;
         case EXPR_BOOL:
             return make_boolean_object(expr->bool);
-        case EXPR_PREFIX:
-            right = eval_expression(expr->prefix.right, env);
-            if (is_object_error(right)) {
+            break;
+        case EXPR_PREFIX: {
+            struct object *right = eval_expression(expr->prefix.right, env);
+            if (is_object_error(right->type)) {
                 return right;
             }
-            result = eval_prefix_expression(expr->prefix.operator, right);
+            struct object *result = eval_prefix_expression(expr->prefix.operator, right);
             free_object(right);
             return result;
-        case EXPR_INFIX:
-            left = eval_expression(expr->infix.left, env);
-            if (is_object_error(left)) {
+            break;
+        }
+        case EXPR_INFIX: {
+            struct object *left = eval_expression(expr->infix.left, env);
+            if (is_object_error(left->type)) {
                 return left;
             }
 
-            right = eval_expression(expr->infix.right, env);
-            if (is_object_error(right)) {
-                free(left);
+            struct object *right = eval_expression(expr->infix.right, env);
+            if (is_object_error(right->type)) {
+                free_object(left);
                 return right;
             }
 
-            result = eval_infix_expression(expr->infix.operator, left, right);
+            struct object *result = eval_infix_expression(expr->infix.operator, left, right);
             free_object(left);
             free_object(right);
             return result;
+            break;
+        }
         case EXPR_IF:
-            result = eval_if_expression(&expr->ifelse, env);
-            return result;
+            return eval_if_expression(&expr->ifelse, env);
         case EXPR_IDENT: 
-            result = eval_identifier(&expr->ident, env);    
-            return result;
+            return eval_identifier(&expr->ident, env);
+            break;
         case EXPR_FUNCTION: 
             // TODO: We need to copy the current environment here, not point to it
             // As it may change underneath it
-            result = make_function_object(&expr->function.parameters, expr->function.body, env);
-            return result;
-        case EXPR_CALL: 
-            left = eval_expression(expr->call.function, env);
-            if (is_object_error(left)) {
+            return make_function_object(&expr->function.parameters, expr->function.body, env);
+            break;
+        case EXPR_CALL: {
+            struct object *left = eval_expression(expr->call.function, env);
+            if (is_object_error(left->type)) {
                 return left;
             }
 
-            args = eval_expression_list(expr->call.arguments, env);
-            if (args->size >= 1 && is_object_error(args->values[0])) {
+            struct object_list *args = eval_expression_list(expr->call.arguments, env);
+            if (args->size >= 1 && is_object_error(args->values[0]->type)) {
                 return args->values[0];
             }
 
-            result = apply_function(left, args);
+            struct object *result = apply_function(left, args);
             free_object(left);
             return result;
+            break;
+        }
     }
     
     return &obj_null;
