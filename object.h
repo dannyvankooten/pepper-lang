@@ -69,34 +69,40 @@ struct object_list {
     struct object_list *next;
 };
 
-struct object obj_null = {
+static struct object _object_null = {
     .type = OBJ_NULL,
     .return_value = 0
 };
-struct object obj_null_return = {
+static struct object _object_null_return = {
     .type = OBJ_NULL,
     .return_value = 1
 };
-struct object obj_true = {
+static struct object _object_true = {
     .type = OBJ_BOOL,
     .boolean = 1,
     .return_value = 0
 };
-struct object obj_false = {
+static struct object _object_false = {
     .type = OBJ_BOOL,
     .boolean = 0,
     .return_value = 0
 };
-struct object obj_true_return = {
+static struct object _object_true_return = {
     .type = OBJ_BOOL,
     .boolean = 1,
     .return_value = 1
 };
-struct object obj_false_return = {
+static struct object _object_false_return = {
     .type = OBJ_BOOL,
     .boolean = 0,
     .return_value = 1
 };
+struct object *object_null = &_object_null;
+struct object *object_null_return = &_object_null_return;
+struct object *object_true = &_object_true;
+struct object *object_false = &_object_false;
+struct object *object_true_return = &_object_true_return;
+struct object *object_false_return = &_object_false_return;
 
 void free_object(struct object *obj);
 const char *object_type_to_str(enum object_type t);
@@ -108,7 +114,7 @@ const char *object_type_to_str(enum object_type t)
 
 struct object *make_boolean_object(char value)
 {
-    return value ? &obj_true : &obj_false;
+    return value ? object_true : object_false;
 }
 
 struct object *make_object() {
@@ -215,9 +221,11 @@ void free_object(struct object *obj)
 
 void free_object_pool() {
     struct object *obj = object_pool.head;
+    struct object *next = NULL;
     while (obj) {
+        next = obj->next;
         free(obj);
-        obj = obj->next;
+        obj = next;
     }
 }
 

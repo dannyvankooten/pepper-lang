@@ -36,6 +36,7 @@ void test_boolean_object(struct object *obj, char expected)
     assertf(!!obj, "expected boolean object, got null pointer");
     assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type), obj->error);
     assertf(obj->boolean == expected, "wrong boolean value: expected %d, got %d", expected, obj->boolean);
+    free_object(obj);
 }
 
 union object_value {
