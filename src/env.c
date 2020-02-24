@@ -1,12 +1,9 @@
-#ifndef ENV_H 
-#define ENV_H 
-
-#define MAX_KEY_LENGTH 32
-
 #include <string.h> 
 #include <stdlib.h> 
 #include <err.h>
+
 #include "object.h"
+#include "env.h"
 
 struct env_pool {
     struct environment *head;
@@ -14,16 +11,6 @@ struct env_pool {
 
 struct env_pool env_pool = {
     .head = NULL,
-};
-
-struct environment {
-    struct object **table;
-    unsigned int size;
-    unsigned int cap;
-    struct environment *outer;
-
-    // for linking in env_pool
-    struct environment *next; 
 };
 
 static unsigned long djb2(char *str)
@@ -153,5 +140,3 @@ void free_environment(struct environment *env) {
     env->next = env_pool.head;
     env_pool.head = env;
 }
-
-#endif

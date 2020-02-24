@@ -1,37 +1,34 @@
-CFLAGS = -std=c11 -Wall -pedantic
-TESTFLAGS = $(CFLAGS) -g -D DEBUG
+CFLAGS += -std=c11 -Wall -pedantic
+TESTFLAGS = $(CFLAGS) -g -DDEBUG
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')
 
 all: monkey repl tests
 
 repl: $(BINDIR)
-	$(CC) $(CFLAGS) repl.c  -ledit -o $(BINDIR)/repl
+	$(CC) $(CFLAGS) src/repl.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c) -ledit -Ofast -o $(BINDIR)/repl
 
 monkey: $(BINDIR)
-	$(CC) $(CFLAGS) monkey.c -o $(BINDIR)/monkey $(MAKEFLAGS)
+	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c) -Ofast --optimize -o $(BINDIR)/monkey 
 
-monkey_release: $(BINDIR) 
-	$(CC) $(CFLAGS) -Ofast --optimize monkey.c -o $(BINDIR)/monkey $(MAKEFLAGS)
-
-tests: $(BINDIR) lexer_test parser_test env_test eval_test 
+tests: $(BINDIR) lexer_test parser_test eval_test 
 
 lexer_test:
-	$(CC) $(TESTFLAGS) lexer_test.c -o $(BINDIR)/lexer_test && $(BINDIR)/lexer_test	
+	$(CC) $(TESTFLAGS) src/lexer_test.c src/lexer.c src/token.c -o $(BINDIR)/lexer_test
+	$(BINDIR)/lexer_test	
 
 parser_test:
-	$(CC) $(TESTFLAGS) parser_test.c -o $(BINDIR)/parser_test && $(BINDIR)/parser_test
+	$(CC) $(TESTFLAGS) src/parser_test.c src/parser.c src/lexer.c src/token.c -o $(BINDIR)/parser_test
+	$(BINDIR)/parser_test
 
 eval_test:
-	$(CC) $(TESTFLAGS) eval_test.c -o $(BINDIR)/eval_test && $(BINDIR)/eval_test
-
-env_test:
-	$(CC) $(TESTFLAGS) env_test.c -o $(BINDIR)/env_test && $(BINDIR)/env_test
+	$(CC) $(TESTFLAGS) src/eval_test.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c) -o $(BINDIR)/eval_test
+	$(BINDIR)/eval_test
 
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
-bench: monkey_release 
+bench: monkey
 	echo "**$(shell date '+%Y-%m-%d %H:%M')** (fib 30)" >> benchmarks.md
 	/usr/bin/time --append -o benchmarks.md ./bin/monkey fibonacci.monkey
 	echo "" >> benchmarks.md

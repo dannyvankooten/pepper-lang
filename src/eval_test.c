@@ -5,6 +5,29 @@
 // declared here so we can free it from other tests
 struct program *program;
 
+void test_environment() {
+    struct environment *env = make_environment(32);
+
+    // set
+    struct object o1 = {.integer = 1 };
+    struct object o2 = {.integer = 2};
+
+    environment_set(env, "foo", &o1);
+    environment_set(env, "bar", &o2);
+    
+    // get
+    struct object *r1 = environment_get(env, "foo");
+    assertf(r1->integer == o1.integer, "expected %d, got %d", o1.integer, r1->integer);
+    struct object *r2 = environment_get(env, "bar");
+    assertf(r2->integer == o2.integer, "expected %d, got %d", o2.integer, r2->integer);
+
+    // not existing
+    assertf(environment_get(env, "unexisting") == NULL, "expected NULL, got something");
+
+    // free env
+    free_environment(env);
+}
+
 struct object *test_eval(char *input, unsigned char keep_prog)
 {
     struct lexer lexer = new_lexer(input);
@@ -378,6 +401,7 @@ void test_recursive_function() {
 
 int main()
 {
+    test_environment();
     test_eval_integer_expressions();
     test_eval_boolean_expressions();
     test_bang_operator();

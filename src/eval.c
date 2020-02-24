@@ -1,5 +1,3 @@
-#ifndef EVAL_H
-#define EVAL_H
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -7,11 +5,21 @@
 #include <err.h>
 #include <assert.h>
 
+#include "object.h"
+#include "eval.h"
 #include "parser.h"
 #include "env.h"
-    
+
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);
+
+struct object_list_pool {
+    struct object_list *head;
+};
+
+struct object_list_pool object_list_pool = {
+    .head = NULL,
+};
 
 struct object *eval_bang_operator_expression(struct object *obj)
 {
@@ -127,20 +135,6 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
     }
 
     return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
-}
-
-unsigned char is_object_truthy(struct object *obj)
-{
-    if (obj == object_null || obj == object_false)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
-unsigned char is_object_error(enum object_type type) {
-    return type == OBJ_ERROR;
 }
 
 struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
@@ -403,34 +397,3 @@ struct object *eval_program(struct program *prog, struct environment *env)
     return obj;
 }
 
-void object_to_str(char *str, struct object *obj)
-{
-    char tmp[16];
-
-    switch (obj->type)
-    {
-    case OBJ_NULL:
-        strcat(str, "NULL");
-        break;
-    case OBJ_INT:
-        sprintf(tmp, "%ld", obj->integer);
-        strcat(str, tmp);
-        break;
-    case OBJ_BOOL:
-        strcat(str, (obj == object_true  || obj == object_true_return) ? "true" : "false");
-        break;
-    case OBJ_ERROR: 
-        strcat(str, obj->error);
-        break;   
-    case OBJ_FUNCTION: 
-        strcat(str, "fn(");
-        identifier_list_to_str(str, obj->function.parameters);
-        strcat(str, ") {\n");
-        block_statement_to_str(str, obj->function.body);
-        strcat(str, "\n}");
-        break;
-    }
-}
-
-
-#endif

@@ -1,11 +1,6 @@
-#include "token.h"
 #include <string.h>
 #include <stdio.h>
-
-struct lexer {
-    char *input;
-    unsigned int pos;
-};
+#include "lexer.h"
 
 int is_letter(char ch) {
     return (ch >= 'a' && ch <= 'z') 

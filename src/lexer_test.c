@@ -1,8 +1,9 @@
 #include "lexer.h"
+#include "test_helpers.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#undef EOF
 
 int main() {
     char *input = "let five = 5;\n"
@@ -102,16 +103,8 @@ int main() {
     struct token t;
     for (int j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
         gettoken(&l, &t);
-
-        if (t.type != tokens[j].type) {
-            printf("[%d] wrong type: expected \"%d\", got \"%d\"\n", j, tokens[j].type, t.type);
-            abort();
-        }
-        
-        if (strcmp(t.literal, tokens[j].literal) != 0) {
-            printf("[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
-            abort();
-        }
+        assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%d\", got \"%d\"\n", j, tokens[j].type, t.type);
+        assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
     }
 
     printf("\x1b[32mAll lexing tests passed!\033[0m\n");

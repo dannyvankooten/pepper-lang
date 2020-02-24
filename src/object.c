@@ -1,19 +1,11 @@
-#ifndef OBJECT_H
-#define OBJECT_H
-
 #include <err.h> 
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h> 
+#include "object.h"
+#include "parser.h"
 
-struct object_list_pool {
-    struct object_list *head;
-};
-
-struct object_list_pool object_list_pool = {
-    .head = NULL,
-};
 
 struct object_pool {
     struct object *head;
@@ -21,52 +13,6 @@ struct object_pool {
 
 struct object_pool object_pool = {
     .head = NULL,
-};
-
-enum object_type
-{
-    OBJ_NULL,
-    OBJ_BOOL,
-    OBJ_INT,
-    OBJ_ERROR,
-    OBJ_FUNCTION,
-};
-
-static const char *object_names[] = {
-    "NULL",
-    "BOOLEAN",
-    "INTEGER",
-    "ERROR",
-    "FUNCTION",
-};
-
-struct function {
-    struct identifier_list *parameters;
-    struct block_statement *body;
-    struct environment *env;
-};
-
-struct object
-{
-    enum object_type type;
-    char *name;
-    union {
-        unsigned char boolean;
-        long integer;
-        char *error;
-        struct function function;
-    };
-    unsigned char return_value;
-    struct object *next;
-};
-
-struct object_list {
-    struct object **values;
-    unsigned int size;
-    unsigned int cap;
-
-    // for linking in pool
-    struct object_list *next;
 };
 
 static struct object _object_null = {
@@ -104,8 +50,13 @@ struct object *object_false = &_object_false;
 struct object *object_true_return = &_object_true_return;
 struct object *object_false_return = &_object_false_return;
 
-void free_object(struct object *obj);
-const char *object_type_to_str(enum object_type t);
+static const char *object_names[] = {
+    "NULL",
+    "BOOLEAN",
+    "INTEGER",
+    "ERROR",
+    "FUNCTION",
+};
 
 const char *object_type_to_str(enum object_type t)
 {
@@ -219,6 +170,51 @@ void free_object(struct object *obj)
     }
 }
 
+
+unsigned char is_object_truthy(struct object *obj)
+{
+    if (obj == object_null || obj == object_false)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+unsigned char is_object_error(enum object_type type) {
+    return type == OBJ_ERROR;
+}
+
+
+void object_to_str(char *str, struct object *obj)
+{
+    char tmp[16];
+
+    switch (obj->type)
+    {
+    case OBJ_NULL:
+        strcat(str, "NULL");
+        break;
+    case OBJ_INT:
+        sprintf(tmp, "%ld", obj->integer);
+        strcat(str, tmp);
+        break;
+    case OBJ_BOOL:
+        strcat(str, (obj == object_true  || obj == object_true_return) ? "true" : "false");
+        break;
+    case OBJ_ERROR: 
+        strcat(str, obj->error);
+        break;   
+    case OBJ_FUNCTION: 
+        strcat(str, "fn(");
+        identifier_list_to_str(str, obj->function.parameters);
+        strcat(str, ") {\n");
+        block_statement_to_str(str, obj->function.body);
+        strcat(str, "\n}");
+        break;
+    }
+}
+
 void free_object_pool() {
     struct object *obj = object_pool.head;
     struct object *next = NULL;
@@ -228,5 +224,3 @@ void free_object_pool() {
         obj = next;
     }
 }
-
-#endif

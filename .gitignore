@@ -1,4 +1,5 @@
 bin/
+obj/
 vgcore.*
 *.out
 prof_*
