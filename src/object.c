@@ -5,15 +5,7 @@
 #include <stdio.h> 
 #include "object.h"
 #include "parser.h"
-
-
-struct object_pool {
-    struct object *head;
-};
-
-struct object_pool object_pool = {
-    .head = NULL,
-};
+#include "mem.h"
 
 static struct object _object_null = {
     .type = OBJ_NULL,
@@ -69,20 +61,7 @@ struct object *make_boolean_object(char value)
 }
 
 struct object *make_object() {
-    struct object *obj;
-
-    // try to get pre-allocated object from pool
-    if (!object_pool.head) {
-        obj = malloc(sizeof *obj);
-        if (!obj) {
-            errx(EXIT_FAILURE, "out of memory");
-        }
-    } else {
-        obj = object_pool.head;
-        object_pool.head = obj->next;
-    }
-
-    obj->next = NULL;
+    struct object *obj = malloc_object();
     return obj;
 }
 
@@ -170,9 +149,7 @@ void free_object(struct object *obj)
         
         case OBJ_FUNCTION:
         case OBJ_INT:
-            // return object to pool so future calls of make_object can use it
-            obj->next = object_pool.head;
-            object_pool.head = obj;
+            malloc_free_object(obj);
             break;
     }
 }
@@ -219,15 +196,5 @@ void object_to_str(char *str, struct object *obj)
         block_statement_to_str(str, obj->function.body);
         strcat(str, "\n}");
         break;
-    }
-}
-
-void free_object_pool() {
-    struct object *obj = object_pool.head;
-    struct object *next = NULL;
-    while (obj) {
-        next = obj->next;
-        free(obj);
-        obj = next;
     }
 }

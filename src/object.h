@@ -56,7 +56,6 @@ struct object *make_error_object(char *format, ...);
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env);
 struct object *copy_object(struct object *obj);
 void free_object(struct object *obj);
-void free_object_pool();
 void object_to_str(char *str, struct object *obj);
 unsigned char is_object_truthy(struct object *obj);
 unsigned char is_object_error(enum object_type type);

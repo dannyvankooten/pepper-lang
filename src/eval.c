@@ -9,17 +9,10 @@
 #include "eval.h"
 #include "parser.h"
 #include "env.h"
+#include "mem.h"
 
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);
-
-struct object_list_pool {
-    struct object_list *head;
-};
-
-struct object_list_pool object_list_pool = {
-    .head = NULL,
-};
 
 struct object *eval_bang_operator_expression(struct object *obj)
 {
@@ -165,30 +158,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 }
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
-    struct object_list *result;
-    if (object_list_pool.head) {
-        result = object_list_pool.head;
-        object_list_pool.head = result->next;
-
-        if (result->cap < list->size) {
-            result->values = realloc(result->values, sizeof *result->values * list->size);
-            if (!result->values) {
-                err(EXIT_FAILURE, "out of memory");
-            }
-            result->cap = list->size;
-        }
-    } else {
-        result = malloc(sizeof *result);
-        if (!result) {
-            err(EXIT_FAILURE, "out of memory");
-        }
-
-        result->values = malloc(sizeof *result->values * list->size);
-        if (!result->values) {
-            err(EXIT_FAILURE, "out of memory");
-        }
-        result->cap = list->size;
-    }
+    struct object_list *result = malloc_object_list(list->size);
     
     result->size = 0;
     for (int i = 0; i < list->size; i++) {
@@ -224,8 +194,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     struct object *result = eval_block_statement(obj->function.body, env);
 
     // return object list memory to pool so it can be re-used later on
-    args->next = object_list_pool.head;
-    object_list_pool.head = args;
+    malloc_free_object_list(args);
     free_environment(env);
     result->return_value = 0;   
     return result;
@@ -374,6 +343,8 @@ struct object *eval_program(struct program *prog, struct environment *env)
     if (prog->size == 0) {
         return NULL;
     }
+
+    malloc_init();
 
     struct object *obj = NULL;
 
