@@ -45,11 +45,11 @@ struct environment *make_environment(unsigned int cap) {
 
     // try to get pre-allocated object from pool
     if (!env_pool.head) {
-        env = malloc(sizeof(struct environment));
+        env = malloc(sizeof *env);
         if (!env) {
             errx(EXIT_FAILURE, "out of memory");
         }
-        env->table = malloc(sizeof(struct object *) * cap);
+        env->table = malloc(sizeof *env->table * cap);
         if (!env->table) {
             errx(EXIT_FAILURE, "out of memory");
         }
@@ -61,7 +61,7 @@ struct environment *make_environment(unsigned int cap) {
 
         // increase capacity of existing env if needed
         if (env->cap < cap) {
-            env->table = realloc(env->table, sizeof(struct object *) * cap);
+            env->table = realloc(env->table, sizeof *env->table * cap);
         }
     }
     
@@ -72,13 +72,13 @@ struct environment *make_environment(unsigned int cap) {
         env->table[i] = NULL;
     }
     return env;
-};
+}
 
 struct environment *make_closed_environment(struct environment *parent, unsigned int cap) {
     struct environment *env = make_environment(cap);
     env->outer = parent;
     return env;
-};
+}
 
 struct object *environment_get_with_hash(struct environment *env, char *key, unsigned long hash) {
     unsigned int pos = hash % env->cap;
@@ -98,12 +98,12 @@ struct object *environment_get_with_hash(struct environment *env, char *key, uns
     }
 
     return NULL;
-};
+}
 
 struct object *environment_get(struct environment *env, char *key) {
    unsigned long hash = djb2(key);
    return environment_get_with_hash(env, key, hash);
-};
+}
 
 void environment_set(struct environment *env, char *key, struct object *value) {
     unsigned int pos = djb2(key) % env->cap;
@@ -133,7 +133,7 @@ void environment_set(struct environment *env, char *key, struct object *value) {
     value->next = list;
     env->table[pos] = value;
     env->size++;
-};
+}
 
 void free_environment(struct environment *env) {
     struct object *node;

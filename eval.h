@@ -168,7 +168,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
         return make_error_object("identifier not found: %s", ident->value);
     }
     return copy_object(obj);
-};
+}
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
     struct object_list *result;
@@ -177,7 +177,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
         object_list_pool.head = result->next;
 
         if (result->cap < list->size) {
-            result->values = realloc(result->values, sizeof (struct object *) * list->size);
+            result->values = realloc(result->values, sizeof *result->values * list->size);
             if (!result->values) {
                 err(EXIT_FAILURE, "out of memory");
             }
@@ -189,7 +189,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
             err(EXIT_FAILURE, "out of memory");
         }
 
-        result->values = malloc(sizeof (struct object *) * list->size);
+        result->values = malloc(sizeof *result->values * list->size);
         if (!result->values) {
             err(EXIT_FAILURE, "out of memory");
         }
@@ -212,7 +212,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
     }
 
     return result;
-};
+}
 
 struct object *apply_function(struct object *obj, struct object_list *args) {
     if (obj->type != OBJ_FUNCTION) {
@@ -239,7 +239,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     }
     result->return_value = 0;   
     return result;
-};
+}
 
 struct object *eval_expression(struct expression *expr, struct environment *env)
 {
@@ -295,7 +295,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
                 return left;
             }
 
-            struct object_list *args = eval_expression_list(expr->call.arguments, env);
+            struct object_list *args = eval_expression_list(&(expr->call.arguments), env);
             if (args->size >= 1 && is_object_error(args->values[0]->type)) {
                 return args->values[0];
             }
@@ -354,7 +354,7 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
     }
 
     return object_null;
-};
+}
 
 struct object *eval_block_statement(struct block_statement *block, struct environment *env)
 {

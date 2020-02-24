@@ -87,5 +87,5 @@ void get_ident(struct token *t) {
 }
 
 const char *token_to_str(enum token_type type) {
-    return token_names[type] ?: "TOKEN_ILLEGAL";
+    return token_names[type];
 }

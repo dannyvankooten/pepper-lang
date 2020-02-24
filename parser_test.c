@@ -251,9 +251,9 @@ void test_boolean_expression_parsing() {
 
 void test_expression(struct expression *e, expression_value expected) {
     switch (e->type) {
-        case EXPR_BOOL: return test_boolean_expression(e, expected.bool_value); break;
-        case EXPR_INT: return test_integer_expression(e, expected.int_value); break;
-        case EXPR_IDENT: return test_identifier_expression(e, expected.str_value); break;
+        case EXPR_BOOL: test_boolean_expression(e, expected.bool_value); break;
+        case EXPR_INT: test_integer_expression(e, expected.int_value); break;
+        case EXPR_IDENT: test_identifier_expression(e, expected.str_value); break;
         default: break;
     }
 }
@@ -466,12 +466,30 @@ void test_call_expression_parsing() {
     struct expression *expr = stmt.value;
     assertf(expr->type == EXPR_CALL, "invalid expression type: expected EXPR_CALL, got %d\n", expr->type);
     test_identifier_expression(expr->call.function, "add");
-    assertf(expr->call.arguments->size == 3, "expected 3 arguments, got %d\n", expr->call.arguments->size);
+    assertf(expr->call.arguments.size == 3, "expected 3 arguments, got %d\n", expr->call.arguments.size);
 
-    expression_value left = {.int_value = 2};
-    expression_value right = {.int_value = 3};
-    test_infix_expression(expr->call.arguments->values[1], left, "*", right);
-    test_infix_expression(expr->call.arguments->values[2], (expression_value) 4, "+", (expression_value) 5);
+
+    struct {
+        expression_value left;
+        operator op;
+        expression_value right;
+    } tests[] = {
+        { .left = { .int_value = 1 } },
+        { 
+            .left = { .int_value = 2 },
+            .op = "*",
+            .right = { .int_value = 3 },
+        },
+        { 
+            .left = { .int_value = 4 },
+            .op = "+",
+            .right = { .int_value = 5 },
+        },
+    };
+
+    test_integer_expression(expr->call.arguments.values[0], tests[0].left.int_value);
+    test_infix_expression(expr->call.arguments.values[1], tests[1].left, tests[1].op, tests[1].right);
+    test_infix_expression(expr->call.arguments.values[2], tests[2].left, tests[2].op, tests[2].right);
     free_program(program);
 }
 

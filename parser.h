@@ -96,7 +96,7 @@ struct expression_list {
 
 struct call_expresion {
     struct expression *function;
-    struct expression_list *arguments;
+    struct expression_list arguments;
 };
 
 struct expression {
@@ -221,7 +221,7 @@ static int parse_return_statement(struct parser *p, struct statement *s) {
 }
 
 static struct expression *parse_identifier_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof (struct expression));
+    struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -233,7 +233,7 @@ static struct expression *parse_identifier_expression(struct parser *p) {
 }
 
 static struct expression *parse_int_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof (struct expression));
+    struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -245,7 +245,7 @@ static struct expression *parse_int_expression(struct parser *p) {
 }
 
 static struct expression *parse_prefix_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof (struct expression));
+    struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -258,13 +258,15 @@ static struct expression *parse_prefix_expression(struct parser *p) {
     return expr;
 }
 
-struct expression_list *parse_call_arguments(struct parser *p) {
-    struct expression_list *list = malloc(sizeof (struct expression_list));
-    if (!list) {
-        errx(EXIT_FAILURE, "out of memory");
-    }
-    list->size = 0;
-    list->cap = 0;
+struct expression_list parse_call_arguments(struct parser *p) {
+    // struct expression_list *list = malloc(sizeof (struct expression_list));
+    // if (!list) {
+    //     errx(EXIT_FAILURE, "out of memory");
+    // }
+    struct expression_list list = {
+        .size = 0,
+        .cap = 0,
+    };
 
     if (next_token_is(p, TOKEN_RPAREN)) {
         next_token(p);
@@ -272,29 +274,29 @@ struct expression_list *parse_call_arguments(struct parser *p) {
     }
 
     // allocate memory here, so we do not need an alloc for calls without any arguments
-    list->cap = 4;
-    list->values = malloc(list->cap * sizeof(struct expression));
-    if (!list->values) {
+    list.cap = 4;
+    list.values = malloc(list.cap * sizeof *list.values);
+    if (!list.values) {
         errx(EXIT_FAILURE, "out of memory");
     }
     next_token(p);
-    list->values[list->size++] = parse_expression(p, LOWEST);
+    list.values[list.size++] = parse_expression(p, LOWEST);
 
     while (next_token_is(p, TOKEN_COMMA)) {
         next_token(p);
         next_token(p);
 
-        list->values[list->size++] = parse_expression(p, LOWEST);
+        list.values[list.size++] = parse_expression(p, LOWEST);
 
         // double capacity if needed
-        if (list->size >= list->cap) {
-            list->cap *= 2;
-            list->values = realloc(list->values, list->cap * sizeof(struct expression));
+        if (list.size >= list.cap) {
+            list.cap *= 2;
+            list.values = realloc(list.values, list.cap * sizeof *list.values);
         }
     }
 
     if (!expect_next_token(p, TOKEN_RPAREN)) {
-        free(list->values);
+        free(list.values);
         return list;
     }
 
@@ -302,7 +304,7 @@ struct expression_list *parse_call_arguments(struct parser *p) {
 }
 
 struct expression *parse_call_expression(struct parser *p, struct expression *left) {
-    struct expression *expr = malloc(sizeof (struct expression));
+    struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -314,7 +316,7 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
 }
 
 static struct expression *parse_infix_expression(struct parser *p, struct expression *left) {
-    struct expression * expr = malloc(sizeof (struct expression));
+    struct expression * expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -330,7 +332,7 @@ static struct expression *parse_infix_expression(struct parser *p, struct expres
 }
 
 struct expression *parse_boolean_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof (struct expression));
+    struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -355,7 +357,7 @@ struct expression *parse_grouped_expression(struct parser *p) {
 }
 
 struct block_statement *parse_block_statement(struct parser *p) {
-    struct block_statement *b = malloc(sizeof (struct block_statement));
+    struct block_statement *b = malloc(sizeof *b);
     if (!b) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -375,7 +377,7 @@ struct block_statement *parse_block_statement(struct parser *p) {
 
             if (b->size >= b->cap) {
                 b->cap *= 2;
-                b->statements = realloc(b->statements, b->cap * sizeof (struct statement));
+                b->statements = realloc(b->statements, b->cap * sizeof *b->statements);
             }
         }
         next_token(p);
@@ -385,7 +387,7 @@ struct block_statement *parse_block_statement(struct parser *p) {
 }
 
 struct expression *parse_if_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof (struct expression));
+    struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -438,7 +440,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
         .size = 0,
         .cap = 4,
     };
-    params.values = malloc(sizeof (struct identifier) * params.cap);
+    params.values = malloc(sizeof *params.values * params.cap);
     if (!params.values) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -465,7 +467,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
 
         if (params.size >= params.cap) {
             params.cap *= 2;
-            params.values = realloc(params.values, params.cap * sizeof (struct identifier));
+            params.values = realloc(params.values, params.cap * sizeof *params.values);
         }
     }
 
@@ -478,7 +480,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
 }
 
 struct expression *parse_function_literal(struct parser *p) {
-    struct expression *expr = malloc(sizeof (struct expression));
+    struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -564,7 +566,7 @@ static enum precedence get_token_precedence(struct token t) {
     }
 
     return LOWEST;
-};
+}
 
 static int parse_expression_statement(struct parser *p, struct statement *s) {
     s->type = STMT_EXPR;
@@ -589,14 +591,14 @@ static int parse_statement(struct parser *p, struct statement *s) {
 }
 
 struct program *parse_program(struct parser *parser) {
-    struct program *program = malloc(sizeof (struct program));
+    struct program *program = malloc(sizeof *program);
     if (!program) {
         errx(EXIT_FAILURE, "out of memory");
     }
 
     program->size = 0;
     program->cap = 32;
-    program->statements = malloc(program->cap * sizeof (struct statement));
+    program->statements = malloc(program->cap * sizeof *program->statements);
     if (!program->statements) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -615,7 +617,7 @@ struct program *parse_program(struct parser *parser) {
         // double program capacity if needed
         if (program->size >= program->cap) {
             program->cap *= 2;
-            program->statements = realloc(program->statements, sizeof (struct statement) * program->cap);
+            program->statements = realloc(program->statements, sizeof *program->statements * program->cap);
         }
 
         next_token(parser);        
@@ -642,9 +644,9 @@ static void return_statement_to_str(char *str, struct statement *stmt) {
 
 static void statement_to_str(char *str, struct statement *stmt) {
     switch (stmt->type) {
-        case STMT_LET: return let_statement_to_str(str, stmt); break;
-        case STMT_RETURN: return return_statement_to_str(str, stmt); break;
-        case STMT_EXPR: return expression_to_str(str, stmt->value); break;
+        case STMT_LET: let_statement_to_str(str, stmt); break;
+        case STMT_RETURN: return_statement_to_str(str, stmt); break;
+        case STMT_EXPR: expression_to_str(str, stmt->value); break;
     }
 }
 
@@ -709,9 +711,9 @@ static void expression_to_str(char *str, struct expression *expr) {
         case EXPR_CALL:
             expression_to_str(str, expr->call.function);
             strcat(str, "(");
-            for (int i=0; i < expr->call.arguments->size; i++){
-                expression_to_str(str, expr->call.arguments->values[i]);
-                if (i < expr->call.arguments->size-1) {
+            for (int i=0; i < expr->call.arguments.size; i++){
+                expression_to_str(str, expr->call.arguments.values[i]);
+                if (i < expr->call.arguments.size-1) {
                     strcat(str, ", ");
                 }
             }
@@ -786,11 +788,11 @@ static void free_expression(struct expression *expr) {
         break;
 
         case EXPR_CALL:
-            for (int i=0; i < expr->call.arguments->size; i++) {
-                free_expression(expr->call.arguments->values[i]);
+            for (int i=0; i < expr->call.arguments.size; i++) {
+                free_expression(expr->call.arguments.values[i]);
             }
-            free(expr->call.arguments->values);
-            free(expr->call.arguments);
+            free(expr->call.arguments.values);
+            //free(expr->call.arguments);
             free_expression(expr->call.function);
         break;
 

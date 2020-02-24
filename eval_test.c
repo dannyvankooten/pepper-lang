@@ -58,12 +58,19 @@ void test_object(struct object *obj, enum object_type type, union object_value v
     switch (type)
     {
     case OBJ_BOOL:
-        return test_boolean_object(obj, value.bool);
+        test_boolean_object(obj, value.bool);
+        break;
     case OBJ_INT:
-        return test_integer_object(obj, value.integer);
+        test_integer_object(obj, value.integer);
+        break;
     case OBJ_ERROR:
-        return test_error_object(obj, value.message);    
+        test_error_object(obj, value.message);
+        break;    
+    case OBJ_NULL: 
+        assertf(obj->type == OBJ_NULL, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_NULL), object_type_to_str(obj->type));
+        break;
     default:
+        printf("No test function for object of type %s\n", object_type_to_str(type));
         break;
     }
 }
@@ -76,20 +83,20 @@ void test_eval_integer_expressions()
         int expected;
     } tests[] = {
         {"5", 5},
-        // {"10", 10},
-        // {"-5", -5},
-        // {"-10", -10},
-        // {"5 + 5 + 5 + 5 - 10", 10},
-        // {"2 * 2 * 2 * 2 * 2", 32},
-        // {"-50 + 100 + -50", 0},
-        // {"5 * 2 + 10", 20},
-        // {"5 + 2 * 10", 25},
-        // {"20 + 2 * -10", 0},
-        // {"50 / 2 * 2 + 10", 60},
-        // {"2 * (5 + 10)", 30},
-        // {"3 * 3 * 3 + 10", 37},
-        // {"3 * (3 * 3) + 10", 37},
-        // {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+        {"10", 10},
+        {"-5", -5},
+        {"-10", -10},
+        {"5 + 5 + 5 + 5 - 10", 10},
+        {"2 * 2 * 2 * 2 * 2", 32},
+        {"-50 + 100 + -50", 0},
+        {"5 * 2 + 10", 20},
+        {"5 + 2 * 10", 25},
+        {"20 + 2 * -10", 0},
+        {"50 / 2 * 2 + 10", 60},
+        {"2 * (5 + 10)", 30},
+        {"3 * 3 * 3 + 10", 37},
+        {"3 * (3 * 3) + 10", 37},
+        {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
@@ -382,6 +389,6 @@ int main()
     test_function_calls();
     test_closing_environments();
     test_recursive_function();
-     //test_closures();
+    //test_closures();
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }

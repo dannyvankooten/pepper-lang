@@ -109,7 +109,7 @@ const char *object_type_to_str(enum object_type t);
 
 const char *object_type_to_str(enum object_type t)
 {
-    return object_names[t] ?: "UNKOWN";
+    return object_names[t];
 }
 
 struct object *make_boolean_object(char value)
@@ -122,7 +122,7 @@ struct object *make_object() {
 
     // try to get pre-allocated object from pool
     if (!object_pool.head) {
-        obj = malloc(sizeof (struct object));
+        obj = malloc(sizeof *obj);
         if (!obj) {
             errx(EXIT_FAILURE, "out of memory");
         }
@@ -147,7 +147,7 @@ struct object *make_integer_object(long value)
 struct object *make_error_object(char *format, ...) {
     va_list args;
 
-    struct object *obj = malloc(sizeof (struct object));
+    struct object *obj = malloc(sizeof *obj);
     if (!obj) {
         errx(EXIT_FAILURE, "out of memory");
     }
@@ -164,7 +164,7 @@ struct object *make_error_object(char *format, ...) {
     vsnprintf(obj->error, l + 16, format, args);
     va_end(args);
     return obj;
-};
+}
 
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
     struct object *obj = make_object();
