@@ -33,7 +33,14 @@ struct object *test_eval(char *input, unsigned char keep_prog)
     struct lexer lexer = new_lexer(input);
     struct parser parser = new_parser(&lexer);
     program = parse_program(&parser);
-    assertf(parser.errors == 0, "parser got %d errors", parser.errors);
+
+    if (parser.errors > 0) {
+        printf("parsing errors: \n");
+        for (int i=0; i < parser.errors; i++) {
+            printf("  %s\n", parser.error_messages[i]);
+        }
+        exit(1);
+    }
     struct environment *env = make_environment(16);
     struct object *obj = eval_program(program, env);
 
@@ -42,6 +49,7 @@ struct object *test_eval(char *input, unsigned char keep_prog)
     if (!keep_prog) {
         free_program(program);
     }
+
     free_environment(env);
     return obj;
 }
@@ -399,6 +407,50 @@ void test_recursive_function() {
     test_integer_object(obj, 6765);
 }
 
+void test_invalid_function_call() {
+    char *input = "              \
+        let my_function = fn(a, b) { 100 };      \
+        my_function(20)        \
+    ";
+
+    struct object *obj = test_eval(input, 0);
+    test_error_object(obj, "invalid function call: expected 2 arguments, got 1");
+}
+
+void test_shadow_declaration() {
+    char *input = "let count = 0;"
+        "let shadow = fn() { let count = 1; return count; }; "
+        "return shadow();";
+    struct object *obj = test_eval(input, 0);
+    test_integer_object(obj, 1);
+}
+
+void test_actual_code() {
+    char *input = " \
+        let a = 100;\
+        let b = 200;\
+        let add = fn (a, b) {\
+           let tmp = a;\
+           let a = b;\
+           let b = tmp;\
+           return a + b;\
+        };\
+        let multiply = fn(a, b) { return b * a; };\
+        if (a) {\
+            if (add(100, a) == 200) {\
+                if (multiply(a, b) == 20000) {\
+                    return b;\
+                }\
+            }\
+        }\
+        \
+        return -1;\
+    ";
+
+    struct object *obj = test_eval(input, 0);
+    test_integer_object(obj, 200);
+}
+
 int main()
 {
     test_environment();
@@ -413,6 +465,9 @@ int main()
     test_function_calls();
     test_closing_environments();
     test_recursive_function();
-    //test_closures();
+    test_closures();
+    test_invalid_function_call();
+    test_shadow_declaration();
+    test_actual_code();
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }

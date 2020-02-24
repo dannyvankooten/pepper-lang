@@ -178,7 +178,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
             result->cap = list->size;
         }
     } else {
-        result = malloc(sizeof (struct object_list));
+        result = malloc(sizeof *result);
         if (!result) {
             err(EXIT_FAILURE, "out of memory");
         }
@@ -213,9 +213,9 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
         return make_error_object("not a function: %s", object_type_to_str(obj->type));
     }
 
-    #ifdef DEBUG
-    assert(args->size == obj->function.parameters->size);
-    #endif 
+    if (args->size != obj->function.parameters->size) {
+        return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
+    }
     struct environment *env = make_closed_environment(obj->function.env, 8);
     for (int i=0; i < obj->function.parameters->size; i++) {
         environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
@@ -227,10 +227,6 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     args->next = object_list_pool.head;
     object_list_pool.head = args;
     free_environment(env);
-
-    if (!result) {
-        return NULL;
-    }
     result->return_value = 0;   
     return result;
 }
@@ -364,7 +360,7 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
         }
 
         obj = eval_statement(&block->statements[i], env);
-        if (obj->return_value || obj->type == OBJ_ERROR)
+        if (obj->return_value)
         {
             return obj;
         }
@@ -388,7 +384,7 @@ struct object *eval_program(struct program *prog, struct environment *env)
         }
 
         obj = eval_statement(&prog->statements[i], env);
-        if (obj->return_value || obj->type == OBJ_ERROR)
+        if (obj->return_value)
         {
             return obj;
         }

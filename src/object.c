@@ -110,7 +110,8 @@ struct object *make_error_object(char *format, ...) {
     }
 
     obj->type = OBJ_ERROR;
-    obj->return_value = 0;
+    // always return error objects
+    obj->return_value = 1;
     va_start(args, format);  
     vsnprintf(obj->error, l + 16, format, args);
     va_end(args);
@@ -124,6 +125,9 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     obj->function.parameters = parameters;
     obj->function.body = body;
     obj->function.env = env;
+
+    // ensure environment isn't free'd up while we depend on it
+    env->ref_count++;
     return obj;
 }
 
@@ -132,15 +136,19 @@ struct object *copy_object(struct object *obj) {
         case OBJ_BOOL:
         case OBJ_NULL:
             return obj;
+            break;
 
         case OBJ_INT:
             return make_integer_object(obj->integer);
+            break;
 
         case OBJ_FUNCTION:
             return make_function_object(obj->function.parameters, obj->function.body, obj->function.env);
+            break;
 
         case OBJ_ERROR: 
-            return obj;
+            return make_error_object(obj->error);
+            break;
     }
 
     // TODO: This should not be reached, but also potential problem later on
@@ -166,7 +174,6 @@ void free_object(struct object *obj)
             obj->next = object_pool.head;
             object_pool.head = obj;
             break;
-
     }
 }
 
