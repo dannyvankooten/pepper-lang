@@ -213,9 +213,10 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
         return make_error_object("not a function: %s", object_type_to_str(obj->type));
     }
 
-    #ifdef DEBUG
-    assert(args->size == obj->function.parameters->size);
-    #endif 
+    if (args->size != obj->function.parameters->size) {
+        return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
+    }
+
     struct environment *env = make_closed_environment(obj->function.env, 8);
     for (int i=0; i < obj->function.parameters->size; i++) {
         environment_set(env, obj->function.parameters->values[i].value, args->values[i]);

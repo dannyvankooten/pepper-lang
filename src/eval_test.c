@@ -383,6 +383,17 @@ void test_closures() {
     test_integer_object(obj, 4);
 }
 
+
+void test_invalid_function() {
+    char *input = "              \
+        let my_function = fn(a, b) { 100 };      \
+        my_function(20)        \
+    ";
+    
+    struct object *obj = test_eval(input, 0);
+    test_error_object(obj, "invalid function call: expected 2 arguments, got 1");
+}
+
 void test_recursive_function() {
     char *input = "              \
         let fibonacci = fn(x) {  \
@@ -413,6 +424,7 @@ int main()
     test_function_calls();
     test_closing_environments();
     test_recursive_function();
+    test_invalid_function();
     //test_closures();
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }
