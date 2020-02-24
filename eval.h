@@ -18,13 +18,13 @@ struct object *eval_bang_operator_expression(struct object *obj)
     switch (obj->type)
     {
     case OBJ_BOOL:
-        return obj == &obj_false ? &obj_true : &obj_false;
+        return obj == object_false ? object_true : object_false;
         break;
     case OBJ_NULL:
-        return &obj_true;
+        return object_true;
         break;
     default:
-        return &obj_false;
+        return object_false;
         break;
     }
 }
@@ -55,7 +55,7 @@ struct object *eval_prefix_expression(operator operator, struct object *right)
         return make_error_object("unknown operator: %s%s", operator, object_type_to_str(right->type));    
     }
 
-    return &obj_null;
+    return object_null;
 }
 
 struct object *eval_integer_infix_expression(operator operator, struct object *left, struct object *right)
@@ -86,18 +86,18 @@ struct object *eval_integer_infix_expression(operator operator, struct object *l
         if (operator[1] == '=') {
             result = make_boolean_object(left->integer == right->integer);
         } else {
-            result = &obj_null;
+            result = object_null;
         }
         break;
     case '!':
         if (operator[1] == '=') {
             result = make_boolean_object(left->integer != right->integer);
         } else { 
-            result = &obj_null;
+            result = object_null;
         }
         break;
     default:
-        result = &obj_null;
+        result = object_null;
         break;
     }
 
@@ -118,13 +118,10 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
 
     if (left->type == OBJ_BOOL)
     {
-        if (operator[0] == '=' && operator[1] == '=')
+        if (operator[0] == '=' && operator[1] == '=') 
         {
             return make_boolean_object(left == right);
-        }
-
-        if (operator[0] == '!' && operator[1] == '=')
-        {
+        } else if (operator[0] == '!' && operator[1] == '=') {
             return make_boolean_object(left != right);
         }
     }
@@ -134,11 +131,7 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
 
 unsigned char is_object_truthy(struct object *obj)
 {
-    if (!obj) {
-        return 0;
-    }
-
-    if (obj == &obj_null || obj == &obj_false)
+    if (obj == object_null || obj == object_false)
     {
         return 0;
     }
@@ -166,7 +159,7 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
         return eval_block_statement(expr->alternative, env);
     }
 
-    return &obj_null;
+    return object_null;
 }
 
 struct object *eval_identifier(struct identifier *ident, struct environment *env) {
@@ -174,7 +167,6 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
     if (obj == NULL) {
         return make_error_object("identifier not found: %s", ident->value);
     }
-
     return copy_object(obj);
 };
 
@@ -184,17 +176,24 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
         result = object_list_pool.head;
         object_list_pool.head = result->next;
 
-        // TODO: Check capacity of values
+        if (result->cap < list->size) {
+            result->values = realloc(result->values, sizeof (struct object *) * list->size);
+            if (!result->values) {
+                err(EXIT_FAILURE, "out of memory");
+            }
+            result->cap = list->size;
+        }
     } else {
         result = malloc(sizeof (struct object_list));
         if (!result) {
-            errx(EXIT_FAILURE, "out of memory");
+            err(EXIT_FAILURE, "out of memory");
         }
 
         result->values = malloc(sizeof (struct object *) * list->size);
         if (!result->values) {
-            errx(EXIT_FAILURE, "out of memory");
+            err(EXIT_FAILURE, "out of memory");
         }
+        result->cap = list->size;
     }
     
     result->size = 0;
@@ -203,6 +202,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
         result->values[result->size++] = obj;
 
         if (is_object_error(obj->type)) {
+            // move object to start of values because that's the only error type we check
             if (result->size > 1) {
                 free_object(result->values[0]);
                 result->values[0] = result->values[result->size];
@@ -229,14 +229,9 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
 
     struct object *result = eval_block_statement(obj->function.body, env);
 
-    // free args & function env
-    // if (args->values) {
-    //     free(args->values);
-    // }
-    // free(args);
+    // return object list memory to pool so it can be re-used later on
     args->next = object_list_pool.head;
     object_list_pool.head = args;
-
     free_environment(env);
 
     if (!result) {
@@ -312,7 +307,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
         }
     }
     
-    return &obj_null;
+    return object_null;
 }
 
 struct object *make_return_object(struct object *obj)
@@ -325,14 +320,14 @@ struct object *make_return_object(struct object *obj)
         obj->return_value = 1;
         break;
     case OBJ_BOOL:
-        if (obj == &obj_false) {
-            return &obj_false_return;
+        if (obj == object_false) {
+            return object_false_return;
         } else {
-            return &obj_true_return;
+            return object_true_return;
         }
         break;
     case OBJ_NULL:
-        obj = &obj_null_return;
+        obj = object_null_return;
         break;
     }
 
@@ -358,7 +353,7 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
         return result;
     }
 
-    return &obj_null;
+    return object_null;
 };
 
 struct object *eval_block_statement(struct block_statement *block, struct environment *env)
@@ -422,7 +417,7 @@ void object_to_str(char *str, struct object *obj)
         strcat(str, tmp);
         break;
     case OBJ_BOOL:
-        strcat(str, (obj == &obj_true  || obj == &obj_true_return) ? "true" : "false");
+        strcat(str, (obj == object_true  || obj == object_true_return) ? "true" : "false");
         break;
     case OBJ_ERROR: 
         strcat(str, obj->error);

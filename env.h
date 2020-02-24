@@ -136,10 +136,6 @@ void environment_set(struct environment *env, char *key, struct object *value) {
 };
 
 void free_environment(struct environment *env) {
-    if (!env) {
-        return;
-    }
-
     struct object *node;
     struct object *next;
 

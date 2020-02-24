@@ -6,4 +6,4 @@ let fibonacci = fn(x) {
     }
 }
 
-fibonacci(40);
+fibonacci(35);
