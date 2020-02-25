@@ -160,13 +160,13 @@ struct expression *parse_prefix_expression(struct parser *p) {
     return expr;
 }
 
-struct expression_list parse_call_arguments(struct parser *p) {
+struct expression_list parse_expression_list(struct parser *p, enum token_type end_token) {
     struct expression_list list = {
         .size = 0,
         .cap = 0,
     };
 
-    if (next_token_is(p, TOKEN_RPAREN)) {
+    if (next_token_is(p, end_token)) {
         next_token(p);
         return list;
     }
@@ -193,12 +193,23 @@ struct expression_list parse_call_arguments(struct parser *p) {
         }
     }
 
-    if (!expect_next_token(p, TOKEN_RPAREN)) {
+    if (!expect_next_token(p, end_token)) {
         free(list.values);
         return list;
     }
 
     return list;
+}
+
+struct expression *parse_array_literal(struct parser *p) {
+    struct expression *expr = malloc(sizeof *expr);
+    if (!expr) {
+        err(EXIT_FAILURE, "out of memory");
+    }
+    expr->type = EXPR_ARRAY;
+    expr->token = p->current_token;
+    expr->array = parse_expression_list(p, TOKEN_RBRACKET);
+    return expr;
 }
 
 struct expression *parse_call_expression(struct parser *p, struct expression *left) {
@@ -209,7 +220,7 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
     expr->type = EXPR_CALL;
     expr->token = p->current_token;
     expr->call.function = left;
-    expr->call.arguments = parse_call_arguments(p);
+    expr->call.arguments = parse_expression_list(p, TOKEN_RPAREN);
     return expr;
 }
 
@@ -406,21 +417,21 @@ struct expression *parse_expression(struct parser *p, int precedence) {
     switch (p->current_token.type) {
         case TOKEN_IDENT: 
             left = parse_identifier_expression(p); 
-            break;
+        break;
         case TOKEN_INT: 
             left = parse_int_expression(p); 
-            break;
+        break;
         case TOKEN_BANG:
         case TOKEN_MINUS: 
             left = parse_prefix_expression(p);
-             break;
+        break;
         case TOKEN_TRUE:
         case TOKEN_FALSE: 
             left = parse_boolean_expression(p); 
-            break;
+        break;
         case TOKEN_LPAREN:
             left = parse_grouped_expression(p);
-            break;
+        break;
         case TOKEN_IF:
             left = parse_if_expression(p);
         break; 
@@ -429,6 +440,9 @@ struct expression *parse_expression(struct parser *p, int precedence) {
         break;   
         case TOKEN_STRING: 
             left = parse_string_literal(p);
+        break;
+        case TOKEN_LBRACKET: 
+            left = parse_array_literal(p);
         break;
         default: 
             if (p->errors < 8) {
@@ -559,6 +573,7 @@ void expression_to_str(char *str, struct expression *expr) {
             expression_to_str(str, expr->prefix.right);
             strcat(str, ")");
         break;
+
         case EXPR_INFIX: 
             strcat(str, "(");
             expression_to_str(str, expr->infix.left);
@@ -568,18 +583,23 @@ void expression_to_str(char *str, struct expression *expr) {
             expression_to_str(str, expr->infix.right);
             strcat(str, ")");
         break;
+
         case EXPR_STRING:
             strcat(str, expr->string);
         break;
+
         case EXPR_IDENT:
             strcat(str, expr->ident.value);
         break;
+
         case EXPR_BOOL:
             strcat(str, expr->bool ? "true" : "false");
-            break;
+        break;
+
         case EXPR_INT:
             strcat(str, expr->token.literal);
         break;
+
         case EXPR_IF:
             strcat(str, "if ");
             expression_to_str(str, expr->ifelse.condition);
@@ -590,6 +610,7 @@ void expression_to_str(char *str, struct expression *expr) {
                 block_statement_to_str(str, expr->ifelse.alternative);
             }
         break;
+
         case EXPR_FUNCTION:
             strcat(str, expr->token.literal);
             strcat(str, "(");
@@ -597,6 +618,7 @@ void expression_to_str(char *str, struct expression *expr) {
             strcat(str, ") ");
             block_statement_to_str(str, expr->function.body);
         break;
+
         case EXPR_CALL:
             expression_to_str(str, expr->call.function);
             strcat(str, "(");
@@ -608,6 +630,15 @@ void expression_to_str(char *str, struct expression *expr) {
             }
             strcat(str, ")");
         break;
+
+        case EXPR_ARRAY: 
+            strcat(str, "[");
+            for (int i=0; i < expr->array.size; i++) {
+                expression_to_str(str, expr->array.values[i]);
+            }
+            strcat(str, "]");
+        break;
+
         default: 
             // TODO: Signal missing to_str implementation
         break;

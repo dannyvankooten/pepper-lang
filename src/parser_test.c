@@ -367,7 +367,7 @@ void test_operator_precedence_parsing() {
         assert_parser_errors(&parser);
         
         char *program_str = program_to_str(program);
-        assertf(strncmp(program_str, tests[i].expected, 48) == 0, "wrong program string: expected %s, got %s\n", tests[i].expected, program_str);        
+        assertf(strcmp(program_str, tests[i].expected) == 0, "wrong program string: expected %s, got %s\n", tests[i].expected, program_str);        
         free(program_str);
         free_program(program);
     }
@@ -493,6 +493,12 @@ void test_call_expression_parsing() {
     free_program(program);
 }
 
+
+void test_string_literal(struct expression *expr, char *expected) {
+    assertf(expr->type == EXPR_STRING, "wrong expression type: expected EXPR_STRING, got %s", expr->type);
+    assertf(strcmp(expr->string, expected) == 0, "wrong expression value: expected \"%s\", got %s", expected, expr->string);
+}
+
 void test_string_expression_parsing() {
     char *input = "\"hello world\";";
     struct lexer l = {input, 0};
@@ -504,8 +510,27 @@ void test_string_expression_parsing() {
     struct statement stmt = program->statements[0];
     assertf(stmt.token.type == TOKEN_STRING, "wroken token type: expected %s, got %s", token_type_to_str(TOKEN_STRING), stmt.token.type);
     assertf (strcmp(stmt.token.literal, "hello world") == 0, "wrong token literal: expected %s, got %s", "hello world", stmt.token.literal);
-    assertf(stmt.value->type == EXPR_STRING, "wrong expression type: expected EXPR_STRING, got %s", stmt.value->type);
-    assertf(strcmp(stmt.value->string, "hello world") == 0, "wrong expression value: expected \"hello world\", got %s", stmt.value->string);
+    test_string_literal(stmt.value, "hello world");
+    free_program(program);
+}
+
+void test_array_literal_parsing() {
+    char *input = "[ 1, 2 * 2, 3 + 3, \"four\"];";
+    struct lexer l = {input, 0};
+    struct parser parser = new_parser(&l);
+    struct program *program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(program, 1);
+
+    struct statement stmt = program->statements[0];
+    assertf(stmt.value->type == EXPR_ARRAY, "wrong expression type: expected EXPR_ARRAY, got %s", stmt.value->type);
+
+    struct expression_list array = stmt.value->array;
+    assertf(array.size == 4, "wrong array size: expected 4, got %d", array.size);
+
+    test_integer_expression(array.values[0], 1);
+    // TODO: Test infix expressions as well
+    test_string_literal(array.values[3], "four");
     free_program(program);
 }
 
@@ -524,5 +549,6 @@ int main() {
     test_function_literal_parsing();
     test_call_expression_parsing();
     test_string_expression_parsing();
+    test_array_literal_parsing();
     printf("\x1b[32mAll parsing tests passed!\033[0m\n");
 }

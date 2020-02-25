@@ -25,7 +25,8 @@ enum expression_type {
     EXPR_IF,
     EXPR_FUNCTION,
     EXPR_CALL,
-    EXPR_STRING
+    EXPR_STRING,
+    EXPR_ARRAY,
 };
 
 enum statement_type {
@@ -105,6 +106,7 @@ struct expression {
         struct if_expression ifelse;
         struct function_literal function;
         struct call_expression call;
+        struct expression_list array;
     };
 } expression;
 
