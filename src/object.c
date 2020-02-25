@@ -6,15 +6,6 @@
 #include "object.h"
 #include "parser.h"
 
-
-struct object_pool {
-    struct object *head;
-};
-
-struct object_pool object_pool = {
-    .head = NULL,
-};
-
 static struct object _object_null = {
     .type = OBJ_NULL,
     .return_value = 0
@@ -49,6 +40,8 @@ struct object *object_true = &_object_true;
 struct object *object_false = &_object_false;
 struct object *object_true_return = &_object_true_return;
 struct object *object_false_return = &_object_false_return;
+struct object *_free_object_list = NULL;
+struct object_list *_free_object_list_list = NULL;
 
 static const char *object_names[] = {
     "NULL",
@@ -69,21 +62,20 @@ struct object *make_boolean_object(char value)
 }
 
 struct object *make_object() {
-    struct object *obj;
+   struct object *obj = _free_object_list;
 
-    // try to get pre-allocated object from pool
-    if (!object_pool.head) {
-        obj = malloc(sizeof *obj);
-        if (!obj) {
-            errx(EXIT_FAILURE, "out of memory");
-        }
-    } else {
-        obj = object_pool.head;
-        object_pool.head = obj->next;
-    }
+   if (!obj) {
+       obj = malloc(sizeof (*obj));
 
-    obj->next = NULL;
-    return obj;
+       if (!obj) {
+           err(EXIT_FAILURE, "out of memory");
+       }
+   } else {
+       _free_object_list = obj->next;
+   }
+
+    
+   return obj;
 }
 
 struct object *make_integer_object(long value)
@@ -100,17 +92,18 @@ struct object *make_error_object(char *format, ...) {
 
     struct object *obj = malloc(sizeof *obj);
     if (!obj) {
-        errx(EXIT_FAILURE, "out of memory");
+        err(EXIT_FAILURE, "out of memory");
     }
 
     size_t l = strlen(format);
     obj->error = malloc(l + 16);
     if (!obj->error) {
-        errx(EXIT_FAILURE, "out of memory");
+        err(EXIT_FAILURE, "out of memory");
     }
 
     obj->type = OBJ_ERROR;
-    obj->return_value = 0;
+    // always return error objects
+    obj->return_value = 1;
     va_start(args, format);  
     vsnprintf(obj->error, l + 16, format, args);
     va_end(args);
@@ -124,6 +117,9 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     obj->function.parameters = parameters;
     obj->function.body = body;
     obj->function.env = env;
+
+    // ensure environment isn't free'd up while we depend on it
+    env->ref_count++;
     return obj;
 }
 
@@ -132,15 +128,19 @@ struct object *copy_object(struct object *obj) {
         case OBJ_BOOL:
         case OBJ_NULL:
             return obj;
+            break;
 
         case OBJ_INT:
             return make_integer_object(obj->integer);
+            break;
 
         case OBJ_FUNCTION:
             return make_function_object(obj->function.parameters, obj->function.body, obj->function.env);
+            break;
 
         case OBJ_ERROR: 
-            return obj;
+            return make_error_object(obj->error);
+            break;
     }
 
     // TODO: This should not be reached, but also potential problem later on
@@ -162,11 +162,11 @@ void free_object(struct object *obj)
         
         case OBJ_FUNCTION:
         case OBJ_INT:
-            // return object to pool so future calls of make_object can use it
-            obj->next = object_pool.head;
-            object_pool.head = obj;
+            // add to start of free object list
+            obj->next = _free_object_list;
+            _free_object_list = obj;
+            obj = NULL;
             break;
-
     }
 }
 
@@ -183,6 +183,38 @@ unsigned char is_object_truthy(struct object *obj)
 
 unsigned char is_object_error(enum object_type type) {
     return type == OBJ_ERROR;
+}
+
+
+struct object_list *make_object_list(unsigned int cap) {
+   struct object_list *list = _free_object_list_list;
+
+   if (!list) {
+       list = malloc(sizeof (*list));
+       if (!list) {
+           err(EXIT_FAILURE, "out of memory");
+       }
+
+       list->values = NULL;
+       list->cap = 0;
+   } else {
+        _free_object_list_list = list->next;
+   }
+
+   if (list->cap < cap) {
+        list->cap = cap;
+        list->values = realloc(list->values, sizeof *list->values * cap);
+        if (!list->values) {
+            err(EXIT_FAILURE, "out of memory");
+        }
+    }
+
+   return list;
+}
+
+void free_object_list(struct object_list *list) {
+    list->next = _free_object_list_list;
+    _free_object_list_list = list;
 }
 
 
@@ -212,15 +244,5 @@ void object_to_str(char *str, struct object *obj)
         block_statement_to_str(str, obj->function.body);
         strcat(str, "\n}");
         break;
-    }
-}
-
-void free_object_pool() {
-    struct object *obj = object_pool.head;
-    struct object *next = NULL;
-    while (obj) {
-        next = obj->next;
-        free(obj);
-        obj = next;
     }
 }

@@ -1,4 +1,4 @@
-CFLAGS += -std=c11 -Wall -pedantic
+CFLAGS += -std=c11 -Wall
 TESTFLAGS = $(CFLAGS) -g -DDEBUG
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')

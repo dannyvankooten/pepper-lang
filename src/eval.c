@@ -13,14 +13,6 @@
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);
 
-struct object_list_pool {
-    struct object_list *head;
-};
-
-struct object_list_pool object_list_pool = {
-    .head = NULL,
-};
-
 struct object *eval_bang_operator_expression(struct object *obj)
 {
     switch (obj->type)
@@ -165,30 +157,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 }
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
-    struct object_list *result;
-    if (object_list_pool.head) {
-        result = object_list_pool.head;
-        object_list_pool.head = result->next;
-
-        if (result->cap < list->size) {
-            result->values = realloc(result->values, sizeof *result->values * list->size);
-            if (!result->values) {
-                err(EXIT_FAILURE, "out of memory");
-            }
-            result->cap = list->size;
-        }
-    } else {
-        result = malloc(sizeof (struct object_list));
-        if (!result) {
-            err(EXIT_FAILURE, "out of memory");
-        }
-
-        result->values = malloc(sizeof *result->values * list->size);
-        if (!result->values) {
-            err(EXIT_FAILURE, "out of memory");
-        }
-        result->cap = list->size;
-    }
+    struct object_list *result = make_object_list(list->size);
     
     result->size = 0;
     for (int i = 0; i < list->size; i++) {
@@ -216,7 +185,6 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     if (args->size != obj->function.parameters->size) {
         return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
     }
-
     struct environment *env = make_closed_environment(obj->function.env, 8);
     for (int i=0; i < obj->function.parameters->size; i++) {
         environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
@@ -225,13 +193,8 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     struct object *result = eval_block_statement(obj->function.body, env);
 
     // return object list memory to pool so it can be re-used later on
-    args->next = object_list_pool.head;
-    object_list_pool.head = args;
+    free_object_list(args);
     free_environment(env);
-
-    if (!result) {
-        return NULL;
-    }
     result->return_value = 0;   
     return result;
 }
@@ -292,6 +255,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
 
             struct object_list *args = eval_expression_list(&(expr->call.arguments), env);
             if (args->size >= 1 && is_object_error(args->values[0]->type)) {
+                free_object(left);
                 return args->values[0];
             }
 
@@ -365,7 +329,7 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
         }
 
         obj = eval_statement(&block->statements[i], env);
-        if (obj->return_value || obj->type == OBJ_ERROR)
+        if (obj->return_value)
         {
             return obj;
         }
@@ -388,8 +352,9 @@ struct object *eval_program(struct program *prog, struct environment *env)
             free_object(obj);
         }
 
+
         obj = eval_statement(&prog->statements[i], env);
-        if (obj->return_value || obj->type == OBJ_ERROR)
+        if (obj->return_value)
         {
             return obj;
         }

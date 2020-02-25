@@ -7,8 +7,8 @@
 
 struct environment {
     struct object **table;
-    unsigned int size;
     unsigned int cap;
+    unsigned int ref_count;
     struct environment *outer;
 
     // for linking in env_pool

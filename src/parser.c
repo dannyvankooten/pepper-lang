@@ -73,7 +73,7 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     struct identifier id = {
         .token = p->current_token,
     };
-    strcpy(id.value, p->current_token.literal);
+    strncpy(id.value, p->current_token.literal, MAX_IDENT_LENGTH);
     s->name = id;
 
     if (!expect_next_token(p, TOKEN_ASSIGN)) {
@@ -338,7 +338,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
     next_token(p);
     struct identifier i;
     i.token = p->current_token;
-    strcpy(i.value, i.token.literal);
+    strncpy(i.value, i.token.literal, MAX_IDENT_LENGTH);
     params.values[params.size++] = i;
 
     while (next_token_is(p, TOKEN_COMMA)) {
@@ -347,7 +347,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
 
         struct identifier i;
         i.token = p->current_token;
-        strcpy(i.value, i.token.literal);
+        strncpy(i.value, i.token.literal, MAX_IDENT_LENGTH);
         params.values[params.size++] = i;
 
         if (params.size >= params.cap) {

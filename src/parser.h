@@ -94,7 +94,7 @@ struct expression_list {
     struct expression **values;
 };
 
-struct call_expresion {
+struct call_expression {
     struct expression *function;
     struct expression_list arguments;
 };
@@ -110,7 +110,7 @@ struct expression {
         struct infix_expression infix;
         struct if_expression ifelse;
         struct function_literal function;
-        struct call_expresion call;
+        struct call_expression call;
     };
 } expression;
 

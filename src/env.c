@@ -5,16 +5,11 @@
 #include "object.h"
 #include "env.h"
 
-struct env_pool {
-    struct environment *head;
-};
-
-struct env_pool env_pool = {
-    .head = NULL,
-};
+struct environment *free_env_list;
 
 static unsigned long djb2(char *str)
 {
+    return str[0] - 'a';
     unsigned long hash = 5381;
     int c;
 
@@ -31,28 +26,28 @@ struct environment *make_environment(unsigned int cap) {
     struct environment *env;
 
     // try to get pre-allocated object from pool
-    if (!env_pool.head) {
+    if (!free_env_list) {
         env = malloc(sizeof *env);
         if (!env) {
-            errx(EXIT_FAILURE, "out of memory");
+            err(EXIT_FAILURE, "out of memory");
         }
-        env->table = malloc(sizeof *env->table * cap);
-        if (!env->table) {
-            errx(EXIT_FAILURE, "out of memory");
-        }
-
-        env->cap = cap;
+        env->cap = 0;
+        env->table = NULL;
     } else {
-        env = env_pool.head;
-        env_pool.head = env->next;
+        env = free_env_list;
+        free_env_list = env->next;
+    }
 
-        // increase capacity of existing env if needed
-        if (env->cap < cap) {
-            env->table = realloc(env->table, sizeof *env->table * cap);
+    // increase capacity if needed
+    if (env->cap < cap) {
+        env->table = realloc(env->table, sizeof *env->table * cap);
+        env->cap = cap;
+        if (!env->table) {
+            err(EXIT_FAILURE, "out of memory");
         }
     }
-    
-    env->size = 0;
+
+    env->ref_count = 1;
     env->outer = NULL;
     for (int i = 0; i < env->cap; i++)
     {
@@ -64,11 +59,11 @@ struct environment *make_environment(unsigned int cap) {
 struct environment *make_closed_environment(struct environment *parent, unsigned int cap) {
     struct environment *env = make_environment(cap);
     env->outer = parent;
+    env->outer->ref_count++;
     return env;
 }
 
-struct object *environment_get_with_hash(struct environment *env, char *key, unsigned long hash) {
-    unsigned int pos = hash % env->cap;
+struct object *environment_get_with_pos(struct environment *env, char *key, unsigned int pos) {
     struct object *node = env->table[pos];
 
     while (node) {
@@ -81,21 +76,20 @@ struct object *environment_get_with_hash(struct environment *env, char *key, uns
 
     // try parent environment (bubble up scope)
     if (env->outer) {
-        return environment_get_with_hash(env->outer, key, hash);
+        return environment_get_with_pos(env->outer, key, pos);
     }
 
     return NULL;
 }
 
 struct object *environment_get(struct environment *env, char *key) {
-   unsigned long hash = djb2(key);
-   return environment_get_with_hash(env, key, hash);
+   unsigned int pos = djb2(key) % env->cap;
+   return environment_get_with_pos(env, key, pos);
 }
 
 void environment_set(struct environment *env, char *key, struct object *value) {
     unsigned int pos = djb2(key) % env->cap;
-    struct object *list = env->table[pos];
-    struct object *node = list;
+    struct object *node = env->table[pos];
     struct object *prev = NULL;
 
     value->name = key;
@@ -117,12 +111,19 @@ void environment_set(struct environment *env, char *key, struct object *value) {
         prev = node;
     }
 
-    value->next = list;
+    value->next = env->table[pos];
     env->table[pos] = value;
-    env->size++;
 }
 
 void free_environment(struct environment *env) {
+    if (--env->ref_count > 0) {
+        return;
+    }
+
+    if (env->outer) {
+        free_environment(env->outer);
+    }
+
     struct object *node;
     struct object *next;
 
@@ -136,7 +137,6 @@ void free_environment(struct environment *env) {
         }
     }
 
-    // return env to pool so future calls of make_environment can use it
-    env->next = env_pool.head;
-    env_pool.head = env;
+    env->next = free_env_list;
+    free_env_list = env;
 }
