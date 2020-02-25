@@ -30,6 +30,8 @@ static const char *token_names[] = {
     "{",
     "}",
     "STRING",
+    "[",
+    "]",
 };
 
 void get_ident(struct token *t) {

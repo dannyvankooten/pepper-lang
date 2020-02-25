@@ -119,6 +119,18 @@ int gettoken(struct lexer *l, struct token *t) {
             t->literal[1] = '\0';
         break;
 
+        case '[': 
+            t->type = TOKEN_LBRACKET;
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
+        case ']': 
+            t->type = TOKEN_RBRACKET;
+            t->literal[0] = ch;
+            t->literal[1] = '\0';
+        break;
+
         case '"': {
             t->type = TOKEN_STRING;
             int i;

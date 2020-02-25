@@ -23,7 +23,9 @@ int main() {
         "10 == 10;\n"
         "10 != 9;\n"
         "\"foobar\"\n"
-        "\"foo bar\"";
+        "\"foo bar\""
+        "[1, 2];"
+        "[\"one\", \"two\"];";
 
     struct lexer l = {input, 0};
     struct token tokens[] = {
@@ -102,6 +104,18 @@ int main() {
         {TOKEN_SEMICOLON, ";"},
         {TOKEN_STRING, "foobar"},
         {TOKEN_STRING, "foo bar"},
+        {TOKEN_LBRACKET, "["},
+        {TOKEN_INT, "1"},
+        {TOKEN_COMMA, ","},
+        {TOKEN_INT, "2"},
+        {TOKEN_RBRACKET, "]"},
+        {TOKEN_SEMICOLON, ";"},
+        {TOKEN_LBRACKET, "["},
+        {TOKEN_STRING, "one"},
+        {TOKEN_COMMA, ","},
+        {TOKEN_STRING, "two"},
+        {TOKEN_RBRACKET, "]"},
+        {TOKEN_SEMICOLON, ";"},
         {TOKEN_EOF, ""},
     };
 

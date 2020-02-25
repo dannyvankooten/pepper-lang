@@ -32,6 +32,8 @@ enum token_type {
     TOKEN_LBRACE,
     TOKEN_RBRACE,
     TOKEN_STRING,
+    TOKEN_LBRACKET,
+    TOKEN_RBRACKET,
 };
 
 
