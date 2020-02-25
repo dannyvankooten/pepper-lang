@@ -60,4 +60,7 @@ void object_to_str(char *str, struct object *obj);
 unsigned char is_object_truthy(struct object *obj);
 unsigned char is_object_error(enum object_type type);
 
+struct object_list *make_object_list(unsigned int cap);
+void free_object_list(struct object_list *list);
+
 #endif

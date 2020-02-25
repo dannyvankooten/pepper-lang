@@ -25,7 +25,8 @@ void test_environment() {
     assertf(environment_get(env, "unexisting") == NULL, "expected NULL, got something");
 
     // free env
-    free_environment(env);
+    free(env->table);
+    free(env);
 }
 
 struct object *test_eval(char *input, unsigned char keep_prog)
@@ -336,6 +337,7 @@ void test_function_object() {
     char *expected_body = "(x + 2)";
     block_statement_to_str(tmp, obj->function.body);
     assertf(strcmp(tmp, expected_body) == 0, "function body is not \"%s\", got \"%s\"", expected_body, tmp);
+    
     free_program(program);
     free_object(obj);
 }

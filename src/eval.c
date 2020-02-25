@@ -9,7 +9,6 @@
 #include "eval.h"
 #include "parser.h"
 #include "env.h"
-#include "mem.h"
 
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);
@@ -158,7 +157,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 }
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
-    struct object_list *result = malloc_object_list(list->size);
+    struct object_list *result = make_object_list(list->size);
     
     result->size = 0;
     for (int i = 0; i < list->size; i++) {
@@ -194,7 +193,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     struct object *result = eval_block_statement(obj->function.body, env);
 
     // return object list memory to pool so it can be re-used later on
-    malloc_free_object_list(args);
+    free_object_list(args);
     free_environment(env);
     result->return_value = 0;   
     return result;
@@ -256,6 +255,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
 
             struct object_list *args = eval_expression_list(&(expr->call.arguments), env);
             if (args->size >= 1 && is_object_error(args->values[0]->type)) {
+                free_object(left);
                 return args->values[0];
             }
 
@@ -344,8 +344,6 @@ struct object *eval_program(struct program *prog, struct environment *env)
         return NULL;
     }
 
-    malloc_init();
-
     struct object *obj = NULL;
 
     for (int i = 0; i < prog->size; i++)
@@ -353,6 +351,7 @@ struct object *eval_program(struct program *prog, struct environment *env)
         if (obj) {
             free_object(obj);
         }
+
 
         obj = eval_statement(&prog->statements[i], env);
         if (obj->return_value)

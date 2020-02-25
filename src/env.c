@@ -5,16 +5,11 @@
 #include "object.h"
 #include "env.h"
 
-struct env_pool {
-    struct environment *head;
-};
-
-struct env_pool env_pool = {
-    .head = NULL,
-};
+struct environment *free_env_list;
 
 static unsigned long djb2(char *str)
 {
+    return str[0] - 'a';
     unsigned long hash = 5381;
     int c;
 
@@ -31,27 +26,24 @@ struct environment *make_environment(unsigned int cap) {
     struct environment *env;
 
     // try to get pre-allocated object from pool
-    if (!env_pool.head) {
+    if (!free_env_list) {
         env = malloc(sizeof *env);
         if (!env) {
             err(EXIT_FAILURE, "out of memory");
         }
-        env->table = malloc(sizeof *env->table * cap);
+        env->cap = 0;
+        env->table = NULL;
+    } else {
+        env = free_env_list;
+        free_env_list = env->next;
+    }
+
+    // increase capacity if needed
+    if (env->cap < cap) {
+        env->table = realloc(env->table, sizeof *env->table * cap);
         env->cap = cap;
         if (!env->table) {
             err(EXIT_FAILURE, "out of memory");
-        }
-    } else {
-        env = env_pool.head;
-        env_pool.head = env->next;
-
-        // increase capacity of existing env if needed
-        if (env->cap < cap) {
-            env->table = realloc(env->table, sizeof *env->table * cap);
-            env->cap = cap;
-            if (!env->table) {
-                err(EXIT_FAILURE, "out of memory");
-            }
         }
     }
 
@@ -128,6 +120,10 @@ void free_environment(struct environment *env) {
         return;
     }
 
+    if (env->outer) {
+        free_environment(env->outer);
+    }
+
     struct object *node;
     struct object *next;
 
@@ -141,11 +137,6 @@ void free_environment(struct environment *env) {
         }
     }
 
-    if (env->outer) {
-        free_environment(env->outer);
-    }
-
-    // return env to pool so future calls of make_environment can use it
-    env->next = env_pool.head;
-    env_pool.head = env;
+    env->next = free_env_list;
+    free_env_list = env;
 }

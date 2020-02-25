@@ -5,7 +5,6 @@
 #include <stdio.h> 
 #include "object.h"
 #include "parser.h"
-#include "mem.h"
 
 static struct object _object_null = {
     .type = OBJ_NULL,
@@ -41,6 +40,8 @@ struct object *object_true = &_object_true;
 struct object *object_false = &_object_false;
 struct object *object_true_return = &_object_true_return;
 struct object *object_false_return = &_object_false_return;
+struct object *_free_object_list = NULL;
+struct object_list *_free_object_list_list = NULL;
 
 static const char *object_names[] = {
     "NULL",
@@ -61,8 +62,20 @@ struct object *make_boolean_object(char value)
 }
 
 struct object *make_object() {
-    struct object *obj = malloc_object();
-    return obj;
+   struct object *obj = _free_object_list;
+
+   if (!obj) {
+       obj = malloc(sizeof (*obj));
+
+       if (!obj) {
+           err(EXIT_FAILURE, "out of memory");
+       }
+   } else {
+       _free_object_list = obj->next;
+   }
+
+    
+   return obj;
 }
 
 struct object *make_integer_object(long value)
@@ -79,13 +92,13 @@ struct object *make_error_object(char *format, ...) {
 
     struct object *obj = malloc(sizeof *obj);
     if (!obj) {
-        errx(EXIT_FAILURE, "out of memory");
+        err(EXIT_FAILURE, "out of memory");
     }
 
     size_t l = strlen(format);
     obj->error = malloc(l + 16);
     if (!obj->error) {
-        errx(EXIT_FAILURE, "out of memory");
+        err(EXIT_FAILURE, "out of memory");
     }
 
     obj->type = OBJ_ERROR;
@@ -149,7 +162,10 @@ void free_object(struct object *obj)
         
         case OBJ_FUNCTION:
         case OBJ_INT:
-            malloc_free_object(obj);
+            // add to start of free object list
+            obj->next = _free_object_list;
+            _free_object_list = obj;
+            obj = NULL;
             break;
     }
 }
@@ -167,6 +183,38 @@ unsigned char is_object_truthy(struct object *obj)
 
 unsigned char is_object_error(enum object_type type) {
     return type == OBJ_ERROR;
+}
+
+
+struct object_list *make_object_list(unsigned int cap) {
+   struct object_list *list = _free_object_list_list;
+
+   if (!list) {
+       list = malloc(sizeof (*list));
+       if (!list) {
+           err(EXIT_FAILURE, "out of memory");
+       }
+
+       list->values = NULL;
+       list->cap = 0;
+   } else {
+        _free_object_list_list = list->next;
+   }
+
+   if (list->cap < cap) {
+        list->cap = cap;
+        list->values = realloc(list->values, sizeof *list->values * cap);
+        if (!list->values) {
+            err(EXIT_FAILURE, "out of memory");
+        }
+    }
+
+   return list;
+}
+
+void free_object_list(struct object_list *list) {
+    list->next = _free_object_list_list;
+    _free_object_list_list = list;
 }
 
 
