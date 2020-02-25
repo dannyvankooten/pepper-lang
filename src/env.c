@@ -5,29 +5,15 @@
 #include "object.h"
 #include "env.h"
 
-#define hash(s) s[0]
+#define hash(s) (s[0] - 'a')
 
-struct environment *free_env_list;
-
-unsigned long djb2(char *str)
-{
-    unsigned long hash = 5381;
-    int c;
-
-    // hash * 33 + c
-    // shifting bits for performance
-    while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c; 
-    }
-
-    return hash;
-}
+struct environment *env_pool_head;
 
 struct environment *make_environment(unsigned int cap) {
     struct environment *env;
 
     // try to get pre-allocated object from pool
-    if (!free_env_list) {
+    if (!env_pool_head) {
         env = malloc(sizeof *env);
         if (!env) {
             err(EXIT_FAILURE, "out of memory");
@@ -35,8 +21,8 @@ struct environment *make_environment(unsigned int cap) {
         env->cap = 0;
         env->table = NULL;
     } else {
-        env = free_env_list;
-        free_env_list = env->next;
+        env = env_pool_head;
+        env_pool_head = env->next;
     }
 
     // increase capacity if needed
@@ -49,7 +35,6 @@ struct environment *make_environment(unsigned int cap) {
     }
 
     env->next = NULL;
-    env->ref_count = 1;
     env->outer = NULL;
     for (int i = 0; i < env->cap; i++)
     {
@@ -114,14 +99,6 @@ void environment_set(struct environment *env, char *key, struct object *value) {
 }
 
 void free_environment(struct environment *env) {
-    if (--env->ref_count > 0) {
-        return;
-    }
-
-    if (env->outer) {
-        free_environment(env->outer);
-    }
-
     struct object *node;
     struct object *next;
 
@@ -136,13 +113,13 @@ void free_environment(struct environment *env) {
     }
 
     // return env to pool
-    env->next = free_env_list;
-    free_env_list = env;
+    env->next = env_pool_head;
+    env_pool_head = env;
 }
 
 
 void free_env_pool() {
-    struct environment *node = free_env_list;
+    struct environment *node = env_pool_head;
     struct environment *next = NULL;
 
     while (node) {
@@ -152,5 +129,5 @@ void free_env_pool() {
         node = next;
     }
 
-    free_env_list = NULL;
+    env_pool_head = NULL;
 }

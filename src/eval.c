@@ -191,7 +191,12 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
             // move object to start of values because that's the only error type we check
             if (result->size > 1) {
                 result->values[0] = result->values[result->size-1];
+
+                for (int j=1; j < result->size; j++) {
+                    free_object(result->values[j]);
+                }
             } 
+
             return result;
         }
     }
@@ -208,16 +213,17 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
         break;
 
         case OBJ_FUNCTION: {
-             if (args->size != obj->function.parameters->size) {
+            if (args->size != obj->function.parameters->size) {
                 return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
             }
-            struct environment *env = make_closed_environment(obj->function.env, 4);
+            
+            struct environment *env = make_closed_environment(obj->function.env, 4); 
             for (int i=0; i < obj->function.parameters->size; i++) {
                 environment_set(env, obj->function.parameters->values[i].value, copy_object(args->values[i]));
             }
             struct object *result = eval_block_statement(obj->function.body, env);
             free_environment(env);
-            result->return_value = 0;   
+
             return result;
         }
         break;
@@ -290,8 +296,6 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
             return eval_identifier(&expr->ident, env);
             break;
         case EXPR_FUNCTION: 
-            // TODO: We need to copy the current environment here, not point to it
-            // As it may change underneath it
             return make_function_object(&expr->function.parameters, expr->function.body, env);
             break;
         case EXPR_CALL: {
@@ -425,7 +429,6 @@ struct object *eval_program(struct program *prog, struct environment *env)
         if (obj) {
             free_object(obj);
         }
-
 
         obj = eval_statement(&prog->statements[i], env);
         if (obj->return_value)

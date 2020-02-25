@@ -42,8 +42,8 @@ struct object *object_true = &_object_true;
 struct object *object_false = &_object_false;
 struct object *object_true_return = &_object_true_return;
 struct object *object_false_return = &_object_false_return;
-struct object *_free_object_list = NULL;
-struct object_list *_free_object_list_list = NULL;
+struct object *object_pool_head = NULL;
+struct object_list *object_list_pool_head = NULL;
 
 static const char *object_names[] = {
     "NULL",
@@ -62,7 +62,7 @@ const char *object_type_to_str(enum object_type t)
 }
 
 struct object *make_object() {
-   struct object *obj = _free_object_list;
+   struct object *obj = object_pool_head;
 
    if (!obj) {
        obj = malloc(sizeof (*obj));
@@ -71,7 +71,7 @@ struct object *make_object() {
            err(EXIT_FAILURE, "out of memory");
        }
    } else {
-       _free_object_list = obj->next;
+       object_pool_head = obj->next;
        obj->next = NULL;
    }
 
@@ -143,9 +143,6 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     obj->function.parameters = parameters;
     obj->function.body = body;
     obj->function.env = env;
-
-    // ensure environment isn't free'd up while we depend on it
-    env->ref_count++;
     return obj;
 }
 
@@ -194,28 +191,36 @@ void free_object(struct object *obj)
 
         case OBJ_ERROR:
             free(obj->error);
+            obj->error = NULL;
             break;
 
         case OBJ_ARRAY: 
             free_object_list(obj->array);
+            obj->array = NULL;
             break;
 
         case OBJ_STRING: 
             free(obj->string);
+            obj->string = NULL;
             break;
-        
+
+        case OBJ_FUNCTION:
+            // free_environment(obj->function.env);
+            // obj->function.env = NULL;
+            break;
+
        default:
            // nothing special
            break;
     }
 
      // add to start of free object list
-    obj->next = _free_object_list;
-    _free_object_list = obj;
+    obj->next = object_pool_head;
+    object_pool_head = obj;
 }
 
 struct object_list *make_object_list(unsigned int cap) {
-   struct object_list *list = _free_object_list_list;
+   struct object_list *list = object_list_pool_head;
 
    if (!list) {
        list = malloc(sizeof (*list));
@@ -229,7 +234,7 @@ struct object_list *make_object_list(unsigned int cap) {
             err(EXIT_FAILURE, "out of memory");
         }
    } else {
-        _free_object_list_list = list->next;
+        object_list_pool_head = list->next;
         if (list->cap < cap) {
             list->cap = cap;
             list->values = realloc(list->values, sizeof *list->values * cap);
@@ -241,7 +246,7 @@ struct object_list *make_object_list(unsigned int cap) {
         list->next = NULL;
    }
 
-    list->size = 0;
+   list->size = 0;
    return list;
 }
 
@@ -250,8 +255,8 @@ void free_object_list(struct object_list *list) {
         free_object(list->values[i]);
     }
 
-    list->next = _free_object_list_list;
-    _free_object_list_list = list;
+    list->next = object_list_pool_head;
+    object_list_pool_head = list;
 }
 
 
@@ -318,8 +323,8 @@ void object_to_str(char *str, struct object *obj)
     }
 }
 
-void free_object_list_pool() {
-    struct object *node = _free_object_list;
+void free_object_pool() {
+    struct object *node = object_pool_head;
     struct object *next = NULL;
 
     while (node) {
@@ -328,5 +333,19 @@ void free_object_list_pool() {
         node = next;
     }
 
-    _free_object_list = NULL;
+    object_pool_head = NULL;
+}
+
+void free_object_list_pool() {
+    struct object_list *node = object_list_pool_head;
+    struct object_list *next = NULL;
+
+    while (node) {
+        next = node->next;
+        free(node->values);
+        free(node);
+        node = next;
+    }
+
+    object_list_pool_head = NULL;
 }
