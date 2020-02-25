@@ -7,7 +7,7 @@
 
 struct environment *free_env_list;
 
-static unsigned long djb2(char *str)
+unsigned long djb2(char *str)
 {
     return str[0] - 'a';
     unsigned long hash = 5381;

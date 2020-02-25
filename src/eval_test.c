@@ -516,6 +516,18 @@ void test_builtin_functions() {
     }
 }
 
+void test_array_literals() {
+    char *input = "[1, 2 * 2, 3 + 3]";
+    struct object *obj = test_eval(input, 0);
+    assertf(!!obj, "expected object, got null pointer");
+    assertf(obj->type == OBJ_ARRAY, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj->type));
+    assertf(obj->array->size == 3, "wrong array size: expected %d, got %d", 3, obj->array->size);
+    test_integer_object(obj->array->values[0], 1);
+    test_integer_object(obj->array->values[1], 4);
+    test_integer_object(obj->array->values[2], 6);
+    free_object(obj);
+}
+
 int main()
 {
     test_environment();
@@ -537,5 +549,7 @@ int main()
     test_actual_code();
     test_string_concatenation();
     test_builtin_functions();
+    test_array_literals();
+
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }

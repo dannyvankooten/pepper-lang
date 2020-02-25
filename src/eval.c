@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -218,8 +219,6 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
 
             struct object *result = eval_block_statement(obj->function.body, env);
             free_environment(env);
-            // return object list memory to pool so it can be re-used later on
-            free_object_list(args);
             result->return_value = 0;   
             return result;
         }
@@ -276,6 +275,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
         }
         case EXPR_IF:
             return eval_if_expression(&expr->ifelse, env);
+            break;
         case EXPR_IDENT: 
             return eval_identifier(&expr->ident, env);
             break;
@@ -297,8 +297,18 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
             }
 
             struct object *result = apply_function(left, args);
+            free_object_list(args);
             free_object(left);
             return result;
+            break;
+        }
+
+        case EXPR_ARRAY: {
+            struct object_list *elements = eval_expression_list(&expr->array, env);
+            if (elements->size >= 1 && is_object_error(elements->values[0]->type)) {
+                return elements->values[0];
+            }
+            return make_array_object(elements);
             break;
         }
     }
@@ -314,6 +324,7 @@ struct object *make_return_object(struct object *obj)
     case OBJ_FUNCTION:
     case OBJ_ERROR:
     case OBJ_STRING:
+    case OBJ_ARRAY:
         obj->return_value = 1;
         break;
     case OBJ_BOOL:

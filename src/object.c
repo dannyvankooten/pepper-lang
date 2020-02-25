@@ -51,16 +51,12 @@ static const char *object_names[] = {
     "FUNCTION",
     "STRING",
     "BUILTIN",
+    "ARRAY",
 };
 
 const char *object_type_to_str(enum object_type t)
 {
     return object_names[t];
-}
-
-struct object *make_boolean_object(char value)
-{
-    return value ? object_true : object_false;
 }
 
 struct object *make_object() {
@@ -89,6 +85,13 @@ struct object *make_integer_object(long value)
     return obj;
 }
 
+struct object *make_array_object(struct object_list *elements) {
+    struct object *obj = make_object();
+    obj->type = OBJ_ARRAY;
+    obj->array = elements;
+    obj->return_value = 0;
+    return obj;
+}
 
 struct object *make_string_object(char *str1, char *str2)
 {
@@ -170,6 +173,11 @@ struct object *copy_object(struct object *obj) {
         case OBJ_STRING:
             return make_string_object(obj->string, NULL);
             break;
+
+        case OBJ_ARRAY: 
+            // TODO: Should we be copying array's object_list here?
+            return make_array_object(obj->array);
+            break;
     }
 
     // TODO: This should not be reached, but also potential problem later on
@@ -182,11 +190,19 @@ void free_object(struct object *obj)
         case OBJ_NULL: 
         case OBJ_BOOL: 
         case OBJ_BUILTIN:
+            // never free static objects
             return;
             break;
 
         case OBJ_ERROR:
             free(obj->error);
+            break;
+
+        case OBJ_ARRAY: 
+            for (int i=0; i < obj->array->size; i++) {
+                free(obj->array->values[i]);
+            }
+            free(obj->array);
             break;
 
         case OBJ_STRING: 
@@ -203,22 +219,6 @@ void free_object(struct object *obj)
     _free_object_list = obj;
     obj = NULL;
 }
-
-
-unsigned char is_object_truthy(struct object *obj)
-{
-    if (obj == object_null || obj == object_false)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
-unsigned char is_object_error(enum object_type type) {
-    return type == OBJ_ERROR;
-}
-
 
 struct object_list *make_object_list(unsigned int cap) {
    struct object_list *list = _free_object_list_list;
@@ -243,6 +243,8 @@ struct object_list *make_object_list(unsigned int cap) {
         }
     }
 
+    list->next = NULL;
+
    return list;
 }
 
@@ -261,16 +263,20 @@ void object_to_str(char *str, struct object *obj)
     case OBJ_NULL:
         strcat(str, "NULL");
         break;
+        
     case OBJ_INT:
         sprintf(tmp, "%ld", obj->integer);
         strcat(str, tmp);
         break;
+        
     case OBJ_BOOL:
         strcat(str, (obj == object_true  || obj == object_true_return) ? "true" : "false");
         break;
+        
     case OBJ_ERROR: 
         strcat(str, obj->error);
-        break;   
+        break;  
+         
     case OBJ_FUNCTION: 
         strcat(str, "fn(");
         identifier_list_to_str(str, obj->function.parameters);
@@ -286,5 +292,16 @@ void object_to_str(char *str, struct object *obj)
     case OBJ_BUILTIN: 
         strcat(str, "builtin function");
         break;    
+
+    case OBJ_ARRAY: 
+        strcat(str, "[");
+        for (int i=0; i < obj->array->size; i++) {
+            object_to_str(str, obj->array->values[i]);
+            if (i < (obj->array->size - 1)) {
+                strcat(str, ", ");
+            }
+        }
+        strcat(str, "]");
+    break;
     }
 }

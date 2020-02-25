@@ -766,8 +766,23 @@ void free_expression(struct expression *expr) {
             free(expr->string);
         break;
 
-        default: 
-        break;
+       case EXPR_ARRAY: 
+            for (int i=0; i < expr->array.size; i++) {
+                free_expression(expr->array.values[i]);
+            }
+            free(expr->array.values);
+       break;
+
+       case EXPR_INDEX: 
+            free(expr->index.left);
+            free(expr->index.index);
+       break;
+
+       case EXPR_INT: 
+       case EXPR_IDENT: 
+       case EXPR_BOOL: 
+            //nothing to free
+       break;
     }
 
     free(expr);
