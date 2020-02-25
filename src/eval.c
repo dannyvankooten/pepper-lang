@@ -182,7 +182,6 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
     struct object_list *result = make_object_list(list->size);
     
-    result->size = 0;
     for (int i = 0; i < list->size; i++) {
         struct object *obj = eval_expression(list->values[i], env);
         result->values[result->size++] = obj;
@@ -190,8 +189,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
         if (is_object_error(obj->type)) {
             // move object to start of values because that's the only error type we check
             if (result->size > 1) {
-                free_object(result->values[0]);
-                result->values[0] = result->values[result->size];
+                result->values[0] = result->values[result->size-1];
             } 
             return result;
         }
@@ -214,7 +212,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
             }
             struct environment *env = make_closed_environment(obj->function.env, 8);
             for (int i=0; i < obj->function.parameters->size; i++) {
-                environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
+                environment_set(env, obj->function.parameters->values[i].value, copy_object(args->values[i]));
             }
 
             struct object *result = eval_block_statement(obj->function.body, env);
@@ -230,6 +228,18 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     }
   
     return NULL;
+}
+
+struct object *eval_index_expression(struct object *left, struct object *index) {
+    if (left->type != OBJ_ARRAY || index->type != OBJ_INT) {
+        return make_error_object("index operator not supported: %s", object_type_to_str(left->type));
+    }
+
+    if (index->integer < 0 || index->integer > (left->array->size - 1)) {
+        return object_null;
+    }
+
+    return copy_object(left->array->values[index->integer]);
 }
 
 struct object *eval_expression(struct expression *expr, struct environment *env)
@@ -308,8 +318,28 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
             if (elements->size >= 1 && is_object_error(elements->values[0]->type)) {
                 return elements->values[0];
             }
-            return make_array_object(elements);
+            struct object *result = make_array_object(elements);
+            free_object_list(elements);
+            return result;
             break;
+        }
+
+        case EXPR_INDEX: {
+            struct object *left = eval_expression(expr->index.left, env);
+            if (is_object_error(left->type)) {
+                return left;
+            }
+
+            struct object *index = eval_expression(expr->index.index, env);
+            if (is_object_error(index->type)) {
+                free_object(left);
+                return index;
+            }
+
+            struct object *result = eval_index_expression(left, index);
+            free_object(left);
+            free_object(index);
+            return result;
         }
     }
     

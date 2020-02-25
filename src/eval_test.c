@@ -47,8 +47,7 @@ struct object *test_eval(char *input, unsigned char keep_prog)
     struct environment *env = make_environment(16);
     struct object *obj = eval_program(program, env);
 
-    // Free'ing the program clears the identifier values, so we can't do that yet
-    // Unless we copy them in identifier_list
+    // Free'ing the program clears the identifier values, which we need in test_function_object
     if (!keep_prog) {
         free_program(program);
     }
@@ -62,7 +61,6 @@ void test_integer_object(struct object *obj, int expected)
     assertf(!!obj, "expected integer object, got null pointer");
     assertf(obj->type == OBJ_INT, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_INT), object_type_to_str(obj->type), obj->error);
     assertf(obj->integer == expected, "wrong integer value: expected %d, got %d", expected, obj->integer);
-    free_object(obj);
 }
 
 void test_boolean_object(struct object *obj, char expected)
@@ -70,7 +68,6 @@ void test_boolean_object(struct object *obj, char expected)
     assertf(!!obj, "expected boolean object, got null pointer");
     assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type), obj->error);
     assertf(obj->boolean == expected, "wrong boolean value: expected %d, got %d", expected, obj->boolean);
-    free_object(obj);
 }
 
 void test_string_object(struct object *obj, char *expected)
@@ -78,7 +75,6 @@ void test_string_object(struct object *obj, char *expected)
     assertf(!!obj, "expected string object, got null pointer");
     assertf(obj->type == OBJ_STRING, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_STRING), object_type_to_str(obj->type), obj->error);
     assertf(strcmp(obj->string, expected) == 0, "wrong string value: expected %s, got %s", expected, obj->string);
-    free_object(obj);
 }
 
 union object_value {
@@ -93,7 +89,6 @@ void test_error_object(struct object *obj, char *expected) {
     assertf(!!obj, "expected error object, got null pointer");
     assertf(obj->type == OBJ_ERROR, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_ERROR), object_type_to_str(obj->type));
     assertf(strcmp(obj->error, expected) == 0, "invalid error message: expected %s, got %s", expected, obj->error);
-    free_object(obj);
 }
 
 void test_object(struct object *obj, enum object_type type, union object_value value)
@@ -149,6 +144,7 @@ void test_eval_integer_expressions()
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_integer_object(obj, tests[i].expected);
+        free_object(obj);
     }
 }
 
@@ -157,6 +153,7 @@ void test_eval_string_expression()
 {
     struct object *obj = test_eval("\"Hello world!\"", 0);
     test_string_object(obj, "Hello world!");
+    free_object(obj);
 }
 
 void test_eval_boolean_expressions()
@@ -191,6 +188,7 @@ void test_eval_boolean_expressions()
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_boolean_object(obj, tests[i].expected);
+        free_object(obj);
     }
 }
 
@@ -214,6 +212,7 @@ void test_bang_operator()
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_boolean_object(obj, tests[i].expected);
+        free_object(obj);
     }
 }
 
@@ -238,6 +237,7 @@ void test_if_else_expressions()
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_object(obj, tests[i].type, tests[i].value);
+        free_object(obj);
     }
 }
 
@@ -266,6 +266,7 @@ void test_return_statements()
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_object(obj, tests[i].type, tests[i].value);
+        free_object(obj);
     }
 }
 
@@ -322,6 +323,7 @@ void test_error_handling() {
         struct object *obj = test_eval(tests[i].input, 0);
         union object_value value = { .message = tests[i].message };
         test_object(obj, OBJ_ERROR, value);
+        free_object(obj);
     }
 }
 
@@ -342,6 +344,7 @@ void test_let_statements() {
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_integer_object(obj, tests[i].expected);
+        free_object(obj);
     }
 }
 
@@ -385,6 +388,7 @@ void test_function_calls() {
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_integer_object(obj, tests[i].expected);
+        //free_object(obj);
     }
 }
 
@@ -402,6 +406,7 @@ void test_closing_environments() {
     
     struct object *obj = test_eval(input, 0);
     test_integer_object(obj, 70);
+    free_object(obj);
 }
 
 void test_closures() {
@@ -416,6 +421,7 @@ void test_closures() {
     
     struct object *obj = test_eval(input, 0);
     test_integer_object(obj, 4);
+    free_object(obj);
 }
 
 
@@ -427,6 +433,7 @@ void test_invalid_function() {
     
     struct object *obj = test_eval(input, 0);
     test_error_object(obj, "invalid function call: expected 2 arguments, got 1");
+    free_object(obj);
 }
 
 void test_recursive_function() {
@@ -443,6 +450,7 @@ void test_recursive_function() {
     
     struct object *obj = test_eval(input, 0);
     test_integer_object(obj, 6765);
+    free_object(obj);
 }
 
 void test_invalid_function_call() {
@@ -453,6 +461,7 @@ void test_invalid_function_call() {
 
     struct object *obj = test_eval(input, 0);
     test_error_object(obj, "invalid function call: expected 2 arguments, got 1");
+    free_object(obj);
 }
 
 void test_shadow_declaration() {
@@ -461,6 +470,7 @@ void test_shadow_declaration() {
         "return shadow();";
     struct object *obj = test_eval(input, 0);
     test_integer_object(obj, 1);
+    free_object(obj);
 }
 
 void test_actual_code() {
@@ -487,12 +497,14 @@ void test_actual_code() {
 
     struct object *obj = test_eval(input, 0);
     test_integer_object(obj, 200);
+    free_object(obj);
 }
 
 void test_string_concatenation() {
     char *input = "\"Hello\" + \" \" + \"world\"";
     struct object *obj = test_eval(input, 0);
     test_string_object(obj, "Hello world");
+    free_object(obj);
 }
 
 void test_builtin_functions() {
@@ -513,6 +525,7 @@ void test_builtin_functions() {
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_object(obj, tests[i].type, tests[i].value);
+        free_object(obj);
     }
 }
 
@@ -526,6 +539,30 @@ void test_array_literals() {
     test_integer_object(obj->array->values[1], 4);
     test_integer_object(obj->array->values[2], 6);
     free_object(obj);
+}
+
+void test_array_index_expressions() {
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        { "[1, 2, 3][0]", 1},
+        { "[1, 2, 3][1]", 2},
+        { "[1, 2, 3][2]", 3},
+        { "let i = 0; [1][i];", 1},
+        { "[1, 2, 3][1 + 1];", 3},
+        { "let myArray = [1, 2, 3]; myArray[2];", 3},
+        { "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6},
+        { "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2}
+    };
+
+    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object *obj = test_eval(tests[i].input, 0);
+        test_integer_object(obj, tests[i].expected);
+        free_object(obj);
+    }
+
+    // TODO: Test out of bounds indexing
 }
 
 int main()
@@ -550,6 +587,7 @@ int main()
     test_string_concatenation();
     test_builtin_functions();
     test_array_literals();
+    test_array_index_expressions();
 
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }

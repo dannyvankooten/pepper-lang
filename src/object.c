@@ -6,6 +6,8 @@
 #include "object.h"
 #include "parser.h"
 
+struct object_list *copy_object_list(struct object_list *original);
+
 static struct object _object_null = {
     .type = OBJ_NULL,
     .return_value = 0
@@ -88,7 +90,7 @@ struct object *make_integer_object(long value)
 struct object *make_array_object(struct object_list *elements) {
     struct object *obj = make_object();
     obj->type = OBJ_ARRAY;
-    obj->array = elements;
+    obj->array = copy_object_list(elements);
     obj->return_value = 0;
     return obj;
 }
@@ -124,7 +126,7 @@ struct object *make_error_object(char *format, ...) {
     obj->type = OBJ_ERROR;
 
     size_t l = strlen(format);
-    obj->error = malloc(l + 16);
+    obj->error = malloc(l + 64);
     if (!obj->error) {
         err(EXIT_FAILURE, "out of memory");
     }
@@ -132,7 +134,7 @@ struct object *make_error_object(char *format, ...) {
     // always return error objects
     obj->return_value = 1;
     va_start(args, format);  
-    vsnprintf(obj->error, l + 16, format, args);
+    vsnprintf(obj->error, l + 64, format, args);
     va_end(args);
     return obj;
 }
@@ -175,7 +177,6 @@ struct object *copy_object(struct object *obj) {
             break;
 
         case OBJ_ARRAY: 
-            // TODO: Should we be copying array's object_list here?
             return make_array_object(obj->array);
             break;
     }
@@ -199,10 +200,7 @@ void free_object(struct object *obj)
             break;
 
         case OBJ_ARRAY: 
-            for (int i=0; i < obj->array->size; i++) {
-                free(obj->array->values[i]);
-            }
-            free(obj->array);
+            free_object_list(obj->array);
             break;
 
         case OBJ_STRING: 
@@ -229,30 +227,48 @@ struct object_list *make_object_list(unsigned int cap) {
            err(EXIT_FAILURE, "out of memory");
        }
 
-       list->values = NULL;
-       list->cap = 0;
-   } else {
-        _free_object_list_list = list->next;
-   }
-
-   if (list->cap < cap) {
-        list->cap = cap;
-        list->values = realloc(list->values, sizeof *list->values * cap);
-        if (!list->values) {
+       list->values = malloc(sizeof *list->values * cap);
+       list->cap = cap;
+       if (!list->values) {
             err(EXIT_FAILURE, "out of memory");
         }
-    }
+   } else {
+        _free_object_list_list = list->next;
+        if (list->cap < cap) {
+            list->cap = cap;
+            list->values = realloc(list->values, sizeof *list->values * cap);
+            if (!list->values) {
+                err(EXIT_FAILURE, "out of memory");
+            }
+        }
+   }
 
+    list->size = 0;
     list->next = NULL;
 
    return list;
 }
 
 void free_object_list(struct object_list *list) {
+    for (int i=0; i < list->size; i++) {
+        free_object(list->values[i]);
+    }
+
     list->next = _free_object_list_list;
     _free_object_list_list = list;
 }
 
+
+struct object_list *copy_object_list(struct object_list *original) {
+    struct object_list *new = make_object_list(original->size);
+
+    for (int i=0; i < original->size; i++) {
+        new->values[i] = copy_object(original->values[i]);
+        new->size++;
+    }
+
+    return new;
+}
 
 void object_to_str(char *str, struct object *obj)
 {

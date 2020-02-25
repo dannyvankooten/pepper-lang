@@ -774,8 +774,8 @@ void free_expression(struct expression *expr) {
        break;
 
        case EXPR_INDEX: 
-            free(expr->index.left);
-            free(expr->index.index);
+            free_expression(expr->index.left);
+            free_expression(expr->index.index);
        break;
 
        case EXPR_INT: 
