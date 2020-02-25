@@ -12,6 +12,7 @@ enum object_type
     OBJ_ERROR,
     OBJ_FUNCTION,
     OBJ_STRING,
+    OBJ_BUILTIN,
 };
 
 struct function {
@@ -19,6 +20,16 @@ struct function {
     struct block_statement *body;
     struct environment *env;
 };
+
+struct object_list {
+    struct object **values;
+    unsigned int size;
+    unsigned int cap;
+
+    // for linking in pool
+    struct object_list *next;
+};
+
 
 struct object
 {
@@ -30,18 +41,10 @@ struct object
         char *error;
         char *string;
         struct function function;
+        struct object *(*builtin)(struct object_list *);
     };
     unsigned char return_value;
     struct object *next;
-};
-
-struct object_list {
-    struct object **values;
-    unsigned int size;
-    unsigned int cap;
-
-    // for linking in pool
-    struct object_list *next;
 };
 
 struct object *object_null;

@@ -495,6 +495,27 @@ void test_string_concatenation() {
     test_string_object(obj, "Hello world");
 }
 
+void test_builtin_functions() {
+    struct
+    {
+        char *input;
+        enum object_type type;
+        union object_value value;
+    } tests[] = {
+        {"len(\"\")", OBJ_INT, {.integer = 0}},
+        {"len(\"four\")", OBJ_INT, {.integer = 4}},
+        {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
+        {"len(1)", OBJ_ERROR, {.message = "argument to len() not supported: expected STRING, got INTEGER"}},
+        {"len(\"one\", \"two\")", OBJ_ERROR, {.message = "wrong number of arguments: expected 1, got 2"}},
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
+    {
+        struct object *obj = test_eval(tests[i].input, 0);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
 int main()
 {
     test_environment();
@@ -515,5 +536,6 @@ int main()
     test_shadow_declaration();
     test_actual_code();
     test_string_concatenation();
+    test_builtin_functions();
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }

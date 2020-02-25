@@ -5,6 +5,7 @@
 #include <err.h>
 #include <assert.h>
 
+#include "builtins.h"
 #include "object.h"
 #include "eval.h"
 #include "parser.h"
@@ -165,10 +166,16 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
 
 struct object *eval_identifier(struct identifier *ident, struct environment *env) {
     struct object *obj = environment_get(env, ident->value);
-    if (obj == NULL) {
-        return make_error_object("identifier not found: %s", ident->value);
+    if (obj) {
+        return copy_object(obj);
     }
-    return copy_object(obj);
+
+    obj = get_builtin(ident->value);
+    if (obj) {
+        return obj;
+    }
+
+    return make_error_object("identifier not found: %s", ident->value);
 }
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
@@ -193,25 +200,37 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
 }
 
 struct object *apply_function(struct object *obj, struct object_list *args) {
-    if (obj->type != OBJ_FUNCTION) {
-        return make_error_object("not a function: %s", object_type_to_str(obj->type));
-    }
 
-    if (args->size != obj->function.parameters->size) {
-        return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
-    }
-    struct environment *env = make_closed_environment(obj->function.env, 8);
-    for (int i=0; i < obj->function.parameters->size; i++) {
-        environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
-    }
+    switch (obj->type) {
+        case OBJ_BUILTIN: {
+            return obj->builtin(args);
+        }
+        break;
 
-    struct object *result = eval_block_statement(obj->function.body, env);
+        case OBJ_FUNCTION: {
+             if (args->size != obj->function.parameters->size) {
+                return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
+            }
+            struct environment *env = make_closed_environment(obj->function.env, 8);
+            for (int i=0; i < obj->function.parameters->size; i++) {
+                environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
+            }
 
-    // return object list memory to pool so it can be re-used later on
-    free_object_list(args);
-    free_environment(env);
-    result->return_value = 0;   
-    return result;
+            struct object *result = eval_block_statement(obj->function.body, env);
+            free_environment(env);
+            // return object list memory to pool so it can be re-used later on
+            free_object_list(args);
+            result->return_value = 0;   
+            return result;
+        }
+        break;
+
+        default: 
+            return make_error_object("not a function: %s", object_type_to_str(obj->type));
+        break;
+    }
+  
+    return NULL;
 }
 
 struct object *eval_expression(struct expression *expr, struct environment *env)
@@ -307,6 +326,9 @@ struct object *make_return_object(struct object *obj)
     case OBJ_NULL:
         obj = object_null_return;
         break;
+
+    case OBJ_BUILTIN:
+        break;    
     }
 
     return obj;

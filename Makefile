@@ -6,10 +6,10 @@ DATE=$(shell date '+%Y-%m-%d')
 all: monkey repl tests
 
 repl: $(BINDIR)
-	$(CC) $(CFLAGS) src/repl.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c) -ledit -Ofast -o $(BINDIR)/repl
+	$(CC) $(CFLAGS) src/repl.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -ledit -Ofast -o $(BINDIR)/repl
 
 monkey: $(BINDIR)
-	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c) -Ofast --optimize -o $(BINDIR)/monkey 
+	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -Ofast --optimize -o $(BINDIR)/monkey 
 
 tests: $(BINDIR) lexer_test parser_test eval_test 
 
@@ -22,7 +22,7 @@ parser_test:
 	$(BINDIR)/parser_test
 
 eval_test:
-	$(CC) $(TESTFLAGS) src/eval_test.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c) -o $(BINDIR)/eval_test
+	$(CC) $(TESTFLAGS) src/eval_test.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -o $(BINDIR)/eval_test
 	$(BINDIR)/eval_test
 
 $(BINDIR):

@@ -50,6 +50,7 @@ static const char *object_names[] = {
     "ERROR",
     "FUNCTION",
     "STRING",
+    "BUILTIN",
 };
 
 const char *object_type_to_str(enum object_type t)
@@ -150,6 +151,7 @@ struct object *copy_object(struct object *obj) {
     switch (obj->type) {
         case OBJ_BOOL:
         case OBJ_NULL:
+        case OBJ_BUILTIN:
             return obj;
             break;
 
@@ -179,6 +181,7 @@ void free_object(struct object *obj)
     switch (obj->type) {
         case OBJ_NULL: 
         case OBJ_BOOL: 
+        case OBJ_BUILTIN:
             return;
             break;
 
@@ -279,5 +282,9 @@ void object_to_str(char *str, struct object *obj)
     case OBJ_STRING: 
         strcat(str, obj->string);
         break;
+
+    case OBJ_BUILTIN: 
+        strcat(str, "builtin function");
+        break;    
     }
 }
