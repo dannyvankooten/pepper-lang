@@ -21,6 +21,7 @@ enum precedence get_token_precedence(struct token t) {
         case TOKEN_SLASH: return PRODUCT;
         case TOKEN_ASTERISK: return PRODUCT;
         case TOKEN_LPAREN: return CALL;
+        case TOKEN_LBRACKET: return INDEX;
         default: return LOWEST;
     }
 
@@ -209,6 +210,25 @@ struct expression *parse_array_literal(struct parser *p) {
     expr->type = EXPR_ARRAY;
     expr->token = p->current_token;
     expr->array = parse_expression_list(p, TOKEN_RBRACKET);
+    return expr;
+}
+
+
+struct expression *parse_index_expression(struct parser *p, struct expression *left) {
+    struct expression *expr = malloc(sizeof *expr);
+    if (!expr) {
+        err(EXIT_FAILURE, "out of memory");
+    }
+    expr->type = EXPR_INDEX;
+    expr->token = p->current_token;
+    expr->index.left = left;
+
+    next_token(p);
+    expr->index.index = parse_expression(p, LOWEST);
+    if (!expect_next_token(p, TOKEN_RBRACKET)) {
+        free(expr);
+        return NULL;
+    }
     return expr;
 }
 
@@ -452,16 +472,35 @@ struct expression *parse_expression(struct parser *p, int precedence) {
         break;
     }
 
+    // maybe parse right (infix) expression
     while (!next_token_is(p, TOKEN_SEMICOLON) && precedence < get_token_precedence(p->next_token)) {
         enum token_type type = p->next_token.type;
-        if (type == TOKEN_PLUS || type == TOKEN_MINUS || type == TOKEN_ASTERISK || type == TOKEN_SLASH || type == TOKEN_EQ || type == TOKEN_NOT_EQ || type == TOKEN_LT || type == TOKEN_GT) {
-            next_token(p);
-            left = parse_infix_expression(p, left);
-        } else if (type == TOKEN_LPAREN) {
-            next_token(p);
-            left = parse_call_expression(p, left);
-        } else {
-            return left;
+        switch (type) {
+            case TOKEN_PLUS: 
+            case TOKEN_MINUS: 
+            case TOKEN_ASTERISK: 
+            case TOKEN_SLASH: 
+            case TOKEN_EQ: 
+            case TOKEN_NOT_EQ: 
+            case TOKEN_LT: 
+            case TOKEN_GT: 
+                next_token(p);
+                left = parse_infix_expression(p, left);
+            break; 
+
+            case TOKEN_LPAREN: 
+                next_token(p);
+                left = parse_call_expression(p, left);
+            break; 
+
+            case TOKEN_LBRACKET: 
+                next_token(p);
+                left = parse_index_expression(p, left);
+            break;
+
+            default: 
+                return left;
+            break;
         }
     }
 
@@ -624,7 +663,7 @@ void expression_to_str(char *str, struct expression *expr) {
             strcat(str, "(");
             for (int i=0; i < expr->call.arguments.size; i++){
                 expression_to_str(str, expr->call.arguments.values[i]);
-                if (i < expr->call.arguments.size-1) {
+                if (i < (expr->call.arguments.size - 1)) {
                     strcat(str, ", ");
                 }
             }
@@ -635,12 +674,20 @@ void expression_to_str(char *str, struct expression *expr) {
             strcat(str, "[");
             for (int i=0; i < expr->array.size; i++) {
                 expression_to_str(str, expr->array.values[i]);
+
+                if (i < (expr->array.size - 1)) {
+                    strcat(str, ", ");
+                }
             }
             strcat(str, "]");
         break;
 
-        default: 
-            // TODO: Signal missing to_str implementation
+        case EXPR_INDEX: 
+            strcat(str, "(");
+            expression_to_str(str, expr->index.left);
+            strcat(str, "[");
+            expression_to_str(str, expr->index.index);
+            strcat(str, "])");
         break;
     }
 

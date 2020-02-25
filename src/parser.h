@@ -13,7 +13,8 @@ enum precedence {
     SUM,            // - and +
     PRODUCT,        // * and /
     PREFIX,         // - or !x
-    CALL            // fn()
+    CALL,           // fn()
+    INDEX,          // array[i]
 };
 
 enum expression_type {
@@ -27,6 +28,7 @@ enum expression_type {
     EXPR_CALL,
     EXPR_STRING,
     EXPR_ARRAY,
+    EXPR_INDEX,
 };
 
 enum statement_type {
@@ -93,6 +95,11 @@ struct call_expression {
     struct expression_list arguments;
 };
 
+struct index_expression {
+    struct expression *left;
+    struct expression *index;
+};
+
 struct expression {
     enum expression_type type;
     struct token token;
@@ -107,6 +114,7 @@ struct expression {
         struct function_literal function;
         struct call_expression call;
         struct expression_list array;
+        struct index_expression index;
     };
 } expression;
 

@@ -6,13 +6,13 @@
 #include "parser.h"
 #include "test_helpers.h"
 
-typedef union {
+union expression_value {
     int int_value;
     char bool_value;
     char *str_value;
-} expression_value;
+};
 
-void test_expression(struct expression *e, expression_value expected);
+void test_expression(struct expression *e, union expression_value expected);
 
 void assert_parser_errors(struct parser *p) {
     if (p->errors > 0) {
@@ -47,7 +47,7 @@ void test_let_statements() {
     struct test {
         char *literal;
         char *name;
-        expression_value value;
+        union expression_value value;
     } tests[3] = {
         {"let", "x", {.int_value = 5}},
         {"let", "y", {.bool_value = 1}},
@@ -82,7 +82,7 @@ void test_return_statements() {
     struct test {
         char *literal;
         char *name;
-        expression_value value;
+        union expression_value value;
     } tests[3] = {
         {"return", "", {.int_value = 5}},
         {"return", "", {.bool_value = 1}},
@@ -249,7 +249,7 @@ void test_boolean_expression_parsing() {
     }
 }
 
-void test_expression(struct expression *e, expression_value expected) {
+void test_expression(struct expression *e, union expression_value expected) {
     switch (e->type) {
         case EXPR_BOOL: test_boolean_expression(e, expected.bool_value); break;
         case EXPR_INT: test_integer_expression(e, expected.int_value); break;
@@ -258,7 +258,7 @@ void test_expression(struct expression *e, expression_value expected) {
     }
 }
 
-void test_infix_expression(struct expression *expr, expression_value left_value, char *operator, expression_value right_value) {
+void test_infix_expression(struct expression *expr, union expression_value left_value, char *operator, union expression_value right_value) {
     assertf(expr->type == EXPR_INFIX, "wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
     test_expression(expr->infix.left, left_value);
     assertf(strncmp(expr->infix.operator, operator, MAX_OPERATOR_LENGTH) == 0, "wrong operator: expected %s, got %s\n", operator, expr->infix.operator);
@@ -268,9 +268,9 @@ void test_infix_expression(struct expression *expr, expression_value left_value,
 void test_infix_expression_parsing() {
     struct test{
         char *input;
-        expression_value left_value;
+        union expression_value left_value;
         char *operator;
-        expression_value right_value;        
+        union expression_value right_value;        
     };
     struct test tests[] = {
        {"5 + 5", {5}, "+", {5}},
@@ -303,7 +303,7 @@ void test_prefix_expression_parsing() {
     typedef struct test {
         char *input;
         char *operator;
-        expression_value value;
+        union expression_value value;
     } test;
 
     test tests[] = {
@@ -357,7 +357,15 @@ void test_operator_precedence_parsing() {
        {"!(true == true)", "(!(true == true))"},
        {"a + add(b * c) +d", "((a + add((b * c))) + d)"},
        {"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7* 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
-       {"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"}
+       {"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"},
+       {
+        "a * [1, 2, 3, 4][b * c] * d",
+        "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+        },
+        {
+        "add(a * b[2], b[1], 2 * [1, 2][1])",
+        "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+        },
     };
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
@@ -385,8 +393,8 @@ void test_if_expression_parsing() {
     struct expression *expr = stmt.value;
     assertf (expr->type == EXPR_IF, "invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
 
-    expression_value left = {.str_value = "x"};
-    expression_value right = {.str_value = "y"};
+    union expression_value left = {.str_value = "x"};
+    union expression_value right = {.str_value = "y"};
     test_infix_expression(expr->ifelse.condition, left, "<", right);
 
     struct block_statement *consequence = expr->ifelse.consequence;
@@ -410,8 +418,8 @@ void test_if_else_expression_parsing() {
     struct expression *expr = stmt.value;
     assertf(expr->type == EXPR_IF, "invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
 
-    expression_value left = {.str_value = "x"};
-    expression_value right = {.str_value = "y"};
+    union expression_value left = {.str_value = "x"};
+    union expression_value right = {.str_value = "y"};
     test_infix_expression(expr->ifelse.condition, left, "<", right);
 
     struct block_statement *consequence = expr->ifelse.consequence;
@@ -445,9 +453,9 @@ void test_function_literal_parsing() {
     assertf(strcmp(expr->function.parameters.values[1].value, "y") == 0, "invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[1].value);
     assertf(expr->function.body->size == 1, "invalid body size: expected %d, got %d\n", 1, expr->function.body->size);
     
-    expression_value left = {.str_value = "x"};
+    union expression_value left = {.str_value = "x"};
     char *op = "+";
-    expression_value right = {.str_value = "y"};
+    union expression_value right = {.str_value = "y"};
     test_infix_expression(expr->function.body->statements[0].value, left, op, right);
     free_program(program);
 }
@@ -470,9 +478,9 @@ void test_call_expression_parsing() {
 
 
     struct {
-        expression_value left;
+        union expression_value left;
         operator op;
-        expression_value right;
+        union expression_value right;
     } tests[] = {
         { .left = { .int_value = 1 } },
         { 
@@ -534,6 +542,27 @@ void test_array_literal_parsing() {
     free_program(program);
 }
 
+void test_index_expression_parsing() {
+    char *input = "myArray[1+2];";
+    struct lexer l = {input, 0};
+    struct parser parser = new_parser(&l);
+    struct program *program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(program, 1);
+
+    struct statement stmt = program->statements[0];
+    assertf(stmt.value->type == EXPR_INDEX, "wrong expression type: expected EXPR_INDEX, got %s", stmt.value->type);
+
+    struct index_expression expr = stmt.value->index;
+    test_identifier_expression(expr.left, "myArray");
+
+    union expression_value left = {.int_value = 1};
+    union expression_value right = {.int_value = 2};
+
+    test_infix_expression(expr.index, left, "+", right);
+    free_program(program);
+}
+
 int main() {
     test_let_statements();
     test_return_statements();
@@ -550,5 +579,6 @@ int main() {
     test_call_expression_parsing();
     test_string_expression_parsing();
     test_array_literal_parsing();
+    test_index_expression_parsing();
     printf("\x1b[32mAll parsing tests passed!\033[0m\n");
 }
