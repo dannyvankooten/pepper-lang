@@ -20,5 +20,6 @@ struct environment *make_closed_environment(struct environment *parent, unsigned
 struct object *environment_get(struct environment *env, char *key);
 void environment_set(struct environment *env, char *key, struct object *value);
 void free_environment(struct environment *env);
+void free_env_pool();
 
 #endif

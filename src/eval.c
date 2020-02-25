@@ -214,7 +214,6 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
             for (int i=0; i < obj->function.parameters->size; i++) {
                 environment_set(env, obj->function.parameters->values[i].value, copy_object(args->values[i]));
             }
-
             struct object *result = eval_block_statement(obj->function.body, env);
             free_environment(env);
             result->return_value = 0;   

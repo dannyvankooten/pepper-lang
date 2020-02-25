@@ -53,6 +53,8 @@ struct object *test_eval(char *input, unsigned char keep_prog)
     }
 
     free_environment(env);
+    free_object_list_pool();
+    free_env_pool();
     return obj;
 }
 
@@ -388,7 +390,7 @@ void test_function_calls() {
     {
         struct object *obj = test_eval(tests[i].input, 0);
         test_integer_object(obj, tests[i].expected);
-        //free_object(obj);
+        free_object(obj);
     }
 }
 

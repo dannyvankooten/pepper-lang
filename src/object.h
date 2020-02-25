@@ -72,5 +72,6 @@ void object_to_str(char *str, struct object *obj);
 
 struct object_list *make_object_list(unsigned int cap);
 void free_object_list(struct object_list *list);
+void free_object_list_pool();
 
 #endif

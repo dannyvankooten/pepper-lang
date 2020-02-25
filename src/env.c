@@ -47,6 +47,7 @@ struct environment *make_environment(unsigned int cap) {
         }
     }
 
+    env->next = NULL;
     env->ref_count = 1;
     env->outer = NULL;
     for (int i = 0; i < env->cap; i++)
@@ -59,7 +60,6 @@ struct environment *make_environment(unsigned int cap) {
 struct environment *make_closed_environment(struct environment *parent, unsigned int cap) {
     struct environment *env = make_environment(cap);
     env->outer = parent;
-    env->outer->ref_count++;
     return env;
 }
 
@@ -111,6 +111,7 @@ void environment_set(struct environment *env, char *key, struct object *value) {
         prev = node;
     }
 
+    // insert node at head of table
     value->next = env->table[pos];
     env->table[pos] = value;
 }
@@ -137,6 +138,22 @@ void free_environment(struct environment *env) {
         }
     }
 
+    // return env to pool
     env->next = free_env_list;
     free_env_list = env;
+}
+
+
+void free_env_pool() {
+    struct environment *node = free_env_list;
+    struct environment *next = NULL;
+
+    while (node) {
+        next = node->next;
+        free(node->table);
+        free(node);
+        node = next;
+    }
+
+    free_env_list = NULL;
 }

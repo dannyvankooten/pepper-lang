@@ -72,6 +72,7 @@ struct object *make_object() {
        }
    } else {
        _free_object_list = obj->next;
+       obj->next = NULL;
    }
 
     
@@ -215,7 +216,6 @@ void free_object(struct object *obj)
      // add to start of free object list
     obj->next = _free_object_list;
     _free_object_list = obj;
-    obj = NULL;
 }
 
 struct object_list *make_object_list(unsigned int cap) {
@@ -320,4 +320,17 @@ void object_to_str(char *str, struct object *obj)
         strcat(str, "]");
     break;
     }
+}
+
+void free_object_list_pool() {
+    struct object *node = _free_object_list;
+    struct object *next = NULL;
+
+    while (node) {
+        next = node->next;
+        free(node);
+        node = next;
+    }
+
+    _free_object_list = NULL;
 }
