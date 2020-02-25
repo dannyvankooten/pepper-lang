@@ -2,6 +2,30 @@
 #include "builtins.h"
 #include <stdarg.h>
 #include <string.h> 
+#include <stdio.h>
+
+struct object *builtin_len(struct object_list * args);
+struct object *builtin_puts(struct object_list * args);
+
+struct object *get_builtin(char *name) {
+    static struct object len = {
+        .type = OBJ_BUILTIN,
+        .builtin = &builtin_len,
+    };
+
+    static struct object puts = {
+        .type = OBJ_BUILTIN,
+        .builtin = &builtin_puts,
+    };
+
+    if (strcmp(name, "len") == 0) {
+        return &len;
+    } else if (strcmp(name, "puts") == 0) {
+        return &puts;
+    }
+
+    return NULL;
+}
 
 struct object *builtin_len(struct object_list * args) {
     if (args->size != 1) {
@@ -16,15 +40,12 @@ struct object *builtin_len(struct object_list * args) {
     return make_integer_object(strlen(arg->string));
 }
 
-struct object *get_builtin(char *name) {
-    static struct object len = {
-        .type = OBJ_BUILTIN,
-        .builtin = &builtin_len,
-    };
-
-    if (strcmp(name, "len") == 0) {
-        return &len;
+struct object *builtin_puts(struct object_list * args) {
+    for (int i=0; i<args->size; i++) {
+        char str[1024] = {'\0'};
+        object_to_str(str, args->values[i]);
+        puts(str);
     }
 
-    return NULL;
+    return object_null;
 }

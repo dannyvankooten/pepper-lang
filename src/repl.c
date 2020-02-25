@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 
         // evaluate program into buffer
         struct object *obj = eval_program(program, env);
-        if (obj->type != OBJ_FUNCTION) {
+        if (obj->type != OBJ_NULL && obj->type != OBJ_BUILTIN && obj->type != OBJ_FUNCTION) {
             object_to_str(output, obj);
             printf("%s\n", output);
         }
