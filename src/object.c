@@ -75,7 +75,7 @@ struct object *make_object() {
        obj->next = NULL;
    }
 
-    
+   obj->return_value = 0;
    return obj;
 }
 
@@ -84,7 +84,6 @@ struct object *make_integer_object(long value)
     struct object *obj = make_object();
     obj->type = OBJ_INT;
     obj->integer = value;
-    obj->return_value = 0;
     return obj;
 }
 
@@ -92,7 +91,6 @@ struct object *make_array_object(struct object_list *elements) {
     struct object *obj = make_object();
     obj->type = OBJ_ARRAY;
     obj->array = copy_object_list(elements);
-    obj->return_value = 0;
     return obj;
 }
 
@@ -100,7 +98,6 @@ struct object *make_string_object(char *str1, char *str2)
 {
     struct object *obj = make_object();
     obj->type = OBJ_STRING;
-    obj->return_value = 0;
     
     // allocate enough memory to fit both strings
     int l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
@@ -110,7 +107,7 @@ struct object *make_string_object(char *str1, char *str2)
     }
 
     // piece strings together
-    obj->string[0] = 0;
+    obj->string[0] = '\0';
     strcat(obj->string, str1);
     if (str2) {
         strcat(obj->string, str2);
@@ -143,7 +140,6 @@ struct object *make_error_object(char *format, ...) {
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
     struct object *obj = make_object();
     obj->type = OBJ_FUNCTION;
-    obj->return_value = 0;
     obj->function.parameters = parameters;
     obj->function.body = body;
     obj->function.env = env;
@@ -241,11 +237,11 @@ struct object_list *make_object_list(unsigned int cap) {
                 err(EXIT_FAILURE, "out of memory");
             }
         }
+
+        list->next = NULL;
    }
 
     list->size = 0;
-    list->next = NULL;
-
    return list;
 }
 

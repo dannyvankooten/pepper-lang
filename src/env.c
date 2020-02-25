@@ -5,11 +5,12 @@
 #include "object.h"
 #include "env.h"
 
+#define hash(s) s[0]
+
 struct environment *free_env_list;
 
 unsigned long djb2(char *str)
 {
-    return str[0] - 'a';
     unsigned long hash = 5381;
     int c;
 
@@ -63,7 +64,8 @@ struct environment *make_closed_environment(struct environment *parent, unsigned
     return env;
 }
 
-struct object *environment_get_with_pos(struct environment *env, char *key, unsigned int pos) {
+struct object *environment_get(struct environment *env, char *key) {
+    unsigned int pos = hash(key) % env->cap;
     struct object *node = env->table[pos];
 
     while (node) {
@@ -76,19 +78,14 @@ struct object *environment_get_with_pos(struct environment *env, char *key, unsi
 
     // try parent environment (bubble up scope)
     if (env->outer) {
-        return environment_get_with_pos(env->outer, key, pos);
+        return environment_get(env->outer, key);
     }
 
     return NULL;
 }
 
-struct object *environment_get(struct environment *env, char *key) {
-   unsigned int pos = djb2(key) % env->cap;
-   return environment_get_with_pos(env, key, pos);
-}
-
 void environment_set(struct environment *env, char *key, struct object *value) {
-    unsigned int pos = djb2(key) % env->cap;
+    unsigned int pos = hash(key) % env->cap;
     struct object *node = env->table[pos];
     struct object *prev = NULL;
 

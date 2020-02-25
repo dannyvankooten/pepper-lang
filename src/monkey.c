@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    struct environment *env = make_environment(64);
+    struct environment *env = make_environment(26);
     struct object *obj = eval_program(program, env);
     char output[256];
     output[0] = '\0';

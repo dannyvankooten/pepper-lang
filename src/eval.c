@@ -122,25 +122,26 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
         return make_error_object("type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
     }
 
-    // only check left type here as we know types are equal by now
-    if (left->type == OBJ_INT)
-    {
-        return eval_integer_infix_expression(operator, left, right);
-    }
+    switch (left->type) {
+        case OBJ_INT: 
+            return eval_integer_infix_expression(operator, left, right);
+        break;
 
-    if (left->type == OBJ_BOOL)
-    {
-        if (operator[0] == '=' && operator[1] == '=') 
-        {
-            return make_boolean_object(left == right);
-        } else if (operator[0] == '!' && operator[1] == '=') {
-            return make_boolean_object(left != right);
-        }
-    }
+        case OBJ_BOOL:
+            if (operator[0] == '=' && operator[1] == '=') 
+            {
+                return make_boolean_object(left == right);
+            } else if (operator[0] == '!' && operator[1] == '=') {
+                return make_boolean_object(left != right);
+            }
+        break;
 
-    if (left->type == OBJ_STRING) 
-    {
-        return eval_string_infix_expression(operator, left, right);
+        case OBJ_STRING: 
+            return eval_string_infix_expression(operator, left, right);
+        break;
+
+        default: 
+        break;
     }
 
     return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
@@ -210,7 +211,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
              if (args->size != obj->function.parameters->size) {
                 return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
             }
-            struct environment *env = make_closed_environment(obj->function.env, 8);
+            struct environment *env = make_closed_environment(obj->function.env, 4);
             for (int i=0; i < obj->function.parameters->size; i++) {
                 environment_set(env, obj->function.parameters->values[i].value, copy_object(args->values[i]));
             }
@@ -398,10 +399,6 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
 
 struct object *eval_block_statement(struct block_statement *block, struct environment *env)
 {
-    if (block->size == 0) {
-        return NULL;
-    }
-
     struct object *obj = NULL;
     for (int i = 0; i < block->size; i++)
     {
@@ -421,10 +418,6 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
 
 struct object *eval_program(struct program *prog, struct environment *env)
 {
-    if (prog->size == 0) {
-        return NULL;
-    }
-
     struct object *obj = NULL;
 
     for (int i = 0; i < prog->size; i++)
