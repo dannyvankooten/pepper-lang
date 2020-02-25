@@ -25,20 +25,13 @@ enum expression_type {
     EXPR_IF,
     EXPR_FUNCTION,
     EXPR_CALL,
+    EXPR_STRING
 };
 
 enum statement_type {
     STMT_LET = 1,
     STMT_RETURN,
     STMT_EXPR,
-};
-
-struct bool_expression {
-    char value;
-};
-
-struct integer_literal {
-    long value;
 };
 
 struct prefix_expression {
@@ -105,6 +98,7 @@ struct expression {
     union {
         long integer;
         unsigned char bool;
+        char *string;
         struct identifier ident;
         struct prefix_expression prefix;
         struct infix_expression infix;

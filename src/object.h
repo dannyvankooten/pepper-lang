@@ -11,6 +11,7 @@ enum object_type
     OBJ_INT,
     OBJ_ERROR,
     OBJ_FUNCTION,
+    OBJ_STRING,
 };
 
 struct function {
@@ -27,6 +28,7 @@ struct object
         unsigned char boolean;
         long integer;
         char *error;
+        char *string;
         struct function function;
     };
     unsigned char return_value;
@@ -52,6 +54,7 @@ struct object *object_false_return;
 const char *object_type_to_str(enum object_type t);
 struct object *make_boolean_object(char value);
 struct object *make_integer_object(long value);
+struct object *make_string_object(char *str1, char *str2);
 struct object *make_error_object(char *format, ...);
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env);
 struct object *copy_object(struct object *obj);

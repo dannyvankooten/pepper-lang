@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "token.h"
 #include "test_helpers.h"
 
 #include <string.h>
@@ -20,7 +21,9 @@ int main() {
         "\treturn false;\n"
         "}\n"
         "10 == 10;\n"
-        "10 != 9;\n";
+        "10 != 9;\n"
+        "\"foobar\"\n"
+        "\"foo bar\"";
 
     struct lexer l = {input, 0};
     struct token tokens[] = {
@@ -97,13 +100,15 @@ int main() {
         {TOKEN_NOT_EQ, "!="},
         {TOKEN_INT, "9"},
         {TOKEN_SEMICOLON, ";"},
+        {TOKEN_STRING, "foobar"},
+        {TOKEN_STRING, "foo bar"},
         {TOKEN_EOF, ""},
     };
 
     struct token t;
     for (int j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
         gettoken(&l, &t);
-        assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%d\", got \"%d\"\n", j, tokens[j].type, t.type);
+        assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), token_type_to_str(t.type));
         assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
     }
 

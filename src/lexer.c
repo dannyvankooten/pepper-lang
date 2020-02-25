@@ -119,14 +119,26 @@ int gettoken(struct lexer *l, struct token *t) {
             t->literal[1] = '\0';
         break;
 
-        default:
+        case '"': {
+            t->type = TOKEN_STRING;
+            int i;
+            char ch;
+            for (i=0; (ch = l->input[l->pos + i]) && ch != '"' && ch != '\0'; i++) {
+                t->literal[i] = ch;
+            }
+            t->literal[i++] = '\0';
+            l->pos += i;
+        }
+        break;
+
+        default: {
             if (is_letter(ch)) {    
                 int i = 0; 
                 while (is_letter(ch)) {
                     t->literal[i++] = ch;
                     ch = l->input[l->pos++];
                 }
-                t->literal[i++] = '\0';
+                t->literal[i] = '\0';
                 get_ident(t);
 
                  // return last character to input 
@@ -147,18 +159,20 @@ int gettoken(struct lexer *l, struct token *t) {
                 t->literal[0] = ch;  
             }            
             break;
+        }
 
-            case '\0':
-                t->type = TOKEN_EOF;
-                t->literal[0] = '\0';
-                return -1; // signal DONE
-            break;
+        case '\0':
+            t->type = TOKEN_EOF;
+            t->literal[0] = '\0';
+            return -1; // signal DONE
+        break;
     }
 
     return 1;
 }
 
-extern struct lexer new_lexer(char *input) {
+
+struct lexer new_lexer(char *input) {
     struct lexer lexer = {input, 0};
     return lexer;
 }

@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h> 
+
 #include "eval.h"
 #include "test_helpers.h"
 
@@ -71,11 +73,20 @@ void test_boolean_object(struct object *obj, char expected)
     free_object(obj);
 }
 
+void test_string_object(struct object *obj, char *expected)
+{
+    assertf(!!obj, "expected string object, got null pointer");
+    assertf(obj->type == OBJ_STRING, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_STRING), object_type_to_str(obj->type), obj->error);
+    assertf(strcmp(obj->string, expected) == 0, "wrong string value: expected %s, got %s", expected, obj->string);
+    free_object(obj);
+}
+
 union object_value {
     int integer;
     char null;
     char bool;
     char *message;
+    char *string;
 };
 
 void test_error_object(struct object *obj, char *expected) {
@@ -98,6 +109,9 @@ void test_object(struct object *obj, enum object_type type, union object_value v
     case OBJ_ERROR:
         test_error_object(obj, value.message);
         break;    
+    case OBJ_STRING:
+        test_string_object(obj, value.string);
+        break;
     case OBJ_NULL: 
         assertf(obj->type == OBJ_NULL, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_NULL), object_type_to_str(obj->type));
         break;
@@ -136,6 +150,13 @@ void test_eval_integer_expressions()
         struct object *obj = test_eval(tests[i].input, 0);
         test_integer_object(obj, tests[i].expected);
     }
+}
+
+
+void test_eval_string_expression()
+{
+    struct object *obj = test_eval("\"Hello world!\"", 0);
+    test_string_object(obj, "Hello world!");
 }
 
 void test_eval_boolean_expressions()
@@ -290,6 +311,10 @@ void test_error_handling() {
         "foobar",
         "identifier not found: foobar",
         },
+        {
+            "\"Hello\" - \"world\"",
+            "unknown operator: STRING - STRING",
+        }
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
@@ -464,11 +489,18 @@ void test_actual_code() {
     test_integer_object(obj, 200);
 }
 
+void test_string_concatenation() {
+    char *input = "\"Hello\" + \" \" + \"world\"";
+    struct object *obj = test_eval(input, 0);
+    test_string_object(obj, "Hello world");
+}
+
 int main()
 {
     test_environment();
     test_eval_integer_expressions();
     test_eval_boolean_expressions();
+    test_eval_string_expression();
     test_bang_operator();
     test_if_else_expressions();
     test_return_statements();
@@ -482,5 +514,6 @@ int main()
     test_invalid_function_call();
     test_shadow_declaration();
     test_actual_code();
+    test_string_concatenation();
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }

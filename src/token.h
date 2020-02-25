@@ -1,7 +1,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include <string.h>
+#define MAX_LITERAL_LENGTH 255 
 
 enum token_type {
     TOKEN_ILLEGAL,
@@ -31,16 +31,17 @@ enum token_type {
     TOKEN_RPAREN,
     TOKEN_LBRACE,
     TOKEN_RBRACE,
+    TOKEN_STRING,
 };
 
 
 struct token {
     enum token_type type;
-    char literal[32];
+    char literal[MAX_LITERAL_LENGTH];
 };
 
 void get_ident(struct token *t);
 
-const char *token_to_str(enum token_type type);
+const char *token_type_to_str(enum token_type type);
 
 #endif

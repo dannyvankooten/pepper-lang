@@ -185,7 +185,7 @@ void test_identifier_expression_parsing() {
     assert_program_size(program, 1);
 
     struct statement stmt = program->statements[0];
-    assertf(stmt.token.type == TOKEN_IDENT, "wrong token type: expected %s, got %s\n", token_to_str(TOKEN_IDENT), stmt.token.type);
+    assertf(stmt.token.type == TOKEN_IDENT, "wrong token type: expected %s, got %s\n", token_type_to_str(TOKEN_IDENT), stmt.token.type);
     assertf(strcmp(stmt.token.literal, "foobar") == 0, "wrong token literal: expected %s, got %s\n", "foobar", stmt.token.literal);
     test_identifier_expression(stmt.value, "foobar");
     free_program(program);
@@ -211,7 +211,7 @@ void test_integer_expression_parsing() {
     assert_program_size(program, 1);
 
     struct statement stmt = program->statements[0];
-    assertf(stmt.token.type == TOKEN_INT, "wroken token type: expected %s, got %s", token_to_str(TOKEN_INT), stmt.token.type);
+    assertf(stmt.token.type == TOKEN_INT, "wroken token type: expected %s, got %s", token_type_to_str(TOKEN_INT), stmt.token.type);
     assertf (strcmp(stmt.token.literal, "5") == 0, "wrong token literal: expected %s, got %s", "foobar", stmt.token.literal);
     test_integer_expression(stmt.value, 5);
     free_program(program);
@@ -493,8 +493,21 @@ void test_call_expression_parsing() {
     free_program(program);
 }
 
-// TODO: Add test for argument parsing
-// TODO: Add test for parameter parsing
+void test_string_expression_parsing() {
+    char *input = "\"hello world\";";
+    struct lexer l = {input, 0};
+    struct parser parser = new_parser(&l);
+    struct program *program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(program, 1);
+
+    struct statement stmt = program->statements[0];
+    assertf(stmt.token.type == TOKEN_STRING, "wroken token type: expected %s, got %s", token_type_to_str(TOKEN_STRING), stmt.token.type);
+    assertf (strcmp(stmt.token.literal, "hello world") == 0, "wrong token literal: expected %s, got %s", "hello world", stmt.token.literal);
+    assertf(stmt.value->type == EXPR_STRING, "wrong expression type: expected EXPR_STRING, got %s", stmt.value->type);
+    assertf(strcmp(stmt.value->string, "hello world") == 0, "wrong expression value: expected \"hello world\", got %s", stmt.value->string);
+    free_program(program);
+}
 
 int main() {
     test_let_statements();
@@ -510,5 +523,6 @@ int main() {
     test_if_else_expression_parsing();
     test_function_literal_parsing();
     test_call_expression_parsing();
+    test_string_expression_parsing();
     printf("\x1b[32mAll parsing tests passed!\033[0m\n");
 }

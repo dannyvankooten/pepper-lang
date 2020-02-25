@@ -49,6 +49,7 @@ static const char *object_names[] = {
     "INTEGER",
     "ERROR",
     "FUNCTION",
+    "STRING",
 };
 
 const char *object_type_to_str(enum object_type t)
@@ -87,13 +88,36 @@ struct object *make_integer_object(long value)
     return obj;
 }
 
+
+struct object *make_string_object(char *str1, char *str2)
+{
+    struct object *obj = make_object();
+    obj->type = OBJ_STRING;
+    obj->return_value = 0;
+    
+    // allocate enough memory to fit both strings
+    int l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
+    obj->string = malloc(l);
+    if (!obj->string) {
+        err(EXIT_FAILURE, "out of memory");
+    }
+
+    // piece strings together
+    obj->string[0] = 0;
+    strcat(obj->string, str1);
+    if (str2) {
+        strcat(obj->string, str2);
+    }
+   
+    return obj;
+}
+
+
 struct object *make_error_object(char *format, ...) {
     va_list args;
 
-    struct object *obj = malloc(sizeof *obj);
-    if (!obj) {
-        err(EXIT_FAILURE, "out of memory");
-    }
+    struct object *obj = make_object();
+    obj->type = OBJ_ERROR;
 
     size_t l = strlen(format);
     obj->error = malloc(l + 16);
@@ -101,7 +125,6 @@ struct object *make_error_object(char *format, ...) {
         err(EXIT_FAILURE, "out of memory");
     }
 
-    obj->type = OBJ_ERROR;
     // always return error objects
     obj->return_value = 1;
     va_start(args, format);  
@@ -141,6 +164,10 @@ struct object *copy_object(struct object *obj) {
         case OBJ_ERROR: 
             return make_error_object(obj->error);
             break;
+        
+        case OBJ_STRING:
+            return make_string_object(obj->string, NULL);
+            break;
     }
 
     // TODO: This should not be reached, but also potential problem later on
@@ -157,17 +184,21 @@ void free_object(struct object *obj)
 
         case OBJ_ERROR:
             free(obj->error);
-            free(obj);
+            break;
+
+        case OBJ_STRING: 
+            free(obj->string);
             break;
         
-        case OBJ_FUNCTION:
-        case OBJ_INT:
-            // add to start of free object list
-            obj->next = _free_object_list;
-            _free_object_list = obj;
-            obj = NULL;
-            break;
+       default:
+           // nothing special
+           break;
     }
+
+     // add to start of free object list
+    obj->next = _free_object_list;
+    _free_object_list = obj;
+    obj = NULL;
 }
 
 
@@ -243,6 +274,10 @@ void object_to_str(char *str, struct object *obj)
         strcat(str, ") {\n");
         block_statement_to_str(str, obj->function.body);
         strcat(str, "\n}");
+        break;
+
+    case OBJ_STRING: 
+        strcat(str, obj->string);
         break;
     }
 }

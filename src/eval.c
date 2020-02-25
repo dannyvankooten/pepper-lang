@@ -104,9 +104,19 @@ struct object *eval_integer_infix_expression(operator operator, struct object *l
     return result;
 }
 
+struct object *eval_string_infix_expression(operator operator, struct object *left, struct object *right)
+{
+    if (operator[0] != '+') {
+        return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+    }
+
+    return make_string_object(left->string, right->string);
+}
+
 struct object *eval_infix_expression(operator operator, struct object *left, struct object *right)
 {
-    if (left->type != right->type) {
+    if (left->type != right->type) 
+    {
         return make_error_object("type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
     }
 
@@ -124,6 +134,11 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
         } else if (operator[0] == '!' && operator[1] == '=') {
             return make_boolean_object(left != right);
         }
+    }
+
+    if (left->type == OBJ_STRING) 
+    {
+        return eval_string_infix_expression(operator, left, right);
     }
 
     return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
@@ -209,6 +224,9 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
         case EXPR_BOOL:
             return make_boolean_object(expr->bool);
             break;
+        case EXPR_STRING: 
+            return make_string_object(expr->string, NULL);
+            break;
         case EXPR_PREFIX: {
             struct object *right = eval_expression(expr->prefix.right, env);
             if (is_object_error(right->type)) {
@@ -276,6 +294,7 @@ struct object *make_return_object(struct object *obj)
     case OBJ_INT:
     case OBJ_FUNCTION:
     case OBJ_ERROR:
+    case OBJ_STRING:
         obj->return_value = 1;
         break;
     case OBJ_BOOL:

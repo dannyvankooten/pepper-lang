@@ -1,33 +1,35 @@
 #include "token.h"
+#include <string.h> 
 
 static const char *token_names[] = {
-    "ILLEGAL"
-    "EOF"
-    "IDENT"
-    "INT"
-    "FUNCTION"
-    "LET"
-    "TRUE"
-    "FALSE"
-    "IF"
-    "ELSE"
-    "RETURN"
-    "="
-    "+"
-    "-"
-    "!"
-    "*"
-    "/"
-    "<"
-    ">"
-    "=="
-    "!="
-    ","
-    ";"
-    "("
-    ")"
-    "{"
-    "}"
+    "ILLEGAL",
+    "EOF",
+    "IDENT",
+    "INT",
+    "FUNCTION",
+    "LET",
+    "TRUE",
+    "FALSE",
+    "IF",
+    "ELSE",
+    "RETURN",
+    "=",
+    "+",
+    "-",
+    "!",
+    "*",
+    "/",
+    "<",
+    ">",
+    "==",
+    "!=",
+    ",",
+    ";",
+    "(",
+    ")",
+    "{",
+    "}",
+    "STRING",
 };
 
 void get_ident(struct token *t) {
@@ -51,6 +53,6 @@ void get_ident(struct token *t) {
     }
 }
 
-const char *token_to_str(enum token_type type) {
+const char *token_type_to_str(enum token_type type) {
     return token_names[type];
 }
