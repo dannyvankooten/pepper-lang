@@ -4,9 +4,9 @@
 #include "env.h"
 #include "parser.h"
 
-#define is_object_error(t) t == OBJ_ERROR
-#define is_object_truthy(obj) obj != object_null && obj != object_false
-#define make_boolean_object(value) value ? object_true : object_false
+#define is_object_error(t) (t == OBJ_ERROR)
+#define is_object_truthy(obj) (obj != object_null && obj != object_false)
+#define make_boolean_object(value) (value ? object_true : object_false)
 
 enum object_type
 {

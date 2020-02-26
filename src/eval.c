@@ -17,18 +17,11 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
 
 struct object *eval_bang_operator_expression(struct object *obj)
 {
-    switch (obj->type)
-    {
-    case OBJ_BOOL:
-        return obj == object_false ? object_true : object_false;
-        break;
-    case OBJ_NULL:
+    if (!is_object_truthy(obj)) {
         return object_true;
-        break;
-    default:
-        return object_false;
-        break;
     }
+
+    return object_false;
 }
 
 struct object *eval_minus_prefix_operator_expression(struct object *right)
