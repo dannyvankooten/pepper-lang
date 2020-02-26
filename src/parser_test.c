@@ -26,9 +26,7 @@ void assert_parser_errors(struct parser *p) {
 }
 
 void assert_program_size(struct program *p, unsigned expected_size) {
-    if (p->size != expected_size) {
-        abortf("wrong program size. expected %d, got %d\n", expected_size, p->size);
-    }   
+    assertf(p->size == expected_size, "wrong program size. expected %d, got %d\n", expected_size, p->size); 
 }
 
 void test_let_statements() {
