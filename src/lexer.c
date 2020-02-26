@@ -185,6 +185,9 @@ int gettoken(struct lexer *l, struct token *t) {
 
 
 struct lexer new_lexer(char *input) {
-    struct lexer lexer = {input, 0};
+    struct lexer lexer = {
+        .input = input, 
+        .pos = 0
+    };
     return lexer;
 }

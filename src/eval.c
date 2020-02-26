@@ -60,6 +60,7 @@ struct object *eval_prefix_expression(operator operator, struct object *right)
     return object_null;
 }
 
+
 struct object *eval_integer_infix_expression(operator operator, struct object *left, struct object *right)
 {
     struct object *result;
@@ -115,6 +116,7 @@ struct object *eval_string_infix_expression(operator operator, struct object *le
     return make_string_object(left->string, right->string);
 }
 
+
 struct object *eval_infix_expression(operator operator, struct object *left, struct object *right)
 {
     if (left->type != right->type) 
@@ -147,6 +149,7 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
     return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
 }
 
+
 struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
 {
     struct object *obj = eval_expression(expr->condition, env);
@@ -166,10 +169,11 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
     return object_null;
 }
 
+
 struct object *eval_identifier(struct identifier *ident, struct environment *env) {
     struct object *obj = environment_get(env, ident->value);
     if (obj) {
-        return copy_object(obj);
+        return obj;
     }
 
     obj = get_builtin(ident->value);
@@ -179,6 +183,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 
     return make_error_object("identifier not found: %s", ident->value);
 }
+
 
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
     struct object_list *result = make_object_list(list->size);
@@ -204,6 +209,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
     return result;
 }
 
+
 struct object *apply_function(struct object *obj, struct object_list *args) {
 
     switch (obj->type) {
@@ -219,11 +225,11 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
             
             struct environment *env = make_closed_environment(obj->function.env, 4); 
             for (int i=0; i < obj->function.parameters->size; i++) {
-                environment_set(env, obj->function.parameters->values[i].value, copy_object(args->values[i]));
+                environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
             }
             struct object *result = eval_block_statement(obj->function.body, env);
             free_environment(env);
-
+            result->return_value = 0;
             return result;
         }
         break;
@@ -350,6 +356,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
     return object_null;
 }
 
+
 struct object *make_return_object(struct object *obj)
 {
     switch (obj->type)
@@ -358,9 +365,11 @@ struct object *make_return_object(struct object *obj)
     case OBJ_FUNCTION:
     case OBJ_ERROR:
     case OBJ_STRING:
-    case OBJ_ARRAY:
+    case OBJ_ARRAY: {
         obj->return_value = 1;
         break;
+    } 
+       
     case OBJ_BOOL:
         if (obj == object_false) {
             return object_false_return;
@@ -379,6 +388,7 @@ struct object *make_return_object(struct object *obj)
     return obj;
 }
 
+
 struct object *eval_statement(struct statement *stmt, struct environment *env)
 {
     struct object *result = NULL;
@@ -390,7 +400,7 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
         return result;
     case STMT_LET: 
         result = eval_expression(stmt->value, env);
-        environment_set(env, stmt->name.value, copy_object(result));
+        environment_set(env, stmt->name.value, result);
         return result;
     case STMT_RETURN:
         result = eval_expression(stmt->value, env);
@@ -400,6 +410,7 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
 
     return object_null;
 }
+
 
 struct object *eval_block_statement(struct block_statement *block, struct environment *env)
 {
@@ -411,13 +422,16 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
         }
 
         obj = eval_statement(&block->statements[i], env);
-        if (obj->return_value)
-        {
-            return obj;
+        if (obj->return_value) {
+            break;
         }
     }
 
-    return obj;
+    // create a fresh copy so we can clear out the environment after the current function goes out of scope
+    struct object *copy = copy_object(obj);
+    copy->return_value = 1;
+    free_object(obj);
+    return copy;
 }
 
 struct object *eval_program(struct program *prog, struct environment *env)
@@ -431,12 +445,13 @@ struct object *eval_program(struct program *prog, struct environment *env)
         }
 
         obj = eval_statement(&prog->statements[i], env);
-        if (obj->return_value)
-        {
-            return obj;
+        if (obj->return_value) {
+           break;
         }
     }
 
-    return obj;
+    struct object *copy = copy_object(obj);
+    free_object(obj);
+    return copy;
 }
 

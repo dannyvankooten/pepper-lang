@@ -74,6 +74,7 @@ void environment_set(struct environment *env, char *key, struct object *value) {
     struct object *node = env->table[pos];
     struct object *prev = NULL;
 
+    value = copy_object(value);
     value->name = key;
 
     // find existing node with that key
@@ -85,6 +86,9 @@ void environment_set(struct environment *env, char *key, struct object *value) {
                 env->table[pos] = value;
             }
             value->next = node->next;
+
+            // free old object
+            node->name = NULL;
             free_object(node);
             return;
         }      
@@ -102,11 +106,12 @@ void free_environment(struct environment *env) {
     struct object *node;
     struct object *next;
 
-    // free objects in env
+    // free all objects in env
     for (int i=0; i < env->cap; i++) {
         node = env->table[i];
         while (node) {
             next = node->next;
+            node->name = NULL;
             free_object(node);
             node = next;
         }

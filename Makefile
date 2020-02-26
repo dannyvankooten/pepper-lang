@@ -9,7 +9,7 @@ repl: $(BINDIR)
 	$(CC) $(CFLAGS) src/repl.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -ledit -Ofast -o $(BINDIR)/repl
 
 monkey: $(BINDIR)
-	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -Ofast --optimize -o $(BINDIR)/monkey 
+	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -Ofast -finline-limit=1024 -o $(BINDIR)/monkey 
 
 tests: $(BINDIR) lexer_test parser_test eval_test 
 
@@ -33,9 +33,15 @@ bench: monkey
 	/usr/bin/time --append -o benchmarks.md ./bin/monkey fibonacci.monkey
 	echo "" >> benchmarks.md
 
+.PHONY: clean
 clean:
 	rm -r $(BINDIR)
 
+.PHONY: watch
+watch:
+	find src/ | entr -s 'make tests'
+
+.PHONY: valgrind
 valgrind: 
 	docker run -v $(PWD):/root/build -d -p 22021:22 messeb/valgrind	
 	ssh -p 22021 root@localhost

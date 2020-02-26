@@ -44,7 +44,8 @@ struct object *test_eval(char *input, unsigned char keep_prog)
         }
         exit(1);
     }
-    struct environment *env = make_environment(16);
+
+    struct environment *env = make_environment(26);
     struct object *obj = eval_program(program, env);
 
     // Free'ing the program clears the identifier values, which we need in test_function_object
@@ -579,8 +580,6 @@ int main()
     test_function_calls();
     test_closing_environments();
     test_recursive_function();
-    // TODO: Fix closures 
-    // test_closures();
     test_invalid_function_call();
     test_shadow_declaration();
     test_actual_code();
@@ -588,6 +587,11 @@ int main()
     test_builtin_functions();
     test_array_literals();
     test_array_index_expressions();
+
+    // TODO: Fix closures 
+    // This is tricky because we can't just clear out the outer environment, 
+    // we need to extend it's lifetime somehow
+    // test_closures();
 
     printf("\x1b[32mAll eval tests passed!\033[0m\n");
 }

@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     struct lexer lexer;
     struct parser parser;
     struct program *program;
-    struct environment *env = make_environment(256);
+    struct environment *env = make_environment(26);
 
     while (1)
     {

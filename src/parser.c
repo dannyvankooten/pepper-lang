@@ -36,11 +36,12 @@ void next_token(struct parser * p) {
 struct parser new_parser(struct lexer *l) {
     struct parser p = {
         .lexer = l,
+        .errors = 0,
     };
    
     // read two tokens so that both current_token and next_token are set
-    next_token(&p);
-    next_token(&p);
+    gettoken(p.lexer, &p.current_token);
+    gettoken(p.lexer, &p.next_token);
     return p;
 }
 
