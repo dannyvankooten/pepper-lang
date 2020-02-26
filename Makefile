@@ -9,7 +9,7 @@ repl: $(BINDIR)
 	$(CC) $(CFLAGS) src/repl.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -ledit -Ofast -o $(BINDIR)/repl
 
 monkey: $(BINDIR)
-	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -Ofast -finline-limit=1024 -o $(BINDIR)/monkey 
+	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -Ofast -finline-limit=1024 -DNDEBUG -o $(BINDIR)/monkey 
 
 tests: $(BINDIR) lexer_test parser_test eval_test 
 
@@ -29,7 +29,7 @@ $(BINDIR):
 	mkdir -p $(BINDIR)
 
 bench: monkey
-	echo "**$(shell date '+%Y-%m-%d %H:%M')** (fib 30)" >> benchmarks.md
+	echo "**$(shell date '+%Y-%m-%d %H:%M')** (fib 35)" >> benchmarks.md
 	/usr/bin/time --append -o benchmarks.md ./bin/monkey fibonacci.monkey
 	echo "" >> benchmarks.md
 
