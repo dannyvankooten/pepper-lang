@@ -9,6 +9,7 @@ struct expression *parse_expression(struct parser *p, int precedence);
 int parse_statement(struct parser *p, struct statement *s);
 void expression_to_str(char *str, struct expression *expr);
 void free_expression(struct expression *expr);
+enum operator parse_operator(enum token_type t);
 
 enum precedence get_token_precedence(struct token t) {
     switch (t.type) {
@@ -156,7 +157,7 @@ struct expression *parse_prefix_expression(struct parser *p) {
 
     expr->type = EXPR_PREFIX;
     expr->token = p->current_token;
-    strncpy(expr->prefix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
+    expr->prefix.operator = parse_operator(p->current_token.type);
     next_token(p);
     expr->prefix.right = parse_expression(p, PREFIX);
     return expr;
@@ -254,7 +255,7 @@ struct expression *parse_infix_expression(struct parser *p, struct expression *l
     expr->type = EXPR_INFIX;
     expr->token = p->current_token;
     expr->infix.left = left;
-    strncpy(expr->infix.operator, p->current_token.literal, MAX_OPERATOR_LENGTH);
+    expr->infix.operator = parse_operator(p->current_token.type);
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
     expr->infix.right = parse_expression(p, precedence);
@@ -609,7 +610,7 @@ void expression_to_str(char *str, struct expression *expr) {
     switch (expr->type) {
         case EXPR_PREFIX: 
             strcat(str, "(");
-            strcat(str, expr->prefix.operator);
+            strcat(str, expr->token.literal);
             expression_to_str(str, expr->prefix.right);
             strcat(str, ")");
         break;
@@ -618,7 +619,7 @@ void expression_to_str(char *str, struct expression *expr) {
             strcat(str, "(");
             expression_to_str(str, expr->infix.left);
             strcat(str, " ");
-            strcat(str, expr->prefix.operator);
+            strcat(str, expr->token.literal);
             strcat(str, " ");
             expression_to_str(str, expr->infix.right);
             strcat(str, ")");
@@ -712,6 +713,41 @@ char *program_to_str(struct program *p) {
     }    
 
     return str;
+}
+
+enum operator parse_operator(enum token_type t) {
+    switch (t) {
+        case TOKEN_BANG: return OP_NEGATE; break;
+        case TOKEN_MINUS: return OP_SUBTRACT; break;
+        case TOKEN_PLUS: return OP_ADD; break;
+        case TOKEN_ASTERISK: return OP_MULTIPLY; break;
+        case TOKEN_GT: return OP_GT; break;
+        case TOKEN_LT: return OP_LT; break;
+        case TOKEN_EQ: return OP_EQ; break;
+        case TOKEN_NOT_EQ: return OP_NOT_EQ; break;
+        case TOKEN_SLASH: return OP_DIVIDE; break;
+        default: 
+        break;
+    }
+
+    return OP_UNKNOWN;
+}
+
+char *operator_to_str(enum operator operator) {
+    switch (operator) {
+        case OP_ADD: return "+"; break;
+        case OP_SUBTRACT: return "-"; break;
+        case OP_MULTIPLY: return "*"; break;
+        case OP_DIVIDE: return "/"; break;
+        case OP_NEGATE: return "!"; break;
+        case OP_NOT_EQ: return "!="; break;
+        case OP_EQ: return "=="; break;
+        case OP_LT: return "<"; break;
+        case OP_GT: return ">"; break;
+        case OP_UNKNOWN: break;
+    }
+
+    return "???";
 }
 
 void free_statements(struct statement *stmts, unsigned int size) {

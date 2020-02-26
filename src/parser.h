@@ -4,7 +4,6 @@
 #include "lexer.h"
 
 #define MAX_IDENT_LENGTH 32
-#define MAX_OPERATOR_LENGTH 3
 
 enum precedence {
     LOWEST = 1,
@@ -37,13 +36,26 @@ enum statement_type {
     STMT_EXPR,
 };
 
+enum operator {
+    OP_UNKNOWN,
+    OP_ADD,
+    OP_SUBTRACT,
+    OP_MULTIPLY,
+    OP_DIVIDE,
+    OP_GT,
+    OP_LT,
+    OP_EQ,
+    OP_NOT_EQ,
+    OP_NEGATE,
+};
+
 struct prefix_expression {
-    char operator[MAX_OPERATOR_LENGTH];
+    enum operator operator;
     struct expression *right;
 };
 
 struct infix_expression {
-    char operator[MAX_OPERATOR_LENGTH];
+    enum operator operator;
     struct expression *left;
     struct expression *right;
 };
@@ -134,13 +146,12 @@ struct parser {
     char error_messages[8][128];
 };
 
-typedef char operator[MAX_OPERATOR_LENGTH] ;
-
 struct parser new_parser(struct lexer *l);
 struct program *parse_program(struct parser *parser);
 void block_statement_to_str(char *str, struct block_statement *b);
 void identifier_list_to_str(char *str, struct identifier_list *identifiers);
 char *program_to_str(struct program *p);
 void free_program(struct program *p);
+char *operator_to_str(enum operator operator);
 
 #endif

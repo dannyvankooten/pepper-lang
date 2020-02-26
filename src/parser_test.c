@@ -124,8 +124,12 @@ void test_program_string() {
         },
         {
             .type = EXPR_INFIX,
+            .token = {
+                .type = TOKEN_PLUS,
+                .literal = "+",
+            },
             .infix = {
-                .operator = "+",
+                .operator = OP_ADD,
                 .left = &e1,
                 .right = &e2,
             }
@@ -256,10 +260,10 @@ void test_expression(struct expression *e, union expression_value expected) {
     }
 }
 
-void test_infix_expression(struct expression *expr, union expression_value left_value, char *operator, union expression_value right_value) {
+void test_infix_expression(struct expression *expr, union expression_value left_value, enum operator operator, union expression_value right_value) {
     assertf(expr->type == EXPR_INFIX, "wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
     test_expression(expr->infix.left, left_value);
-    assertf(strncmp(expr->infix.operator, operator, MAX_OPERATOR_LENGTH) == 0, "wrong operator: expected %s, got %s\n", operator, expr->infix.operator);
+    assertf(expr->infix.operator == operator, "wrong operator: expected %d, got %d\n", operator, expr->infix.operator);
     test_expression(expr->infix.right, right_value);
 }
 
@@ -267,21 +271,21 @@ void test_infix_expression_parsing() {
     struct test{
         char *input;
         union expression_value left_value;
-        char *operator;
+        enum operator operator;
         union expression_value right_value;        
     };
     struct test tests[] = {
-       {"5 + 5", {5}, "+", {5}},
-       {"5 - 5", {5}, "-", {5}},
-       {"5 * 5", {5}, "*", {5}},
-       {"5 / 5", {5}, "/", {5}},
-       {"5 > 5", {5}, ">", {5}},
-       {"5 < 5", {5}, "<", {5}},
-       {"5 == 5", {5}, "==", {5}},
-       {"5 != 5", {5}, "!=", {5}},
-       {"true == true", {1}, "==", {1}},
-       {"true != false", {1}, "!=", {0}},
-       {"false == false", {0}, "==", {0}},
+       {"5 + 5", {5}, OP_ADD, {5}},
+       {"5 - 5", {5}, OP_SUBTRACT, {5}},
+       {"5 * 5", {5}, OP_MULTIPLY, {5}},
+       {"5 / 5", {5}, OP_DIVIDE, {5}},
+       {"5 > 5", {5}, OP_GT, {5}},
+       {"5 < 5", {5}, OP_LT, {5}},
+       {"5 == 5", {5}, OP_EQ, {5}},
+       {"5 != 5", {5}, OP_NOT_EQ, {5}},
+       {"true == true", {1}, OP_EQ, {1}},
+       {"true != false", {1}, OP_NOT_EQ, {0}},
+       {"false == false", {0}, OP_EQ, {0}},
     };
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
@@ -300,15 +304,15 @@ void test_infix_expression_parsing() {
 void test_prefix_expression_parsing() {
     typedef struct test {
         char *input;
-        char *operator;
+        enum operator operator;
         union expression_value value;
     } test;
 
     test tests[] = {
-        {"!5", "!", { .int_value = 5 }},
-        {"-15", "-", { .int_value = 15 }},
-        {"!true", "!", { .bool_value = 1 }},
-        {"!false", "!", { .bool_value = 0 }},
+        {"!5", OP_NEGATE, { .int_value = 5 }},
+        {"-15", OP_SUBTRACT, { .int_value = 15 }},
+        {"!true", OP_NEGATE, { .bool_value = 1 }},
+        {"!false", OP_NEGATE, { .bool_value = 0 }},
     };
     test t;
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
@@ -322,7 +326,7 @@ void test_prefix_expression_parsing() {
         struct statement stmt = program->statements[0];
 
         assertf(stmt.value->type == EXPR_PREFIX, "wrong expression type. expected %d, got %d\n", EXPR_PREFIX, stmt.value->type);
-        assertf(strncmp(stmt.value->prefix.operator, t.operator, 2) == 0, "wrong operator. expected %s, got %s\n", t.operator, stmt.value->prefix.operator);
+        assertf(stmt.value->prefix.operator == t.operator, "wrong operator. expected %d, got %d\n", t.operator, stmt.value->prefix.operator);
         test_expression(stmt.value->prefix.right, t.value); 
         free_program(program);       
     }
@@ -393,7 +397,7 @@ void test_if_expression_parsing() {
 
     union expression_value left = {.str_value = "x"};
     union expression_value right = {.str_value = "y"};
-    test_infix_expression(expr->ifelse.condition, left, "<", right);
+    test_infix_expression(expr->ifelse.condition, left, OP_LT, right);
 
     struct block_statement *consequence = expr->ifelse.consequence;
     assertf(!!consequence, "expected consequence block statement, got NULL\n");
@@ -418,7 +422,7 @@ void test_if_else_expression_parsing() {
 
     union expression_value left = {.str_value = "x"};
     union expression_value right = {.str_value = "y"};
-    test_infix_expression(expr->ifelse.condition, left, "<", right);
+    test_infix_expression(expr->ifelse.condition, left, OP_LT, right);
 
     struct block_statement *consequence = expr->ifelse.consequence;
     assertf(!!consequence, "expected consequence block statement, got NULL\n");
@@ -452,7 +456,7 @@ void test_function_literal_parsing() {
     assertf(expr->function.body->size == 1, "invalid body size: expected %d, got %d\n", 1, expr->function.body->size);
     
     union expression_value left = {.str_value = "x"};
-    char *op = "+";
+    enum operator op = OP_ADD;
     union expression_value right = {.str_value = "y"};
     test_infix_expression(expr->function.body->statements[0].value, left, op, right);
     free_program(program);
@@ -477,18 +481,18 @@ void test_call_expression_parsing() {
 
     struct {
         union expression_value left;
-        operator op;
+        enum operator op;
         union expression_value right;
     } tests[] = {
         { .left = { .int_value = 1 } },
         { 
             .left = { .int_value = 2 },
-            .op = "*",
+            .op = OP_MULTIPLY,
             .right = { .int_value = 3 },
         },
         { 
             .left = { .int_value = 4 },
-            .op = "+",
+            .op = OP_ADD,
             .right = { .int_value = 5 },
         },
     };
@@ -557,7 +561,7 @@ void test_index_expression_parsing() {
     union expression_value left = {.int_value = 1};
     union expression_value right = {.int_value = 2};
 
-    test_infix_expression(expr.index, left, "+", right);
+    test_infix_expression(expr.index, left, OP_ADD, right);
     free_program(program);
 }
 

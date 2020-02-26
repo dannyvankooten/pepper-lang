@@ -34,63 +34,55 @@ struct object *eval_minus_prefix_operator_expression(struct object *right)
     return make_integer_object(-right->integer);
 }
 
-struct object *eval_prefix_expression(operator operator, struct object *right)
+struct object *eval_prefix_expression(enum operator operator, struct object *right)
 {
-    switch (operator[0])
+    switch (operator)
     {
-    case '!':
+    case OP_NEGATE:
         return eval_bang_operator_expression(right);
         break;
 
-    case '-':
+    case OP_SUBTRACT:
         return eval_minus_prefix_operator_expression(right);
         break;
 
     default: 
-        return make_error_object("unknown operator: %s%s", operator, object_type_to_str(right->type));    
+        return make_error_object("unknown operator: %s%s", operator_to_str(operator), object_type_to_str(right->type));    
     }
 
     return object_null;
 }
 
 
-struct object *eval_integer_infix_expression(operator operator, struct object *left, struct object *right)
+struct object *eval_integer_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
     struct object *result;
 
-    switch (operator[0])
+    switch (operator)
     {
-    case '+':
+    case OP_ADD:
         result = make_integer_object(left->integer + right->integer);
         break;
-    case '-':
+    case OP_SUBTRACT:
         result = make_integer_object(left->integer - right->integer);
         break;
-    case '*':
+    case OP_MULTIPLY:
         result = make_integer_object(left->integer * right->integer);
         break;
-    case '/':
+    case OP_DIVIDE:
         result = make_integer_object(left->integer / right->integer);
         break;
-    case '<':
+    case OP_LT:
         result = make_boolean_object(left->integer < right->integer);
         break;
-    case '>':
+    case OP_GT:
         result = make_boolean_object(left->integer > right->integer);
         break;
-    case '=':
-        if (operator[1] == '=') {
-            result = make_boolean_object(left->integer == right->integer);
-        } else {
-            result = object_null;
-        }
+    case OP_EQ:
+        result = make_boolean_object(left->integer == right->integer);
         break;
-    case '!':
-        if (operator[1] == '=') {
-            result = make_boolean_object(left->integer != right->integer);
-        } else { 
-            result = object_null;
-        }
+    case OP_NOT_EQ:
+        result = make_boolean_object(left->integer != right->integer);
         break;
     default:
         result = object_null;
@@ -100,21 +92,21 @@ struct object *eval_integer_infix_expression(operator operator, struct object *l
     return result;
 }
 
-struct object *eval_string_infix_expression(operator operator, struct object *left, struct object *right)
+struct object *eval_string_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
-    if (operator[0] != '+') {
-        return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+    if (operator != OP_ADD) {
+        return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator_to_str(operator), object_type_to_str(right->type));
     }
 
     return make_string_object(left->string, right->string);
 }
 
 
-struct object *eval_infix_expression(operator operator, struct object *left, struct object *right)
+struct object *eval_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
     if (left->type != right->type) 
     {
-        return make_error_object("type mismatch: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+        return make_error_object("type mismatch: %s %s %s", object_type_to_str(left->type), operator_to_str(operator), object_type_to_str(right->type));
     }
 
     switch (left->type) {
@@ -123,10 +115,9 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
         break;
 
         case OBJ_BOOL:
-            if (operator[0] == '=' && operator[1] == '=') 
-            {
+            if (operator == OP_EQ) {
                 return make_boolean_object(left == right);
-            } else if (operator[0] == '!' && operator[1] == '=') {
+            } else if (operator == OP_NOT_EQ) {
                 return make_boolean_object(left != right);
             }
         break;
@@ -139,7 +130,7 @@ struct object *eval_infix_expression(operator operator, struct object *left, str
         break;
     }
 
-    return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator, object_type_to_str(right->type));
+    return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator_to_str(operator), object_type_to_str(right->type));
 }
 
 
