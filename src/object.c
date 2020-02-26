@@ -1,5 +1,6 @@
 #include <err.h> 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h> 
@@ -10,31 +11,31 @@ struct object_list *copy_object_list(struct object_list *original);
 
 static struct object _object_null = {
     .type = OBJ_NULL,
-    .return_value = 0
+    .return_value = false,
 };
 static struct object _object_null_return = {
     .type = OBJ_NULL,
-    .return_value = 1
+    .return_value = true,
 };
 static struct object _object_true = {
     .type = OBJ_BOOL,
-    .boolean = 1,
-    .return_value = 0
+    .boolean = true,
+    .return_value = false,
 };
 static struct object _object_false = {
     .type = OBJ_BOOL,
-    .boolean = 0,
-    .return_value = 0
+    .boolean = false,
+    .return_value = false,
 };
 static struct object _object_true_return = {
     .type = OBJ_BOOL,
-    .boolean = 1,
-    .return_value = 1
+    .boolean = true,
+    .return_value = true,
 };
 static struct object _object_false_return = {
     .type = OBJ_BOOL,
-    .boolean = 0,
-    .return_value = 1
+    .boolean = false,
+    .return_value = true,
 };
 struct object *object_null = &_object_null;
 struct object *object_null_return = &_object_null_return;
@@ -78,7 +79,7 @@ struct object *make_object(enum object_type type) {
    obj->type = type;
    obj->next = NULL;
    obj->name = NULL;
-   obj->return_value = 0;
+   obj->return_value = false;
    return obj;
 }
 
@@ -128,7 +129,7 @@ struct object *make_error_object(char *format, ...) {
     }
 
     // always return error objects
-    obj->return_value = 1;
+    obj->return_value = true;
     va_start(args, format);  
     vsnprintf(obj->error, l + 64, format, args);
     va_end(args);

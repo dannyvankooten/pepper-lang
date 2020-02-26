@@ -1,6 +1,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include <stdbool.h>
 #include "env.h"
 #include "parser.h"
 
@@ -40,7 +41,7 @@ struct object
     enum object_type type;
     char *name;
     union {
-        unsigned char boolean;
+        bool boolean;
         long integer;
         char *error;
         char *string;
@@ -48,7 +49,7 @@ struct object
         struct object *(*builtin)(struct object_list *);
         struct object_list *array;
     };
-    unsigned char return_value;
+    bool return_value;
     struct object *next;
 };
 

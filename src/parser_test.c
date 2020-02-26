@@ -25,7 +25,7 @@ void assert_parser_errors(struct parser *p) {
     }
 }
 
-void assert_program_size(struct program *p, unsigned expected_size) {
+void assert_program_size(struct program *p, unsigned int expected_size) {
     assertf(p->size == expected_size, "wrong program size. expected %d, got %d\n", expected_size, p->size); 
 }
 
@@ -222,7 +222,7 @@ void test_integer_expression_parsing() {
 
 void test_boolean_expression(struct expression * expr, char expected) {
     assertf(expr->type == EXPR_BOOL, "wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
-    assertf(expr->bool == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->bool);
+    assertf(expr->boolean == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->boolean);
     
     char *expected_str = expected ? "true" : "false";
     assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);

@@ -1,6 +1,7 @@
 #ifndef PARSER_H 
 #define PARSER_H
 
+#include <stdbool.h>
 #include "lexer.h"
 
 #define MAX_IDENT_LENGTH 32
@@ -117,7 +118,7 @@ struct expression {
     struct token token;
     union {
         long integer;
-        unsigned char bool;
+        bool boolean;
         char *string;
         struct identifier ident;
         struct prefix_expression prefix;

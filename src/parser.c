@@ -270,7 +270,7 @@ struct expression *parse_boolean_expression(struct parser *p) {
 
     expr->type = EXPR_BOOL;
     expr->token = p->current_token;
-    expr->bool = current_token_is(p, TOKEN_TRUE);
+    expr->boolean = current_token_is(p, TOKEN_TRUE);
     return expr;
 }
 
@@ -634,7 +634,7 @@ void expression_to_str(char *str, struct expression *expr) {
         break;
 
         case EXPR_BOOL:
-            strcat(str, expr->bool ? "true" : "false");
+            strcat(str, expr->boolean ? "true" : "false");
         break;
 
         case EXPR_INT:

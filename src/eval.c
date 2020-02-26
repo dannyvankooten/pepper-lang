@@ -1,10 +1,10 @@
 
 #include <stdlib.h>
-#include <string.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <err.h>
-#include <assert.h>
 
 #include "builtins.h"
 #include "object.h"
@@ -141,7 +141,7 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
         return obj;
     }
 
-    unsigned char truthy = is_object_truthy(obj);
+    bool truthy = is_object_truthy(obj);
     free_object(obj);
 
     if (truthy) {
@@ -213,7 +213,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
             }
             struct object *result = eval_block_statement(obj->function.body, env);
             free_environment(env);
-            result->return_value = 0;
+            result->return_value = false;
             return result;
         }
         break;
@@ -246,7 +246,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
             return make_integer_object(expr->integer);
             break;
         case EXPR_BOOL:
-            return make_boolean_object(expr->bool);
+            return make_boolean_object(expr->boolean);
             break;
         case EXPR_STRING: 
             return make_string_object(expr->string, NULL);
@@ -350,7 +350,7 @@ struct object *make_return_object(struct object *obj)
     case OBJ_ERROR:
     case OBJ_STRING:
     case OBJ_ARRAY: {
-        obj->return_value = 1;
+        obj->return_value = true;
         break;
     } 
        
@@ -413,7 +413,7 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
 
     // create a fresh copy so we can clear out the environment after the current function goes out of scope
     struct object *copy = copy_object(obj);
-    copy->return_value = 1;
+    copy->return_value = true;
     free_object(obj);
     return copy;
 }
