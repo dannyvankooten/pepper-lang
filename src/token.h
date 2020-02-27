@@ -14,6 +14,7 @@ enum token_type {
     TOKEN_FALSE, 
     TOKEN_IF,
     TOKEN_ELSE,
+    TOKEN_WHILE,
     TOKEN_RETURN,
     TOKEN_ASSIGN,
     TOKEN_PLUS,

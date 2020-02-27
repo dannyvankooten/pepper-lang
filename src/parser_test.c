@@ -565,6 +565,31 @@ void test_index_expression_parsing() {
     free_program(program);
 }
 
+
+void test_while_expression_parsing() {
+    char *input = "while (x < y) { x }";
+    struct lexer lexer = {input};
+    struct parser parser = new_parser(&lexer);
+    struct program *program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(program, 1);
+
+    struct statement stmt = program->statements[0];
+    struct expression *expr = stmt.value;
+    assertf (expr->type == EXPR_WHILE, "invalid statement type: expected %d, got %d\n", EXPR_WHILE, stmt.type);
+
+    union expression_value left = {.str_value = "x"};
+    union expression_value right = {.str_value = "y"};
+    test_infix_expression(expr->whilst.condition, left, OP_LT, right);
+
+    struct block_statement *body = expr->whilst.body;
+    assertf(!!body, "expected consequence block statement, got NULL\n");
+    assertf(body->size == 1, "invalid consequence size: expected %d, got %d\n", 1, body->size);
+    assertf(body->statements[0].type == STMT_EXPR, "statements[0] is not a statement expression, got %d\n", body->statements[0].type);
+    test_identifier_expression(body->statements[0].value, "x");
+    free_program(program);
+}
+
 int main() {
     test_let_statements();
     test_return_statements();
@@ -582,5 +607,6 @@ int main() {
     test_string_expression_parsing();
     test_array_literal_parsing();
     test_index_expression_parsing();
+    test_while_expression_parsing();
     printf("\x1b[32mAll parsing tests passed!\033[0m\n");
 }

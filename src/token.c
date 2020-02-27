@@ -12,6 +12,7 @@ static const char *token_names[] = {
     "FALSE",
     "IF",
     "ELSE",
+    "WHILE",
     "RETURN",
     "=",
     "+",
@@ -50,6 +51,8 @@ void get_ident(struct token *t) {
         t->type = TOKEN_ELSE;
     } else if (strcmp(t->literal, "return") == 0) {
         t->type = TOKEN_RETURN;
+    } else if (strcmp(t->literal, "while") == 0) {
+        t->type = TOKEN_WHILE;
     } else {
         t->type = TOKEN_IDENT;
     }

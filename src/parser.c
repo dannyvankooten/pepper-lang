@@ -317,6 +317,42 @@ struct block_statement *parse_block_statement(struct parser *p) {
     return b;
 }
 
+struct expression *make_expression(enum expression_type type, struct token tok) {
+    struct expression *expr = malloc(sizeof *expr);
+    if (!expr) {
+        err(EXIT_FAILURE, "out of memory");
+    }
+
+    expr->type = type;
+    expr->token = tok;
+    return expr;
+}
+
+struct expression *parse_while_expression(struct parser *p) {
+    struct expression *expr = make_expression(EXPR_WHILE, p->current_token);
+    if (!expect_next_token(p, TOKEN_LPAREN)) {
+        free(expr);
+        return NULL;
+    }
+
+    next_token(p);
+    expr->whilst.condition = parse_expression(p, LOWEST);
+     if (!expect_next_token(p, TOKEN_RPAREN)) {
+        free(expr->whilst.condition);
+        free(expr);
+        return NULL;
+    }
+
+    if (!expect_next_token(p, TOKEN_LBRACE)) {
+        free(expr->whilst.condition);
+        free(expr);
+        return NULL;
+    }
+
+    expr->whilst.body = parse_block_statement(p);
+    return expr;
+}
+
 struct expression *parse_if_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -457,6 +493,9 @@ struct expression *parse_expression(struct parser *p, int precedence) {
         case TOKEN_IF:
             left = parse_if_expression(p);
         break; 
+        case TOKEN_WHILE: 
+            left = parse_while_expression(p);
+        break;
         case TOKEN_FUNCTION:
             left = parse_function_literal(p);
         break;   
@@ -652,6 +691,13 @@ void expression_to_str(char *str, struct expression *expr) {
             }
         break;
 
+        case EXPR_WHILE: 
+            strcat(str, "while ");
+            expression_to_str(str, expr->whilst.condition);
+            strcat(str, " ");
+            block_statement_to_str(str, expr->whilst.body);
+        break;
+
         case EXPR_FUNCTION:
             strcat(str, expr->token.literal);
             strcat(str, "(");
@@ -758,6 +804,11 @@ void free_statements(struct statement *stmts, unsigned int size) {
     free(stmts);
 }
 
+void free_block_statement(struct block_statement *b) {
+    free_statements(b->statements, b->size);
+    free(b);
+}
+
 void free_expression(struct expression *expr) {
     if (expr == NULL) {
         return;
@@ -775,20 +826,21 @@ void free_expression(struct expression *expr) {
 
         case EXPR_FUNCTION:
             free(expr->function.parameters.values);
-            free_statements(expr->function.body->statements, expr->function.body->size);
-            free(expr->function.body);
+            free_block_statement(expr->function.body);
         break;
 
         case EXPR_IF:
             free_expression(expr->ifelse.condition);
-
-            free_statements(expr->ifelse.consequence->statements, expr->ifelse.consequence->size);
-            free(expr->ifelse.consequence);
+            free_block_statement(expr->ifelse.consequence);
 
             if (expr->ifelse.alternative) {
-                free_statements(expr->ifelse.alternative->statements, expr->ifelse.alternative->size);
-                free(expr->ifelse.alternative);
+                free_block_statement(expr->ifelse.alternative);
             }
+        break;
+
+        case EXPR_WHILE: 
+            free_expression(expr->whilst.condition);
+            free_block_statement(expr->whilst.body);
         break;
 
         case EXPR_CALL:

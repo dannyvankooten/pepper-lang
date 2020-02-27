@@ -29,6 +29,7 @@ enum expression_type {
     EXPR_STRING,
     EXPR_ARRAY,
     EXPR_INDEX,
+    EXPR_WHILE,
 };
 
 enum statement_type {
@@ -113,6 +114,11 @@ struct index_expression {
     struct expression *index;
 };
 
+struct while_expression {
+    struct expression *condition;
+    struct block_statement *body;
+};
+
 struct expression {
     enum expression_type type;
     struct token token;
@@ -128,6 +134,7 @@ struct expression {
         struct call_expression call;
         struct expression_list array;
         struct index_expression index;
+        struct while_expression whilst;
     };
 } expression;
 
