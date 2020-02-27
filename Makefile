@@ -1,4 +1,4 @@
-CFLAGS += -std=c11 -Wall
+CFLAGS += -std=c11 -Wall -Isrc/
 TESTFLAGS = $(CFLAGS) -g -DDEBUG
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')
@@ -6,23 +6,23 @@ DATE=$(shell date '+%Y-%m-%d')
 all: monkey repl tests
 
 repl: $(BINDIR)
-	$(CC) $(CFLAGS) src/repl.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -ledit -Ofast -o $(BINDIR)/repl
+	$(CC) $(CFLAGS) src/repl.c src/eval/*.c src/lexer/*.c src/parser/*.c -ledit -o $(BINDIR)/repl
 
 monkey: $(BINDIR)
-	$(CC) $(CFLAGS) src/monkey.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -Ofast -finline-limit=1024 -DNDEBUG -o $(BINDIR)/monkey 
+	$(CC) $(CFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -finline-limit=1024 -DNDEBUG -o $(BINDIR)/monkey 
 
 tests: $(BINDIR) lexer_test parser_test eval_test 
 
 lexer_test:
-	$(CC) $(TESTFLAGS) src/lexer_test.c src/lexer.c src/token.c -o $(BINDIR)/lexer_test
+	$(CC) $(TESTFLAGS) tests/lexer_test.c src/lexer/*.c -o $(BINDIR)/lexer_test
 	$(BINDIR)/lexer_test	
 
 parser_test:
-	$(CC) $(TESTFLAGS) src/parser_test.c src/parser.c src/lexer.c src/token.c -o $(BINDIR)/parser_test
+	$(CC) $(TESTFLAGS) tests/parser_test.c src/parser/*.c src/lexer/*.c -o $(BINDIR)/parser_test
 	$(BINDIR)/parser_test
 
 eval_test:
-	$(CC) $(TESTFLAGS) src/eval_test.c $(addprefix src/, eval.c parser.c env.c lexer.c token.c object.c builtins.c) -o $(BINDIR)/eval_test
+	$(CC) $(TESTFLAGS) tests/eval_test.c src/eval/*.c src/parser/*.c src/lexer/*.c -o $(BINDIR)/eval_test
 	$(BINDIR)/eval_test
 
 $(BINDIR):

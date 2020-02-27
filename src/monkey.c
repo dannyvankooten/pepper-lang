@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "eval.h"
+#include "eval/eval.h"
 
 char *read_file(char *filename);
 

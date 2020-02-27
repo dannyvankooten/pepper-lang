@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "eval.h"
+#include "eval/eval.h"
 
 // TODO: perhaps mock this in case it's not installed, since it's not super necessary
 #include <editline/readline.h>

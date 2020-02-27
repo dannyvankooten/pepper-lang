@@ -2,7 +2,7 @@
 #define PARSER_H
 
 #include <stdbool.h>
-#include "lexer.h"
+#include "lexer/lexer.h"
 
 #define MAX_IDENT_LENGTH 32
 

@@ -5,11 +5,11 @@
 #include <stdarg.h>
 #include <string.h>
 #include <err.h>
+#include "parser/parser.h"
 
 #include "builtins.h"
 #include "object.h"
 #include "eval.h"
-#include "parser.h"
 #include "env.h"
 
 struct object *eval_expression(struct expression *expr, struct environment *env);

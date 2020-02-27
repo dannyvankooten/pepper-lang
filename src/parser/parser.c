@@ -2,8 +2,8 @@
 #include <err.h>
 #include <string.h>
 #include <stdio.h>
+
 #include "parser.h"
-#include "lexer.h"
 
 struct expression *parse_expression(struct parser *p, int precedence);
 int parse_statement(struct parser *p, struct statement *s);
