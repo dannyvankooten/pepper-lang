@@ -566,6 +566,26 @@ void test_array_index_expressions() {
     // TODO: Test out of bounds indexing
 }
 
+
+void test_while_expressions() {
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"let a = 0; while (1 > 3) { let a = a + 1; }; a;", 0},
+        {"let a = 0; while (a < 3) { let a = a + 1; }; a;", 3},
+        {"let a = 1; while (a < 3) { let a = a + 1 };", 3},
+    };
+
+    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object *obj = test_eval(tests[i].input, false);
+        test_integer_object(obj, tests[i].expected);
+        free_object(obj);
+    }
+
+    // TODO: Test out of bounds indexing
+}
+
 int main()
 {
     test_environment();
@@ -588,6 +608,7 @@ int main()
     test_builtin_functions();
     test_array_literals();
     test_array_index_expressions();
+    test_while_expressions();
 
     // TODO: Fix closures 
     // This is tricky because we can't just clear out the outer environment, 

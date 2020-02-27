@@ -155,6 +155,32 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
 }
 
 
+struct object *eval_while_expression(struct while_expression *expr, struct environment *env)
+{
+    struct object *obj = NULL;
+    struct object *result = object_null;
+    
+    while (1) {
+        obj = eval_expression(expr->condition, env);
+        if (is_object_error(obj->type)) {
+            return obj;
+        }
+
+        bool truthy = is_object_truthy(obj);
+        free_object(obj);
+
+        if (truthy) {
+            result = eval_block_statement(expr->body, env);
+        } else {
+            break;
+        }
+
+    }
+   
+    return result;
+}
+
+
 struct object *eval_identifier(struct identifier *ident, struct environment *env) {
     struct object *obj = environment_get(env, ident->value);
     if (obj) {
@@ -284,6 +310,9 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
         case EXPR_IF:
             return eval_if_expression(&expr->ifelse, env);
             break;
+        case EXPR_WHILE: 
+            return eval_while_expression(&expr->whilst, env);
+        break;    
         case EXPR_IDENT: 
             return eval_identifier(&expr->ident, env);
             break;
