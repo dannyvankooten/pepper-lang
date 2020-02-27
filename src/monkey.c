@@ -28,8 +28,10 @@ int main(int argc, char *argv[]) {
     struct object *obj = eval_program(program, env);
     char output[256];
     output[0] = '\0';
-    object_to_str(output, obj);
-    puts(output);
+    if (obj != object_null && obj->type != OBJ_BUILTIN && obj->type != OBJ_FUNCTION) {
+        object_to_str(output, obj);
+        printf("%s\n", output);
+    }
 
     free_program(program);
     free_environment(env);

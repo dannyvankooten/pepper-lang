@@ -32,14 +32,15 @@ struct environment *make_environment(unsigned int cap) {
         if (!env->table) {
             err(EXIT_FAILURE, "out of memory");
         }
+
+        for (int i = 0; i < env->cap; i++) {
+            env->table[i] = NULL;
+        }
     }
 
     env->next = NULL;
     env->outer = NULL;
-    for (int i = 0; i < env->cap; i++)
-    {
-        env->table[i] = NULL;
-    }
+    
     return env;
 }
 
@@ -54,7 +55,7 @@ struct object *environment_get(struct environment *env, char *key) {
     struct object *node = env->table[pos];
 
     while (node) {
-        if (strcmp(node->name, key) == 0) {
+        if (memcmp(node->name, key, MAX_KEY_LENGTH) == 0) {
             return node;
         }
 
@@ -79,7 +80,7 @@ void environment_set(struct environment *env, char *key, struct object *value) {
 
     // find existing node with that key
     while (node) {
-        if (strcmp(node->name, key) == 0) {
+        if (memcmp(node->name, key, MAX_KEY_LENGTH) == 0) {
             if (prev) {
                 prev->next = value;
             } else {
@@ -115,6 +116,8 @@ void free_environment(struct environment *env) {
             free_object(node);
             node = next;
         }
+
+         env->table[i] = NULL;
     }
 
     // return env to pool
