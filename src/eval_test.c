@@ -9,7 +9,7 @@
 struct program *program;
 
 void test_environment() {
-    struct environment *env = make_environment(32);
+    struct environment *env = make_environment(26);
 
     // set
     struct object o1 = {.integer = 1 };
@@ -574,7 +574,8 @@ void test_while_expressions() {
     } tests[] = {
         {"let a = 0; while (1 > 3) { let a = a + 1; }; a;", 0},
         {"let a = 0; while (a < 3) { let a = a + 1; }; a;", 3},
-        {"let a = 1; while (a < 3) { let a = a + 1 };", 3},
+        {"let a = 1; while (a < 3) { let a = a + 1; a; };", 3},
+        {"let a = 1; while (a < 3) { let a = a + 1; };", 3}
     };
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {

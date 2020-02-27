@@ -279,7 +279,7 @@ struct object_list *copy_object_list(struct object_list *original) {
 
 void object_to_str(char *str, struct object *obj)
 {
-    char tmp[16];
+    char tmp[64];
 
     switch (obj->type)
     {

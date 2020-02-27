@@ -158,7 +158,7 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
 struct object *eval_while_expression(struct while_expression *expr, struct environment *env)
 {
     struct object *obj = NULL;
-    struct object *result = object_null;
+    struct object *result = NULL;
     
     while (1) {
         obj = eval_expression(expr->condition, env);
@@ -168,16 +168,21 @@ struct object *eval_while_expression(struct while_expression *expr, struct envir
 
         bool truthy = is_object_truthy(obj);
         free_object(obj);
-
-        if (truthy) {
-            result = eval_block_statement(expr->body, env);
-        } else {
-            break;
+        if (!truthy) {
+             break;
         }
 
+        if (result) {
+            free_object(result);
+        }
+
+        result = eval_block_statement(expr->body, env);
+        if (result->return_value) {
+            return result;
+        }
     }
    
-    return result;
+    return result ? result : object_null;
 }
 
 
@@ -235,7 +240,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
                 return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
             }
             
-            struct environment *env = make_closed_environment(obj->function.env, 4); 
+            struct environment *env = make_closed_environment(obj->function.env, 26); 
             for (int i=0; i < obj->function.parameters->size; i++) {
                 environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
             }
@@ -444,9 +449,10 @@ struct object *eval_block_statement(struct block_statement *block, struct enviro
         }
     }
 
-    // create a fresh copy so we can clear out the environment after the current function goes out of scope
+    // create a fresh copy so we can clear out the environment 
+    // after the current function goes out of scope
     struct object *copy = copy_object(obj);
-    copy->return_value = true;
+    copy->return_value = obj->return_value;
     free_object(obj);
     return copy;
 }
