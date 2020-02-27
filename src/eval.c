@@ -56,49 +56,50 @@ struct object *eval_prefix_expression(enum operator operator, struct object *rig
 
 struct object *eval_integer_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
-    struct object *result;
-
     switch (operator)
     {
     case OP_ADD:
-        result = make_integer_object(left->integer + right->integer);
+        return make_integer_object(left->integer + right->integer);
         break;
     case OP_SUBTRACT:
-        result = make_integer_object(left->integer - right->integer);
+        return make_integer_object(left->integer - right->integer);
         break;
     case OP_MULTIPLY:
-        result = make_integer_object(left->integer * right->integer);
+        return make_integer_object(left->integer * right->integer);
         break;
     case OP_DIVIDE:
-        result = make_integer_object(left->integer / right->integer);
+        return make_integer_object(left->integer / right->integer);
         break;
     case OP_LT:
-        result = make_boolean_object(left->integer < right->integer);
+        return make_boolean_object(left->integer < right->integer);
         break;
     case OP_GT:
-        result = make_boolean_object(left->integer > right->integer);
+        return make_boolean_object(left->integer > right->integer);
         break;
     case OP_EQ:
-        result = make_boolean_object(left->integer == right->integer);
+        return make_boolean_object(left->integer == right->integer);
         break;
     case OP_NOT_EQ:
-        result = make_boolean_object(left->integer != right->integer);
+        return make_boolean_object(left->integer != right->integer);
         break;
     default:
-        result = object_null;
         break;
     }
 
-    return result;
+    return object_null;
 }
 
 struct object *eval_string_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
-    if (operator != OP_ADD) {
-        return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator_to_str(operator), object_type_to_str(right->type));
-    }
+    switch (operator) {
+        case OP_ADD: 
+            return make_string_object(left->string, right->string);
+        break;
 
-    return make_string_object(left->string, right->string);
+        default: 
+            return make_error_object("unknown operator: %s %s %s", object_type_to_str(left->type), operator_to_str(operator), object_type_to_str(right->type));
+        break;
+    }
 }
 
 
@@ -181,6 +182,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
             if (result->size > 1) {
                 result->values[0] = result->values[result->size-1];
 
+                // free other objects in list
                 for (int j=1; j < result->size; j++) {
                     free_object(result->values[j]);
                 }
@@ -375,21 +377,23 @@ struct object *make_return_object(struct object *obj)
 
 struct object *eval_statement(struct statement *stmt, struct environment *env)
 {
-    struct object *result = NULL;
-
     switch (stmt->type)
     {
     case STMT_EXPR:
-        result = eval_expression(stmt->value, env);
-        return result;
-    case STMT_LET: 
-        result = eval_expression(stmt->value, env);
+        return eval_expression(stmt->value, env);
+    break;
+    case STMT_LET: {
+        struct object *result = eval_expression(stmt->value, env);
         environment_set(env, stmt->name.value, result);
         return result;
-    case STMT_RETURN:
-        result = eval_expression(stmt->value, env);
+    }
+    break;
+    case STMT_RETURN: {
+        struct object *result = eval_expression(stmt->value, env);
         result = make_return_object(result);
         return result;
+    }
+    break;
     }
 
     return object_null;
