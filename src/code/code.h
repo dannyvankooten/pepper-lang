@@ -11,7 +11,8 @@ enum opcode {
 
 struct definition {
     char name[64];
-    unsigned int operand_widths[MAX_OP_SIZE];
+    size_t operands;
+    int operand_widths[MAX_OP_SIZE];
 };
 
 struct instruction {
@@ -22,5 +23,8 @@ struct instruction {
 
 struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, int operands[]);
+struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size);
+char *instruction_to_str(struct instruction *ins);
+size_t read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins);
 
 #endif

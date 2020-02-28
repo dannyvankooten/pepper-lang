@@ -1,13 +1,14 @@
 #include "code/code.h"
 #include "test_helpers.h"
+#include <string.h> 
 
 #define ARRAY_SIZE(v) sizeof v / sizeof v[0]
 
 void test_make_instruction() {
     struct {
         enum opcode opcode;
-        int operands[16];
-        unsigned char expected[16];
+        int operands[MAX_OP_SIZE];
+        unsigned char expected[MAX_OP_SIZE];
         size_t expected_size;
     } tests[] = {
         {OP_CONST, {65534}, {OP_CONST, 255, 254}, 3}
@@ -25,8 +26,47 @@ void test_make_instruction() {
     }
 }
 
+void test_instruction_string() {
+    struct instruction *instructions[] = {
+        make_instruction(OP_CONST, (int[]) {1}),
+        make_instruction(OP_CONST, (int[]) {2}),
+        make_instruction(OP_CONST, (int[]) {65535})
+    };
+
+    char *expected_str = "0000 OpConstant 1\n0003 OpConstant 2\n0006 OpConstant 65535";
+    struct instruction *ins = flatten_instructions_array(instructions, 3);
+
+    char *str = instruction_to_str(ins);
+    assertf(strcmp(expected_str, str) == 0, "wrong instruction string: expected \"%s\", got \"%s\"", expected_str, str);
+}
+
+void test_read_operands() {
+    struct {
+        enum opcode opcode;
+        int operands[8];
+        int operands_size;
+        size_t bytes_read;
+    } tests[] = {
+        {OP_CONST, {65535}, 1, 2},
+    };
+
+    for (int t = 0; t < ARRAY_SIZE(tests); t++) {
+        struct instruction *ins = make_instruction(tests[t].opcode, tests[t].operands);
+        struct definition def = lookup(tests[t].opcode);
+        int operands[3] = {};
+        size_t bytes_read = read_operands(operands, def, ins);
+        assertf(bytes_read == tests[t].bytes_read, "wrong number of bytes read: expected %d, got %d", tests[t].bytes_read, bytes_read);
+        for (int i=0; i < tests[t].operands_size; i++) {
+            assertf(tests[t].operands[i] == operands[i], "wrong operand: expected %d, got %d", tests[t].operands[i], operands[i]);
+        }
+    }
+}
+
 int main() {
     test_make_instruction();
+    test_read_operands();
+    // test_instruction_string();
+    
 
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

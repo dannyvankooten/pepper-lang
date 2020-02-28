@@ -6,33 +6,20 @@
 struct compiler_test_case {
     char *input;
     int expected_constants[16];
+    unsigned int expected_constants_size;
     struct instruction *expected_instructions[16];
-    unsigned int expected_instructions_size;
 };
-
-struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size) {
-    struct instruction *ins = arr[0];
-    for (int i = 1; i < size; i++) {
-        ins->bytes = realloc(ins->bytes, (ins->size + arr[i]->size ) * sizeof(*ins->bytes));
-        for (int j=0; j < arr[i]->size; j++) {
-            ins->bytes[ins->size++] = arr[i]->bytes[j];
-        }
-
-        // TODO: Free instructions
-    }
-    return ins;
-}
 
 void test_integer_arithmetic() {
     struct compiler_test_case tests[] = {
         {
             .input = "1 + 2",
             .expected_constants = {1, 2},
+            .expected_constants_size = 2,
             .expected_instructions = {
                 make_instruction(OP_CONST, (int[]) {0}),
                 make_instruction(OP_CONST, (int[]) {1}),
             },
-            .expected_instructions_size = 6,
         }
     };
 
@@ -41,17 +28,19 @@ void test_integer_arithmetic() {
         struct compiler *compiler = make_compiler();
         assertf(compile(compiler, program) == 0, "compiler error");
         struct bytecode *bytecode = get_bytecode(compiler);
-        assertf(bytecode->instructions->size == tests[t].expected_instructions_size, "wrong instructions length: expected %d, got %d", tests[t].expected_instructions_size, bytecode->instructions->size);
-
         struct instruction *concatted = flatten_instructions_array(tests[t].expected_instructions, 2);
-        for (int i=0; i < tests[t].expected_instructions_size; i++) {
+
+        assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: expected %d, got %d", concatted->size, bytecode->instructions->size);
+        for (int i=0; i < concatted->size; i++) {
             assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch");
         }
-        
-        // TODO: Test constants
+
+        assertf(bytecode->constants->size == tests[t].expected_constants_size, "wrong constants size: expected %d, got %d", tests[t].expected_constants_size, bytecode->constants->size);
+        for (int i=0; i < tests[t].expected_constants_size; i++) {
+            assertf(bytecode->constants->values[i]->integer == tests[t].expected_constants[i], "invalid constant: expected %d, got %d", tests[t].expected_constants[i], bytecode->constants->values[i]->integer);
+        }
     }
 }
-
 
 int main() {
     test_integer_arithmetic();
