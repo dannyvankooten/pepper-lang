@@ -570,6 +570,12 @@ int parse_statement(struct parser *p, struct statement *s) {
    return -1;
 }
 
+struct program *parse_program_str(char *str) {
+    struct lexer lexer = new_lexer(str);
+    struct parser parser = new_parser(&lexer);
+    return parse_program(&parser);
+}
+
 struct program *parse_program(struct parser *parser) {
     struct program *program = malloc(sizeof *program);
     if (!program) {

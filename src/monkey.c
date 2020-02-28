@@ -41,6 +41,11 @@ char *read_file(char *filename) {
     unsigned int size = 0;
 
     FILE *f = fopen(filename, "r");
+    if (!f) {
+        printf("Could not open \"%s\" for reading", filename);
+        exit(1);
+    }
+
     unsigned int read = 0;
     while ( (read = fread(input, 512, 1024, f)) > 0) {
         size += read;

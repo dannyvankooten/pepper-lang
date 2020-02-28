@@ -2,16 +2,17 @@ CFLAGS += -std=c11 -Wall -Isrc/
 TESTFLAGS = $(CFLAGS) -g -DDEBUG
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')
+LIBS = -ledit
 
 all: monkey repl tests
 
 repl: $(BINDIR)
-	$(CC) $(CFLAGS) src/repl.c src/eval/*.c src/lexer/*.c src/parser/*.c -ledit -o $(BINDIR)/repl
+	$(CC) $(CFLAGS) src/repl.c src/eval/*.c src/lexer/*.c src/parser/*.c $(LIBS) -o $(BINDIR)/repl
 
 monkey: $(BINDIR)
 	$(CC) $(CFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -finline-limit=1024 -DNDEBUG -o $(BINDIR)/monkey 
 
-tests: $(BINDIR) lexer_test parser_test eval_test code_test
+tests: $(BINDIR) lexer_test parser_test eval_test code_test compiler_test
 
 lexer_test:
 	$(CC) $(TESTFLAGS) tests/lexer_test.c src/lexer/*.c -o $(BINDIR)/lexer_test
@@ -26,8 +27,12 @@ eval_test:
 	$(BINDIR)/eval_test
 
 code_test:
-	$(CC) $(TESTFLAGS) tests/code_test.c -o $(BINDIR)/code_test
+	$(CC) $(TESTFLAGS) tests/code_test.c src/code/*.c -o $(BINDIR)/code_test
 	$(BINDIR)/code_test	
+
+compiler_test:
+	$(CC) $(TESTFLAGS) tests/compiler_test.c src/compiler/*.c src/code/*.c src/parser/*.c src/lexer/*.c src/eval/object.c -o $(BINDIR)/compiler_test
+	$(BINDIR)/compiler_test	
 
 $(BINDIR):
 	mkdir -p $(BINDIR)

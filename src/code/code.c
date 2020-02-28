@@ -1,20 +1,5 @@
 #include <stdlib.h>
-
-#define MAX_OP_SIZE 16
-
-enum opcode {
-    OP_CONST,
-};
-
-struct definition {
-    char name[64];
-    unsigned int operand_widths[MAX_OP_SIZE];
-};
-
-struct instruction {
-    unsigned char values[MAX_OP_SIZE];
-    int size;
-};
+#include "code.h"
 
 struct definition lookup(enum opcode opcode) {
     switch (opcode) {

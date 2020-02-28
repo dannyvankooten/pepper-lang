@@ -156,6 +156,7 @@ struct parser {
 
 struct parser new_parser(struct lexer *l);
 struct program *parse_program(struct parser *parser);
+struct program *parse_program_str(char *str);
 void block_statement_to_str(char *str, struct block_statement *b);
 void identifier_list_to_str(char *str, struct identifier_list *identifiers);
 char *program_to_str(struct program *p);
