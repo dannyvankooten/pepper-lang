@@ -2,21 +2,16 @@
 #include "eval/object.h"
 
 struct compiler {
-    struct instruction instructions[64];
-    unsigned int instructions_size;
-    struct object constants[64];
-    unsigned int constants_size;
+    struct instruction *instructions;
+    struct object_list *constants;
 };
 
 struct bytecode {
-    struct instruction instructions[64];
-    unsigned int instructions_size;
-    struct object constants[64];
-    unsigned int constants_size;
+    struct instruction *instructions;
+    struct object_list *constants;
 };
 
-int
-compile(struct compiler *compiler, struct program *program);
-
-struct bytecode *
-get_bytecode(struct compiler *c);
+struct compiler *make_compiler();
+int compile(struct compiler *compiler, struct program *program);
+struct bytecode *get_bytecode(struct compiler *c);
+void concat_instructions(struct instruction *ins1, struct instruction *ins2);

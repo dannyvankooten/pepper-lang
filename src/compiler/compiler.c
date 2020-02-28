@@ -5,6 +5,13 @@
 int compile_statement(struct compiler *compiler, struct statement *statement);
 int compile_expression(struct compiler *compiler, struct expression *expression);
 
+struct compiler *make_compiler() {
+    struct compiler *c = malloc(sizeof *c);
+    c->instructions = malloc(sizeof *c->instructions);
+    c->constants = NULL;
+    return c;
+}
+
 int
 compile(struct compiler *compiler, struct program *program) {
     for (int i=0; i < program->size; i++) {
@@ -30,7 +37,28 @@ compile_statement(struct compiler *compiler, struct statement *statement) {
     return 0;
 }
 
-int
+size_t 
+add_instruction(struct compiler *c, struct instruction *ins) {
+    c->instructions->bytes = realloc(c->instructions->bytes, (c->instructions->size + ins->size ) * sizeof(*c->instructions->bytes));
+    for (int i=0; i < ins->size; i++) {
+        c->instructions->bytes[c->instructions->size++] = ins->bytes[i];
+    }
+    return c->instructions->size - 1;
+}
+
+size_t 
+add_constant(struct compiler *c, struct object *obj) {
+    if (!c->constants) {
+        c->constants = make_object_list(16);
+    }
+
+    // TODO: Increase list capacity if needed
+
+    c->constants->values[c->constants->size++] = obj;
+    return c->constants->size - 1;
+}
+
+int 
 compile_expression(struct compiler *compiler, struct expression *expression) {
     switch (expression->type) {
         case EXPR_INFIX: 
@@ -40,9 +68,9 @@ compile_expression(struct compiler *compiler, struct expression *expression) {
 
         case EXPR_INT: {
             struct object *obj = make_integer_object(expression->integer);
-            compiler->constants[compiler->constants_size++] = *obj;
-            struct instruction ins = make(OP_CONST, (int[]) {compiler->constants_size - 1}, 1);
-            compiler->instructions[compiler->instructions_size++] = ins;
+            size_t const_idx = add_constant(compiler, obj);
+            struct instruction *ins = make_instruction(OP_CONST, (int[]) { const_idx });
+            size_t ins_idx = add_instruction(compiler, ins);
             break;
         }
     }
@@ -53,7 +81,8 @@ compile_expression(struct compiler *compiler, struct expression *expression) {
 struct bytecode *
 get_bytecode(struct compiler *c) {
     struct bytecode *b = malloc(sizeof *b);
-
-    memcpy(b->instructions, c->instructions, sizeof(c->instructions));
+    b->instructions = c->instructions;
+    b->constants = c->constants;
+    return b;
 }
 

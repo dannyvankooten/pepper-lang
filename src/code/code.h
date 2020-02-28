@@ -1,10 +1,12 @@
 #ifndef CODE_H 
 #define CODE_H
 
+#include <stdlib.h>
+
 #define MAX_OP_SIZE 16
 
 enum opcode {
-    OP_CONST,
+    OP_CONST = 1,
 };
 
 struct definition {
@@ -13,13 +15,12 @@ struct definition {
 };
 
 struct instruction {
-    unsigned char values[MAX_OP_SIZE];
-    unsigned int size;
+    unsigned char *bytes;
+    size_t cap;
+    size_t size;
 };
 
 struct definition lookup(enum opcode opcode);
-
-// TODO: Should we keep op_size in definition struct?
-struct instruction make(enum opcode opcode, int ops[], unsigned int op_size);
+struct instruction *make_instruction(enum opcode opcode, int operands[]);
 
 #endif
