@@ -234,6 +234,7 @@ struct object_list *make_object_list(unsigned int cap) {
        if (!list) {
            err(EXIT_FAILURE, "out of memory");
        }
+       list->size = 0;
    } else {
         object_list_pool_head = list->next;
         list->next = NULL;
