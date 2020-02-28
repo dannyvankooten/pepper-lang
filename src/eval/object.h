@@ -9,6 +9,9 @@
 #define is_object_truthy(obj) (obj != object_null && obj != object_false)
 #define make_boolean_object(value) (value ? object_true : object_false)
 
+// TODO: Dynamically allocate this
+#define OBJECT_LIST_MAX_VALUES 64
+
 enum object_type
 {
     OBJ_NULL,
@@ -28,9 +31,8 @@ struct function {
 };
 
 struct object_list {
-    struct object **values;
+    struct object *values[OBJECT_LIST_MAX_VALUES];
     unsigned int size;
-    unsigned int cap;
 
     // for linking in pool
     struct object_list *next;

@@ -234,34 +234,23 @@ struct object_list *make_object_list(unsigned int cap) {
        if (!list) {
            err(EXIT_FAILURE, "out of memory");
        }
-
-       list->values = malloc(sizeof *list->values * cap);
-       list->cap = cap;
-       if (!list->values) {
-            err(EXIT_FAILURE, "out of memory");
-        }
    } else {
         object_list_pool_head = list->next;
-        if (list->cap < cap) {
-            list->cap = cap;
-            list->values = realloc(list->values, sizeof *list->values * cap);
-            if (!list->values) {
-                err(EXIT_FAILURE, "out of memory");
-            }
-        }
-
         list->next = NULL;
    }
 
-   list->size = 0;
    return list;
 }
 
 void free_object_list(struct object_list *list) {
+    // reset list values and size
     for (int i=0; i < list->size; i++) {
         free_object(list->values[i]);
+        list->values[i] = NULL;
     }
+    list->size = 0;
 
+    // return to pool
     list->next = object_list_pool_head;
     object_list_pool_head = list;
 }
@@ -269,12 +258,11 @@ void free_object_list(struct object_list *list) {
 
 struct object_list *copy_object_list(struct object_list *original) {
     struct object_list *new = make_object_list(original->size);
-
-    for (int i=0; i < original->size; i++) {
+    int size = original->size;
+    for (int i=0; i < size; i++) {
         new->values[i] = copy_object(original->values[i]);
-        new->size++;
     }
-
+    new->size = size;
     return new;
 }
 
@@ -349,7 +337,6 @@ void free_object_list_pool() {
 
     while (node) {
         next = node->next;
-        free(node->values);
         free(node);
         node = next;
     }

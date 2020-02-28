@@ -5,12 +5,12 @@
 #include <stdarg.h>
 #include <string.h>
 #include <err.h>
-#include "parser/parser.h"
 
 #include "builtins.h"
 #include "object.h"
 #include "eval.h"
 #include "env.h"
+#include "parser/parser.h"
 
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);
@@ -210,12 +210,13 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
 
         if (is_object_error(obj->type)) {
             // move object to start of values because that's the only error type we check
-            if (result->size > 1) {
-                result->values[0] = result->values[result->size-1];
+            if (i > 1) {
+                result->values[0] = result->values[i-1];
 
                 // free other objects in list
-                for (int j=1; j < result->size; j++) {
+                for (int j=1; j < i; j++) {
                     free_object(result->values[j]);
+                    result->values[j] = NULL;
                 }
             } 
 
@@ -437,7 +438,8 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
 struct object *eval_block_statement(struct block_statement *block, struct environment *env)
 {
     struct object *obj = NULL;
-    for (int i = 0; i < block->size; i++)
+    int size = block->size;
+    for (int i = 0; i < size; i++)
     {
         if (obj) {
             free_object(obj);
