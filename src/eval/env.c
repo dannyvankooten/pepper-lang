@@ -6,10 +6,11 @@
 #include "env.h"
 
 #define hash(s) (s[0] - 'a')
+#define ENV_TABLE_SIZE 26
 
 struct environment *env_pool_head;
 
-struct environment *make_environment(unsigned int cap) {
+struct environment *make_environment() {
     struct environment *env;
 
     // try to get pre-allocated object from pool
@@ -18,40 +19,28 @@ struct environment *make_environment(unsigned int cap) {
         if (!env) {
             err(EXIT_FAILURE, "out of memory");
         }
-        env->cap = 0;
-        env->table = NULL;
+
+        for (int i = 0; i < ENV_TABLE_SIZE; i++) {
+            env->table[i] = NULL;
+        }
     } else {
         env = env_pool_head;
         env_pool_head = env->next;
     }
 
-    // increase capacity if needed
-    if (env->cap < cap) {
-        env->table = realloc(env->table, sizeof *env->table * cap);
-        env->cap = cap;
-        if (!env->table) {
-            err(EXIT_FAILURE, "out of memory");
-        }
-
-        for (int i = 0; i < env->cap; i++) {
-            env->table[i] = NULL;
-        }
-    }
-
     env->next = NULL;
     env->outer = NULL;
-    
     return env;
 }
 
-struct environment *make_closed_environment(struct environment *parent, unsigned int cap) {
-    struct environment *env = make_environment(cap);
+struct environment *make_closed_environment(struct environment *parent) {
+    struct environment *env = make_environment();
     env->outer = parent;
     return env;
 }
 
 struct object *environment_get(struct environment *env, char *key) {
-    unsigned int pos = hash(key) % env->cap;
+    unsigned int pos = hash(key) % ENV_TABLE_SIZE;
     struct object *node = env->table[pos];
 
     while (node) {
@@ -71,7 +60,7 @@ struct object *environment_get(struct environment *env, char *key) {
 }
 
 void environment_set(struct environment *env, char *key, struct object *value) {
-    unsigned int pos = hash(key) % env->cap;
+    unsigned int pos = hash(key) % ENV_TABLE_SIZE;
     struct object *node = env->table[pos];
     struct object *prev = NULL;
 
@@ -108,8 +97,9 @@ void free_environment(struct environment *env) {
     struct object *next;
 
     // free all objects in env
-    for (int i=0; i < env->cap; i++) {
+    for (int i=0; i < ENV_TABLE_SIZE; i++) {
         node = env->table[i];
+
         while (node) {
             next = node->next;
             node->name = NULL;
@@ -132,7 +122,6 @@ void free_env_pool() {
 
     while (node) {
         next = node->next;
-        free(node->table);
         free(node);
         node = next;
     }

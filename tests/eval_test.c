@@ -9,7 +9,7 @@
 struct program *program;
 
 void test_environment() {
-    struct environment *env = make_environment(26);
+    struct environment *env = make_environment();
 
     // set
     struct object o1 = {.integer = 1 };
@@ -28,7 +28,6 @@ void test_environment() {
     assertf(environment_get(env, "unexisting") == NULL, "expected NULL, got something");
 
     // free env
-    free(env->table);
     free(env);
 }
 
