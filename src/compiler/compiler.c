@@ -1,6 +1,8 @@
 #include <stdlib.h>
-#include "compiler.h"
 #include <string.h> 
+#include <stdarg.h>
+
+#include "compiler.h"
 
 int compile_statement(struct compiler *compiler, struct statement *statement);
 int compile_expression(struct compiler *compiler, struct expression *expression);
@@ -12,8 +14,14 @@ struct compiler *make_compiler() {
     return c;
 }
 
+void free_compiler(struct compiler *c) {
+    free(c->instructions);
+    free(c->constants);
+    free(c);
+}
+
 int
-compile(struct compiler *compiler, struct program *program) {
+compile_program(struct compiler *compiler, struct program *program) {
     for (int i=0; i < program->size; i++) {
         int r = compile_statement(compiler, &program->statements[i]);
         if (r != 0) {
@@ -58,19 +66,29 @@ add_constant(struct compiler *c, struct object *obj) {
     return c->constants->size - 1;
 }
 
+size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
+    va_list args;
+    int i = 0;
+    int operands[MAX_OP_SIZE];
+    va_start(args, opcode);
+        operands[i++] = va_arg(args, int);
+    va_end(args);
+
+    struct instruction *ins = make_instruction(opcode, operands);
+    return add_instruction(c, ins);
+}
+
 int 
-compile_expression(struct compiler *compiler, struct expression *expression) {
+compile_expression(struct compiler *c, struct expression *expression) {
     switch (expression->type) {
         case EXPR_INFIX: 
-            compile_expression(compiler, expression->infix.left);
-            compile_expression(compiler, expression->infix.right);
+            compile_expression(c, expression->infix.left);
+            compile_expression(c, expression->infix.right);
         break; 
 
         case EXPR_INT: {
             struct object *obj = make_integer_object(expression->integer);
-            size_t const_idx = add_constant(compiler, obj);
-            struct instruction *ins = make_instruction(OP_CONST, (int[]) { const_idx });
-            size_t ins_idx = add_instruction(compiler, ins);
+            compiler_emit(c,  OPCODE_CONST, add_constant(c, obj));
             break;
         }
     }

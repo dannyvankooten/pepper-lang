@@ -12,7 +12,7 @@ repl: $(BINDIR)
 monkey: $(BINDIR)
 	$(CC) $(CFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -finline-limit=1024 -DNDEBUG -o $(BINDIR)/monkey 
 
-tests: $(BINDIR) lexer_test parser_test eval_test code_test compiler_test
+tests: $(BINDIR) lexer_test parser_test eval_test compiler_test vm_test
 
 lexer_test:
 	$(CC) $(TESTFLAGS) tests/lexer_test.c src/lexer/*.c -o $(BINDIR)/lexer_test
@@ -24,16 +24,18 @@ parser_test:
 
 eval_test:
 	$(CC) $(TESTFLAGS) tests/eval_test.c src/eval/*.c src/parser/*.c src/lexer/*.c -o $(BINDIR)/eval_test
-	$(BINDIR)/eval_test
-
-code_test:
-	$(CC) $(TESTFLAGS) tests/code_test.c src/code/*.c -o $(BINDIR)/code_test
-	$(BINDIR)/code_test	
+	$(BINDIR)/eval_test	
 
 compiler_test:
-	$(CC) $(TESTFLAGS) tests/compiler_test.c src/compiler/*.c src/code/*.c src/parser/*.c src/lexer/*.c src/eval/object.c -o $(BINDIR)/compiler_test
+	$(CC) $(TESTFLAGS) tests/code_test.c src/compiler/opcode.c -o $(BINDIR)/code_test
+	$(BINDIR)/code_test	
+	$(CC) $(TESTFLAGS) tests/compiler_test.c src/compiler/*.c src/parser/*.c src/lexer/*.c src/eval/object.c -o $(BINDIR)/compiler_test
 	$(BINDIR)/compiler_test	
 
+vm_test:
+	$(CC) $(TESTFLAGS) tests/vm_test.c src/vm/*.c src/compiler/*.c src/eval/object.c src/parser/parser.c src/lexer/*.c -o $(BINDIR)/vm_test
+	$(BINDIR)/vm_test
+	
 $(BINDIR):
 	mkdir -p $(BINDIR)
 

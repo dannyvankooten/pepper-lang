@@ -1,8 +1,6 @@
-#include "code/code.h"
+#include "compiler/opcode.h"
 #include "test_helpers.h"
 #include <string.h> 
-
-#define ARRAY_SIZE(v) sizeof v / sizeof v[0]
 
 void test_make_instruction() {
     struct {
@@ -12,27 +10,27 @@ void test_make_instruction() {
         size_t expected_size;
     } tests[] = {
         {
-            .opcode = OP_CONST, 
+            .opcode = OPCODE_CONST, 
             .operands = {65534}, 
             .expected = {OP_CONST, 255, 254},
             .expected_size = 3
         },
         {
-            .opcode = OP_CONST, 
+            .opcode = OPCODE_CONST, 
             .operands = {65535}, 
-            .expected = {OP_CONST, 255, 255},
+            .expected = {OPCODE_CONST, 255, 255},
             .expected_size = 3
         },
         {
             .opcode = OP_CONST, 
             .operands = {1}, 
-            .expected = {OP_CONST, 0, 1},
+            .expected = {OPCODE_CONST, 0, 1},
             .expected_size = 3
         },
         {
             .opcode = OP_CONST, 
             .operands = {2}, 
-            .expected = {OP_CONST, 0, 2},
+            .expected = {OPCODE_CONST, 0, 2},
             .expected_size = 3
         }
     };
@@ -51,9 +49,9 @@ void test_make_instruction() {
 
 void test_instruction_string() {
     struct instruction *instructions[] = {
-        make_instruction(OP_CONST, (int[]) {1}),
-        make_instruction(OP_CONST, (int[]) {2}),
-        make_instruction(OP_CONST, (int[]) {65535})
+        make_instruction(OPCODE_CONST, (int[]) {1}),
+        make_instruction(OPCODE_CONST, (int[]) {2}),
+        make_instruction(OPCODE_CONST, (int[]) {65535})
     };
 
     char *expected_str = "0000 OpConstant 1\n0003 OpConstant 2\n0006 OpConstant 65535";
@@ -70,8 +68,8 @@ void test_read_operands() {
         int operands[8];
         size_t bytes_read;
     } tests[] = {
-        {OP_CONST, {65535}, 2},
-        {OP_CONST, {1}, 2},
+        {OPCODE_CONST, {65535}, 2},
+        {OPCODE_CONST, {1}, 2},
     };
 
     for (int t = 0; t < ARRAY_SIZE(tests); t++) {

@@ -17,8 +17,8 @@ void test_integer_arithmetic() {
             .expected_constants = {1, 2},
             .expected_constants_size = 2,
             .expected_instructions = {
-                make_instruction(OP_CONST, (int[]) {0}),
-                make_instruction(OP_CONST, (int[]) {1}),
+                make_instruction(OPCODE_CONST, (int[]) {0}),
+                make_instruction(OPCODE_CONST, (int[]) {1}),
             },
         }
     };
@@ -26,7 +26,7 @@ void test_integer_arithmetic() {
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct program *program = parse_program_str(tests[t].input);
         struct compiler *compiler = make_compiler();
-        assertf(compile(compiler, program) == 0, "compiler error");
+        assertf(compile_program(compiler, program) == 0, "compiler error");
         struct bytecode *bytecode = get_bytecode(compiler);
         struct instruction *concatted = flatten_instructions_array(tests[t].expected_instructions, 2);
 
@@ -39,6 +39,8 @@ void test_integer_arithmetic() {
         for (int i=0; i < tests[t].expected_constants_size; i++) {
             assertf(bytecode->constants->values[i]->integer == tests[t].expected_constants[i], "invalid constant: expected %d, got %d", tests[t].expected_constants[i], bytecode->constants->values[i]->integer);
         }
+
+        free_compiler(compiler);
     }
 }
 
