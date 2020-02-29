@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "code.h"
 
@@ -7,7 +9,7 @@ struct definition lookup(enum opcode opcode) {
     switch (opcode) {
         case OP_CONST: {
             struct definition def = {
-                .name = "OP_CONST",
+                .name = "OpConstant",
                 .operand_widths = {2},
                 .operands = 1,
             };
@@ -34,7 +36,7 @@ struct instruction *make_instruction(enum opcode opcode, int operands[]) {
      // write operands to remaining bytes
     for (int op_idx = 0; op_idx < def.operands; op_idx++) {
         for (int byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
-            ins->bytes[ins->size++] = operands[op_idx] >> (byte_idx * 8);
+            ins->bytes[ins->size++] = operands[op_idx] >> (byte_idx * 8) & 0xff;
         }
     }
 
@@ -55,27 +57,49 @@ struct instruction *flatten_instructions_array(struct instruction *arr[], size_t
 }
 
 char *instruction_to_str(struct instruction *ins) {
-    char str[265] = '\0';
+    char *buffer = malloc(1024);
+    int operands[MAX_OP_SIZE] = {0};
 
     for (int i=0; i < ins->size; i++) {
         struct definition def = lookup(ins->bytes[i]);
-        int operands[MAX_OP_SIZE];
-        // TODO: Implement this
+        size_t bytes_read = read_operands(operands, def, ins, i);
+        
+        char str[256];
+        switch (def.operands) {
+            case 1:
+                sprintf(str, "%04d %s %d", i, def.name, operands[0]);
+            break;
+
+            // TODO: Add support for opcodes with more operands
+        }
+        strcat(buffer, str);
+
+        i += bytes_read;
+        if (i < (ins->size - 1)) {
+            strcat(buffer, "\n");
+        }
     }
 
-    return str;
+    return buffer;
 }
 
-size_t read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins) {
+size_t read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, size_t offset) {
     size_t bytes_read = 0;
+    int shift, max_shift, sum;
+
     for (int i=0; i < def.operands; i++) {
-        int max_shift = def.operand_widths[i] * 8;
-        dest[i] = 0;
+        max_shift = def.operand_widths[i] * 8;
+        sum = 0;
+
         // byte_idx is 1 here because we skip the opcode
         for (int byte_idx = 1; byte_idx <= def.operand_widths[i]; byte_idx++) {
             bytes_read++;
-            dest[i] += ins->bytes[byte_idx] << (max_shift - 8 * byte_idx);;
+
+            shift = (max_shift - 8 * byte_idx);
+            sum += ins->bytes[byte_idx + offset] << shift;
         }
+
+        dest[i] = sum;
     }
 
     return bytes_read;

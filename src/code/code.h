@@ -25,6 +25,6 @@ struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, int operands[]);
 struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size);
 char *instruction_to_str(struct instruction *ins);
-size_t read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins);
+size_t read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, size_t offset);
 
 #endif
