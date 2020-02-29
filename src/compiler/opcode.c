@@ -74,6 +74,9 @@ char *instruction_to_str(struct instruction *ins) {
         
         char str[256] = {'\0'};
         switch (def.operands) {
+            case 0:
+                sprintf(str, "%04d %s", i, def.name);
+            break;
             case 1:
                 sprintf(str, "%04d %s %d", i, def.name, operands[0]);
             break;

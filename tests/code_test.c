@@ -12,26 +12,14 @@ void test_make_instruction() {
         {
             .opcode = OPCODE_CONST, 
             .operands = {65534}, 
-            .expected = {OP_CONST, 255, 254},
+            .expected = {OPCODE_CONST, 255, 254},
             .expected_size = 3
         },
         {
-            .opcode = OPCODE_CONST, 
-            .operands = {65535}, 
-            .expected = {OPCODE_CONST, 255, 255},
-            .expected_size = 3
-        },
-        {
-            .opcode = OP_CONST, 
-            .operands = {1}, 
-            .expected = {OPCODE_CONST, 0, 1},
-            .expected_size = 3
-        },
-        {
-            .opcode = OP_CONST, 
-            .operands = {2}, 
-            .expected = {OPCODE_CONST, 0, 2},
-            .expected_size = 3
+            .opcode = OPCODE_ADD,
+            .operands = {},
+            .expected = {OPCODE_ADD},
+            .expected_size = 1,
         }
     };
 
@@ -49,12 +37,12 @@ void test_make_instruction() {
 
 void test_instruction_string() {
     struct instruction *instructions[] = {
-        make_instruction(OPCODE_CONST, (int[]) {1}),
+        make_instruction(OPCODE_ADD, (int[]) {}),
         make_instruction(OPCODE_CONST, (int[]) {2}),
         make_instruction(OPCODE_CONST, (int[]) {65535})
     };
 
-    char *expected_str = "0000 OpConstant 1\n0003 OpConstant 2\n0006 OpConstant 65535";
+    char *expected_str = "0000 OpAdd\n0001 OpConstant 2\n0004 OpConstant 65535";
     struct instruction *ins = flatten_instructions_array(instructions, 3);
 
     char *str = instruction_to_str(ins);

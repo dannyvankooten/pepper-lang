@@ -9,7 +9,7 @@ void test_integer_arithmetic() {
     } tests[] = {
         {"1", 1},
         {"2", 2},
-        {"1 + 2", 2}, // FIXME
+        {"1 + 2", 3}, 
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -21,9 +21,9 @@ void test_integer_arithmetic() {
         assertf(vm_run(vm) == 0, "vm error");
         struct object *obj = vm_stack_top(vm);
 
-        assertf(obj != NULL, "expected object, got NULL");
-        assertf(obj->type == OBJ_INT, "invalid object type");
-        assertf(obj->integer == tests[t].expected, "invalid value: expected %d, got %d", tests[t].expected, obj->integer);
+        assertf(obj != NULL, "[%d] expected object, got NULL", t);
+        assertf(obj->type == OBJ_INT, "[%d] invalid object type", t);
+        assertf(obj->integer == tests[t].expected, "[%d] invalid value: expected %d, got %d", t, tests[t].expected, obj->integer);
     }
 }
 

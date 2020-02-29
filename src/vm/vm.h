@@ -18,5 +18,6 @@ struct vm {
 struct vm *make_vm(struct bytecode *bc);
 int vm_run(struct vm *vm);
 struct object *vm_stack_top(struct vm *vm);
+struct object *vm_stack_pop(struct vm *vm);
 
 #endif 

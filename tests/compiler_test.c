@@ -6,8 +6,9 @@
 struct compiler_test_case {
     char *input;
     int expected_constants[16];
-    unsigned int expected_constants_size;
+    size_t expected_constants_size;
     struct instruction *expected_instructions[16];
+    size_t expected_instructions_size;
 };
 
 void test_integer_arithmetic() {
@@ -19,7 +20,9 @@ void test_integer_arithmetic() {
             .expected_instructions = {
                 make_instruction(OPCODE_CONST, (int[]) {0}),
                 make_instruction(OPCODE_CONST, (int[]) {1}),
+                make_instruction(OPCODE_ADD, (int[]) {})
             },
+            .expected_instructions_size = 3,
         }
     };
 
@@ -28,9 +31,9 @@ void test_integer_arithmetic() {
         struct compiler *compiler = make_compiler();
         assertf(compile_program(compiler, program) == 0, "compiler error");
         struct bytecode *bytecode = get_bytecode(compiler);
-        struct instruction *concatted = flatten_instructions_array(tests[t].expected_instructions, 2);
+        struct instruction *concatted = flatten_instructions_array(tests[t].expected_instructions, tests[t].expected_instructions_size);
 
-        assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: expected %d, got %d", concatted->size, bytecode->instructions->size);
+        assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: expected \"%s\", got \"%s\"", instruction_to_str(concatted), instruction_to_str(bytecode->instructions));
         for (int i=0; i < concatted->size; i++) {
             assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch");
         }

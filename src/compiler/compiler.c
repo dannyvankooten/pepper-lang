@@ -4,6 +4,8 @@
 
 #include "compiler.h"
 
+#define COMPILE_ERR_UNKNOWN_OPERATOR 1
+
 int compile_statement(struct compiler *compiler, struct statement *statement);
 int compile_expression(struct compiler *compiler, struct expression *expression);
 
@@ -22,10 +24,11 @@ void free_compiler(struct compiler *c) {
 
 int
 compile_program(struct compiler *compiler, struct program *program) {
+    int err;
     for (int i=0; i < program->size; i++) {
-        int r = compile_statement(compiler, &program->statements[i]);
-        if (r != 0) {
-            return r;
+        err = compile_statement(compiler, &program->statements[i]);
+        if (err) {
+            return err;
         }
     }
 
@@ -80,11 +83,30 @@ size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
 
 int 
 compile_expression(struct compiler *c, struct expression *expression) {
+    int err;
     switch (expression->type) {
-        case EXPR_INFIX: 
-            compile_expression(c, expression->infix.left);
-            compile_expression(c, expression->infix.right);
+        case EXPR_INFIX: {
+            err = compile_expression(c, expression->infix.left);
+            if (err) {
+                return err;
+            }
+
+            err = compile_expression(c, expression->infix.right);
+            if (err) {
+                return err;
+            }
+
+            switch (expression->infix.operator) {
+                case OP_ADD:
+                    compiler_emit(c, OPCODE_ADD);
+                break;
+                default: 
+                    return COMPILE_ERR_UNKNOWN_OPERATOR;
+                break;
+            }
+        }
         break; 
+        
 
         case EXPR_INT: {
             struct object *obj = make_integer_object(expression->integer);
