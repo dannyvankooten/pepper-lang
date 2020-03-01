@@ -12,17 +12,17 @@ void test_environment() {
     struct environment *env = make_environment();
 
     // set
-    struct object o1 = {.integer = 1 };
-    struct object o2 = {.integer = 2};
+    struct object o1 = {.value = 1 };
+    struct object o2 = {.value = 2};
 
     environment_set(env, "foo", &o1);
     environment_set(env, "bar", &o2);
     
     // get
     struct object *r1 = environment_get(env, "foo");
-    assertf(r1->integer == o1.integer, "expected %d, got %d", o1.integer, r1->integer);
+    assertf(r1->value.integer == o1.value.integer, "expected %d, got %d", o1.value.integer, r1->value.integer);
     struct object *r2 = environment_get(env, "bar");
-    assertf(r2->integer == o2.integer, "expected %d, got %d", o2.integer, r2->integer);
+    assertf(r2->value.integer == o2.value.integer, "expected %d, got %d", o2.value.integer, r2->value.integer);
 
     // not existing
     assertf(environment_get(env, "unexisting") == NULL, "expected NULL, got something");
@@ -63,36 +63,28 @@ struct object *test_eval(char *input, bool keep_prog)
 void test_integer_object(struct object *obj, int expected)
 {
     assertf(!!obj, "expected integer object, got null pointer");
-    assertf(obj->type == OBJ_INT, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_INT), object_type_to_str(obj->type), obj->error);
-    assertf(obj->integer == expected, "wrong integer value: expected %d, got %d", expected, obj->integer);
+    assertf(obj->type == OBJ_INT, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_INT), object_type_to_str(obj->type), obj->value.error);
+    assertf(obj->value.integer == expected, "wrong integer value: expected %d, got %d", expected, obj->value.integer);
 }
 
 void test_boolean_object(struct object *obj, char expected)
 {
     assertf(!!obj, "expected boolean object, got null pointer");
-    assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type), obj->error);
-    assertf(obj->boolean == expected, "wrong boolean value: expected %d, got %d", expected, obj->boolean);
+    assertf(obj->type == OBJ_BOOL, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_BOOL), object_type_to_str(obj->type), obj->value.error);
+    assertf(obj->value.boolean == expected, "wrong boolean value: expected %d, got %d", expected, obj->value.boolean);
 }
 
 void test_string_object(struct object *obj, char *expected)
 {
     assertf(!!obj, "expected string object, got null pointer");
-    assertf(obj->type == OBJ_STRING, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_STRING), object_type_to_str(obj->type), obj->error);
-    assertf(strcmp(obj->string, expected) == 0, "wrong string value: expected %s, got %s", expected, obj->string);
+    assertf(obj->type == OBJ_STRING, "wrong object type: expected %s, got %s %s", object_type_to_str(OBJ_STRING), object_type_to_str(obj->type), obj->value.error);
+    assertf(strcmp(obj->value.string, expected) == 0, "wrong string value: expected %s, got %s", expected, obj->value.string);
 }
-
-union object_value {
-    int integer;
-    char null;
-    bool boolean;
-    char *message;
-    char *string;
-};
 
 void test_error_object(struct object *obj, char *expected) {
     assertf(!!obj, "expected error object, got null pointer");
     assertf(obj->type == OBJ_ERROR, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_ERROR), object_type_to_str(obj->type));
-    assertf(strcmp(obj->error, expected) == 0, "invalid error message: expected %s, got %s", expected, obj->error);
+    assertf(strcmp(obj->value.error, expected) == 0, "invalid error message: expected %s, got %s", expected, obj->value.error);
 }
 
 void test_object(struct object *obj, enum object_type type, union object_value value)
@@ -106,7 +98,7 @@ void test_object(struct object *obj, enum object_type type, union object_value v
         test_integer_object(obj, value.integer);
         break;
     case OBJ_ERROR:
-        test_error_object(obj, value.message);
+        test_error_object(obj, value.error);
         break;    
     case OBJ_STRING:
         test_string_object(obj, value.string);
@@ -227,13 +219,13 @@ void test_if_else_expressions()
         union object_value value;
         enum object_type type;
     } tests[] = {
-        {"if (true) { 10 }", {10}, OBJ_INT},
-        {"if (false) { 10 }", {0}, OBJ_NULL},
-        {"if (1) { 10 }", {10}, OBJ_INT},
-        {"if (1 < 2) { 10 }", {10}, OBJ_INT},
-        {"if (1 > 2) { 10 }", {0}, OBJ_NULL},
-        {"if (1 > 2) { 10 } else { 20 }", {20}, OBJ_INT},
-        {"if (1 < 2) { 10 } else { 20 }", {10}, OBJ_INT},
+        {"if (true) { 10 }", {.integer = 10}, OBJ_INT},
+        {"if (false) { 10 }", {.integer = 0}, OBJ_NULL},
+        {"if (1) { 10 }", {.integer = 10}, OBJ_INT},
+        {"if (1 < 2) { 10 }", {.integer = 10}, OBJ_INT},
+        {"if (1 > 2) { 10 }", {.integer = 0}, OBJ_NULL},
+        {"if (1 > 2) { 10 } else { 20 }", {.integer = 20}, OBJ_INT},
+        {"if (1 < 2) { 10 } else { 20 }", {.integer = 10}, OBJ_INT},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
@@ -252,17 +244,17 @@ void test_return_statements()
         union object_value value;
         enum object_type type;
     } tests[] = {
-        {"return 10;", {10}, OBJ_INT},
-        {"return 10; 9;", {10}, OBJ_INT},
-        {"return 2 * 5; 9;", {10}, OBJ_INT},
-        {"9; return 2 * 5; 9;", {10}, OBJ_INT},
+        {"return 10;", {.integer = 10}, OBJ_INT},
+        {"return 10; 9;", {.integer = 10}, OBJ_INT},
+        {"return 2 * 5; 9;", {.integer = 10}, OBJ_INT},
+        {"9; return 2 * 5; 9;", {.integer = 10}, OBJ_INT},
         {"                      \
         if (10 > 1) {           \
             if (10 > 1) {       \
                 return 10;      \
             }                   \
             return 1;           \
-        }", {10}, OBJ_INT}
+        }", {.integer = 10}, OBJ_INT}
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
@@ -324,7 +316,7 @@ void test_error_handling() {
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
     {
         struct object *obj = test_eval(tests[i].input, false);
-        union object_value value = { .message = tests[i].message };
+        union object_value value = { .error = tests[i].message };
         test_object(obj, OBJ_ERROR, value);
         free_object(obj);
     }
@@ -357,16 +349,16 @@ void test_function_object() {
 
     assertf(!!obj, "expected object, got null pointers");
     assertf(obj->type == OBJ_FUNCTION, "wrong object type: expected OBJ_FUNCTION, got %s", object_type_to_str(obj->type));
-    assertf(obj->function.parameters->size == 1, "wrong parameter count: expected 1, got %d", obj->function.parameters->size);
+    assertf(obj->value.function.parameters->size == 1, "wrong parameter count: expected 1, got %d", obj->value.function.parameters->size);
 
     char tmp[64];
     tmp[0] = '\0';
-    identifier_list_to_str(tmp, obj->function.parameters);
+    identifier_list_to_str(tmp, obj->value.function.parameters);
     assertf(strcmp(tmp, "x") == 0, "parameter is not \"x\", got \"%s\"", tmp);
 
     tmp[0] = '\0';
     char *expected_body = "(x + 2)";
-    block_statement_to_str(tmp, obj->function.body);
+    block_statement_to_str(tmp, obj->value.function.body);
     assertf(strcmp(tmp, expected_body) == 0, "function body is not \"%s\", got \"%s\"", expected_body, tmp);
     
     free_program(program);
@@ -517,8 +509,8 @@ void test_builtin_functions() {
         {"len(\"\")", OBJ_INT, {.integer = 0}},
         {"len(\"four\")", OBJ_INT, {.integer = 4}},
         {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
-        {"len(1)", OBJ_ERROR, {.message = "argument to len() not supported: expected STRING, got INTEGER"}},
-        {"len(\"one\", \"two\")", OBJ_ERROR, {.message = "wrong number of arguments: expected 1, got 2"}},
+        {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
+        {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
@@ -534,10 +526,10 @@ void test_array_literals() {
     struct object *obj = test_eval(input, false);
     assertf(!!obj, "expected object, got null pointer");
     assertf(obj->type == OBJ_ARRAY, "wrong object type: expected %s, got %s", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj->type));
-    assertf(obj->array->size == 3, "wrong array size: expected %d, got %d", 3, obj->array->size);
-    test_integer_object(obj->array->values[0], 1);
-    test_integer_object(obj->array->values[1], 4);
-    test_integer_object(obj->array->values[2], 6);
+    assertf(obj->value.array->size == 3, "wrong array size: expected %d, got %d", 3, obj->value.array->size);
+    test_integer_object(obj->value.array->values[0], 1);
+    test_integer_object(obj->value.array->values[1], 4);
+    test_integer_object(obj->value.array->values[2], 6);
     free_object(obj);
 }
 

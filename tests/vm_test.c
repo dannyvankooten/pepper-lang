@@ -1,11 +1,17 @@
+#include <stdbool.h>
 #include "test_helpers.h"
 #include "vm/vm.h"
 #include "compiler/compiler.h"
 
+union value {
+    int integer;
+    bool boolean;
+};
+
 void test_integer_arithmetic() {
     struct {
         char *input;
-        int expected;
+        union value expected;
     } tests[] = {
         {"1", 1},
         {"2", 2},
@@ -36,7 +42,12 @@ void test_integer_arithmetic() {
     }
 }
 
+void test_boolean_expressions() {
+
+}
+
 int main() {
     test_integer_arithmetic();
+    test_boolean_expressions();
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

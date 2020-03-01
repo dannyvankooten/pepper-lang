@@ -5,6 +5,7 @@
 
 #include "opcode.h"
 
+
 struct definition definitions[] = {
     {
         "OpConstant", 1, {2}
@@ -23,6 +24,12 @@ struct definition definitions[] = {
     },
     {
         "OpDivide", 0, {0}
+    },
+    {
+        "OpTrue", 0, {0}
+    },
+    {
+        "OpFalse", 0, {0}
     },
 };
 

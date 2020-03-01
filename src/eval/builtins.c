@@ -10,12 +10,12 @@ struct object *builtin_puts(struct object_list * args);
 struct object *get_builtin(char *name) {
     static struct object len = {
         .type = OBJ_BUILTIN,
-        .builtin = &builtin_len,
+        .value = { .builtin = &builtin_len }
     };
 
     static struct object puts = {
         .type = OBJ_BUILTIN,
-        .builtin = &builtin_puts,
+        .value = { .builtin = &builtin_puts }
     };
 
     if (strcmp(name, "len") == 0) {
@@ -37,7 +37,7 @@ struct object *builtin_len(struct object_list * args) {
         return make_error_object("argument to len() not supported: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(arg->type));
     }
 
-    return make_integer_object(strlen(arg->string));
+    return make_integer_object(strlen(arg->value.string));
 }
 
 struct object *builtin_puts(struct object_list * args) {

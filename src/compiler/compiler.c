@@ -4,9 +4,6 @@
 
 #include "compiler.h"
 
-#define COMPILE_ERR_UNKNOWN_OPERATOR 1
-#define COMPILE_ERR_UNKNOWN_EXPR_TYPE 2
-
 int compile_statement(struct compiler *compiler, struct statement *statement);
 int compile_expression(struct compiler *compiler, struct expression *expression);
 
@@ -24,6 +21,16 @@ void free_compiler(struct compiler *c) {
     free(c->instructions);
     free_object_list(c->constants);
     free(c);
+}
+
+char *compiler_error_str(int err) {
+    static char *messages[] = {
+        "Success",
+        "Unknown operator",
+        "Unknown expression type",
+    };
+
+    return messages[err];
 }
 
 size_t 
@@ -87,21 +94,21 @@ compile_statement(struct compiler *c, struct statement *statement) {
 
 
 int 
-compile_expression(struct compiler *c, struct expression *expression) {
+compile_expression(struct compiler *c, struct expression *expr) {
     int err;
-    switch (expression->type) {
+    switch (expr->type) {
         case EXPR_INFIX: {
-            err = compile_expression(c, expression->infix.left);
+            err = compile_expression(c, expr->infix.left);
             if (err) {
                 return err;
             }
 
-            err = compile_expression(c, expression->infix.right);
+            err = compile_expression(c, expr->infix.right);
             if (err) {
                 return err;
             }
 
-            switch (expression->infix.operator) {
+            switch (expr->infix.operator) {
                 case OP_ADD:
                     compiler_emit(c, OPCODE_ADD);
                 break;
@@ -122,10 +129,19 @@ compile_expression(struct compiler *c, struct expression *expression) {
         break;   
 
         case EXPR_INT: {
-            struct object *obj = make_integer_object(expression->integer);
+            struct object *obj = make_integer_object(expr->integer);
             compiler_emit(c,  OPCODE_CONST, add_constant(c, obj));
             break;
         }
+
+        case EXPR_BOOL: {
+            if (expr->boolean) {
+                compiler_emit(c, OPCODE_TRUE);
+            } else {
+                compiler_emit(c, OPCODE_FALSE);
+            }
+        }
+        break;
 
         default:
             return COMPILE_ERR_UNKNOWN_EXPR_TYPE;

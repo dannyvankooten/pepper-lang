@@ -38,19 +38,21 @@ struct object_list {
     struct object_list *next;
 };
 
+union object_value {
+    bool boolean;
+    long integer;
+    char *error;
+    char *string;
+    struct function function;
+    struct object *(*builtin)(struct object_list *);
+    struct object_list *array;
+};
+
 struct object
 {
     enum object_type type;
     char *name;
-    union {
-        bool boolean;
-        long integer;
-        char *error;
-        char *string;
-        struct function function;
-        struct object *(*builtin)(struct object_list *);
-        struct object_list *array;
-    };
+    union object_value value;
     bool return_value;
     struct object *next;
 };

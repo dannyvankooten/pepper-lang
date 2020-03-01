@@ -31,7 +31,7 @@ struct object *eval_minus_prefix_operator_expression(struct object *right)
         return make_error_object("unknown operator: -%s", object_type_to_str(right->type));
     }
 
-    return make_integer_object(-right->integer);
+    return make_integer_object(-right->value.integer);
 }
 
 struct object *eval_prefix_expression(enum operator operator, struct object *right)
@@ -59,28 +59,28 @@ struct object *eval_integer_infix_expression(enum operator operator, struct obje
     switch (operator)
     {
     case OP_ADD:
-        return make_integer_object(left->integer + right->integer);
+        return make_integer_object(left->value.integer + right->value.integer);
         break;
     case OP_SUBTRACT:
-        return make_integer_object(left->integer - right->integer);
+        return make_integer_object(left->value.integer - right->value.integer);
         break;
     case OP_MULTIPLY:
-        return make_integer_object(left->integer * right->integer);
+        return make_integer_object(left->value.integer * right->value.integer);
         break;
     case OP_DIVIDE:
-        return make_integer_object(left->integer / right->integer);
+        return make_integer_object(left->value.integer / right->value.integer);
         break;
     case OP_LT:
-        return make_boolean_object(left->integer < right->integer);
+        return make_boolean_object(left->value.integer < right->value.integer);
         break;
     case OP_GT:
-        return make_boolean_object(left->integer > right->integer);
+        return make_boolean_object(left->value.integer > right->value.integer);
         break;
     case OP_EQ:
-        return make_boolean_object(left->integer == right->integer);
+        return make_boolean_object(left->value.integer == right->value.integer);
         break;
     case OP_NOT_EQ:
-        return make_boolean_object(left->integer != right->integer);
+        return make_boolean_object(left->value.integer != right->value.integer);
         break;
     default:
         break;
@@ -93,7 +93,7 @@ struct object *eval_string_infix_expression(enum operator operator, struct objec
 {
     switch (operator) {
         case OP_ADD: 
-            return make_string_object(left->string, right->string);
+            return make_string_object(left->value.string, right->value.string);
         break;
 
         default: 
@@ -232,20 +232,20 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
 
     switch (obj->type) {
         case OBJ_BUILTIN: {
-            return obj->builtin(args);
+            return obj->value.builtin(args);
         }
         break;
 
         case OBJ_FUNCTION: {
-            if (args->size != obj->function.parameters->size) {
-                return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
+            if (args->size != obj->value.function.parameters->size) {
+                return make_error_object("invalid function call: expected %d arguments, got %d", obj->value.function.parameters->size, args->size);
             }
             
-            struct environment *env = make_closed_environment(obj->function.env); 
-            for (int i=0; i < obj->function.parameters->size; i++) {
-                environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
+            struct environment *env = make_closed_environment(obj->value.function.env); 
+            for (int i=0; i < obj->value.function.parameters->size; i++) {
+                environment_set(env, obj->value.function.parameters->values[i].value, args->values[i]);
             }
-            struct object *result = eval_block_statement(obj->function.body, env);
+            struct object *result = eval_block_statement(obj->value.function.body, env);
             free_environment(env);
             result->return_value = false;
             return result;
@@ -265,11 +265,11 @@ struct object *eval_index_expression(struct object *left, struct object *index) 
         return make_error_object("index operator not supported: %s", object_type_to_str(left->type));
     }
 
-    if (index->integer < 0 || index->integer > (left->array->size - 1)) {
+    if (index->value.integer < 0 || index->value.integer > (left->value.array->size - 1)) {
         return object_null;
     }
 
-    return copy_object(left->array->values[index->integer]);
+    return copy_object(left->value.array->values[index->value.integer]);
 }
 
 struct object *eval_expression(struct expression *expr, struct environment *env)

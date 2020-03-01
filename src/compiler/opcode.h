@@ -13,6 +13,8 @@ enum opcode {
     OPCODE_SUBTRACT,
     OPCODE_MULTIPLY,
     OPCODE_DIVIDE,
+    OPCODE_TRUE,
+    OPCODE_FALSE
 };
 
 struct definition {

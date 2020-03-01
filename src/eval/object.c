@@ -20,22 +20,22 @@ static struct object _object_null_return = {
 };
 static struct object _object_true = {
     .type = OBJ_BOOL,
-    .boolean = true,
+    .value = { .boolean = true },
     .return_value = false,
 };
 static struct object _object_false = {
     .type = OBJ_BOOL,
-    .boolean = false,
+    .value = { .boolean = false },
     .return_value = false,
 };
 static struct object _object_true_return = {
     .type = OBJ_BOOL,
-    .boolean = true,
+    .value = { .boolean = true },
     .return_value = true,
 };
 static struct object _object_false_return = {
     .type = OBJ_BOOL,
-    .boolean = false,
+    .value = { .boolean = false },
     .return_value = true,
 };
 struct object *object_null = &_object_null;
@@ -87,13 +87,13 @@ struct object *make_object(enum object_type type) {
 struct object *make_integer_object(long value)
 {
     struct object *obj = make_object(OBJ_INT);
-    obj->integer = value;
+    obj->value.integer = value;
     return obj;
 }
 
 struct object *make_array_object(struct object_list *elements) {
     struct object *obj = make_object(OBJ_ARRAY);
-    obj->array = copy_object_list(elements);
+    obj->value.array = copy_object_list(elements);
     return obj;
 }
 
@@ -103,15 +103,15 @@ struct object *make_string_object(char *str1, char *str2)
     
     // allocate enough memory to fit both strings
     int l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
-    obj->string = malloc(l);
-    if (!obj->string) {
+    obj->value.string = malloc(l);
+    if (!obj->value.string) {
         err(EXIT_FAILURE, "out of memory");
     }
 
     // piece strings together
-    strcpy(obj->string, str1);
+    strcpy(obj->value.string, str1);
     if (str2) {
-        strcat(obj->string, str2);
+        strcat(obj->value.string, str2);
     }
    
     return obj;
@@ -124,15 +124,15 @@ struct object *make_error_object(char *format, ...) {
     struct object *obj = make_object(OBJ_ERROR);
 
     size_t l = strlen(format);
-    obj->error = malloc(l + 64);
-    if (!obj->error) {
+    obj->value.error = malloc(l + 64);
+    if (!obj->value.error) {
         err(EXIT_FAILURE, "out of memory");
     }
 
     // always return error objects
     obj->return_value = true;
     va_start(args, format);  
-    vsnprintf(obj->error, l + 64, format, args);
+    vsnprintf(obj->value.error, l + 64, format, args);
     va_end(args);
     return obj;
 }
@@ -140,9 +140,9 @@ struct object *make_error_object(char *format, ...) {
 
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
     struct object *obj = make_object(OBJ_FUNCTION);
-    obj->function.parameters = parameters;
-    obj->function.body = body;
-    obj->function.env = env;
+    obj->value.function.parameters = parameters;
+    obj->value.function.body = body;
+    obj->value.function.env = env;
     return obj;
 }
 
@@ -156,23 +156,23 @@ struct object *copy_object(struct object *obj) {
             break;
 
         case OBJ_INT:
-            return make_integer_object(obj->integer);
+            return make_integer_object(obj->value.integer);
             break;
 
         case OBJ_FUNCTION:
-            return make_function_object(obj->function.parameters, obj->function.body, obj->function.env);
+            return make_function_object(obj->value.function.parameters, obj->value.function.body, obj->value.function.env);
             break;
 
         case OBJ_ERROR: 
-            return make_error_object(obj->error);
+            return make_error_object(obj->value.error);
             break;
         
         case OBJ_STRING:
-            return make_string_object(obj->string, NULL);
+            return make_string_object(obj->value.string, NULL);
             break;
 
         case OBJ_ARRAY: 
-            return make_array_object(obj->array);
+            return make_array_object(obj->value.array);
             break;
     }
 
@@ -191,23 +191,23 @@ void free_object(struct object *obj)
         case OBJ_NULL: 
         case OBJ_BOOL: 
         case OBJ_BUILTIN:
-            // never free static objects
+            // never free staticvalue. objects
             return;
             break;
 
         case OBJ_ERROR:
-            free(obj->error);
-            obj->error = NULL;
+            free(obj->value.error);
+            obj->value.error = NULL;
             break;
 
         case OBJ_ARRAY: 
-            free_object_list(obj->array);
-            obj->array = NULL;
+            free_object_list(obj->value.array);
+            obj->value.array = NULL;
             break;
 
         case OBJ_STRING: 
-            free(obj->string);
-            obj->string = NULL;
+            free(obj->value.string);
+            obj->value.string = NULL;
             break;
 
         case OBJ_FUNCTION:
@@ -278,7 +278,7 @@ void object_to_str(char *str, struct object *obj)
         break;
         
     case OBJ_INT:
-        sprintf(tmp, "%ld", obj->integer);
+        sprintf(tmp, "%ld", obj->value.integer);
         strcat(str, tmp);
         break;
         
@@ -287,19 +287,19 @@ void object_to_str(char *str, struct object *obj)
         break;
         
     case OBJ_ERROR: 
-        strcat(str, obj->error);
+        strcat(str, obj->value.error);
         break;  
          
     case OBJ_FUNCTION: 
         strcat(str, "fn(");
-        identifier_list_to_str(str, obj->function.parameters);
+        identifier_list_to_str(str, obj->value.function.parameters);
         strcat(str, ") {\n");
-        block_statement_to_str(str, obj->function.body);
+        block_statement_to_str(str, obj->value.function.body);
         strcat(str, "\n}");
         break;
 
     case OBJ_STRING: 
-        strcat(str, obj->string);
+        strcat(str, obj->value.string);
         break;
 
     case OBJ_BUILTIN: 
@@ -308,9 +308,9 @@ void object_to_str(char *str, struct object *obj)
 
     case OBJ_ARRAY: 
         strcat(str, "[");
-        for (int i=0; i < obj->array->size; i++) {
-            object_to_str(str, obj->array->values[i]);
-            if (i < (obj->array->size - 1)) {
+        for (int i=0; i < obj->value.array->size; i++) {
+            object_to_str(str, obj->value.array->values[i]);
+            if (i < (obj->value.array->size - 1)) {
                 strcat(str, ", ");
             }
         }
