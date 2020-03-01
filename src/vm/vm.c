@@ -2,6 +2,9 @@
 #include <err.h>
 #include "vm.h"
 
+#define VM_ERR_INVALID_OP_TYPE 1
+#define VM_ERR_INVALID_INT_OPERATOR 2
+
 struct vm *make_vm(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     vm->stack_pointer = 0;
@@ -28,9 +31,46 @@ void vm_stack_push(struct vm *vm, struct object *obj) {
     vm->stack[vm->stack_pointer++] = obj;
 }
 
+int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, struct object *left, struct object *right) {
+    long result;
+    
+    switch (opcode) {
+        case OPCODE_ADD: 
+            result = left->integer + right->integer;
+        break;
+        case OPCODE_SUBTRACT: 
+            result = left->integer - right->integer;
+        break;
+        case OPCODE_MULTIPLY: 
+            result = left->integer * right->integer;
+        break;
+        case OPCODE_DIVIDE: 
+            result = left->integer / right->integer;
+        break;
+        default:
+            return VM_ERR_INVALID_INT_OPERATOR;
+        break;
+    }
+
+    vm_stack_push(vm, make_integer_object(result));
+    return 0;
+}
+
+int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
+    struct object *right = vm_stack_pop(vm);
+    struct object *left = vm_stack_pop(vm);
+    
+    if (left->type == OBJ_INT && right->type == OBJ_INT) {
+        return vm_do_binary_integer_operation(vm, opcode, left, right);
+    }  
+
+    return VM_ERR_INVALID_OP_TYPE;
+}
+
 int vm_run(struct vm *vm) {
     size_t size = vm->instructions->size;
     char *bytes = vm->instructions->bytes;
+    int err;
 
     for (int ip=0; ip < size; ip++) {
         enum opcode opcode = bytes[ip];
@@ -42,13 +82,14 @@ int vm_run(struct vm *vm) {
             }
             break;
 
-            case OPCODE_ADD: {
-                struct object *right = vm_stack_pop(vm);
-                struct object *left = vm_stack_pop(vm);
-                // TODO: Check object types here?
-                struct object *result = make_integer_object(left->integer + right->integer);
-                // TODO: Free left & right here?
-                vm_stack_push(vm, result);
+            case OPCODE_ADD:
+            case OPCODE_SUBTRACT:
+            case OPCODE_MULTIPLY:
+            case OPCODE_DIVIDE: {
+                err = vm_do_binary_operation(vm, opcode);
+                if (err) {
+                    return err;
+                }
             }
             break;
 
@@ -58,6 +99,7 @@ int vm_run(struct vm *vm) {
             break;
         }
     }
+
     return 0;
 }
 

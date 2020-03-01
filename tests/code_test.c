@@ -31,7 +31,7 @@ void test_make_instruction() {
             assertf(ins->bytes[j] == tests[i].expected[j], "[%d] invalid byte value at index %d: expected %d, got %d", i, j, tests[i].expected[j], ins->bytes[j]);
         }
 
-        free(ins);
+        free_instruction(ins);
     }
 }
 
@@ -44,9 +44,9 @@ void test_instruction_string() {
 
     char *expected_str = "0000 OpAdd\n0001 OpConstant 2\n0004 OpConstant 65535";
     struct instruction *ins = flatten_instructions_array(instructions, 3);
-
     char *str = instruction_to_str(ins);
     assertf(strcmp(expected_str, str) == 0, "wrong instruction string: expected \"%s\", got \"%s\"", expected_str, str);
+    free_instruction(ins);
     free(str);
 }
 
@@ -69,6 +69,7 @@ void test_read_operands() {
         for (int i=0; i < def.operands; i++) {
             assertf(tests[t].operands[i] == operands[i], "wrong operand: expected %d, got %d", tests[t].operands[i], operands[i]);
         }
+        free_instruction(ins);
     }
 }
 
@@ -77,6 +78,5 @@ int main() {
     test_read_operands();
     test_instruction_string();
     
-
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

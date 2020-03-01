@@ -5,25 +5,61 @@
 
 struct compiler_test_case {
     char *input;
-    int expected_constants[16];
-    size_t expected_constants_size;
-    struct instruction *expected_instructions[16];
-    size_t expected_instructions_size;
+    int constants[16];
+    size_t constants_size;
+    struct instruction *instructions[16];
+    size_t instructions_size;
 };
 
 void test_integer_arithmetic() {
     struct compiler_test_case tests[] = {
         {
             .input = "1 + 2",
-            .expected_constants = {1, 2},
-            .expected_constants_size = 2,
-            .expected_instructions = {
+            .constants = {1, 2},
+            .constants_size = 2,
+            .instructions = {
                 make_instruction(OPCODE_CONST, 0),
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_ADD),
                 make_instruction(OPCODE_POP),
             },
-            .expected_instructions_size = 4,
+            .instructions_size = 4,
+        },
+        {
+            .input = "1 - 2",
+            .constants = {1, 2},
+            .constants_size = 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_SUBTRACT),
+                make_instruction(OPCODE_POP),
+            },
+            .instructions_size = 4,
+        },
+        {
+            .input = "1 * 2",
+            .constants = {1, 2},
+            .constants_size = 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_MULTIPLY),
+                make_instruction(OPCODE_POP),
+            },
+            .instructions_size = 4,
+        },
+        {
+            .input = "2 / 1",
+            .constants = {2, 1},
+            .constants_size = 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_DIVIDE),
+                make_instruction(OPCODE_POP),
+            },
+            .instructions_size = 4,
         }
     };
 
@@ -32,18 +68,24 @@ void test_integer_arithmetic() {
         struct compiler *compiler = make_compiler();
         assertf(compile_program(compiler, program) == 0, "compiler error");
         struct bytecode *bytecode = get_bytecode(compiler);
-        struct instruction *concatted = flatten_instructions_array(tests[t].expected_instructions, tests[t].expected_instructions_size);
+        struct instruction *concatted = flatten_instructions_array(tests[t].instructions, tests[t].instructions_size);
 
-        assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: expected \"%s\", got \"%s\"", instruction_to_str(concatted), instruction_to_str(bytecode->instructions));
+        char *concatted_str = instruction_to_str(concatted);
+        char *bytecode_str = instruction_to_str(bytecode->instructions);
+        assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: expected \"%s\", got \"%s\"", concatted_str, bytecode_str);
         for (int i=0; i < concatted->size; i++) {
             assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch");
         }
 
-        assertf(bytecode->constants->size == tests[t].expected_constants_size, "wrong constants size: expected %d, got %d", tests[t].expected_constants_size, bytecode->constants->size);
-        for (int i=0; i < tests[t].expected_constants_size; i++) {
-            assertf(bytecode->constants->values[i]->integer == tests[t].expected_constants[i], "invalid constant: expected %d, got %d", tests[t].expected_constants[i], bytecode->constants->values[i]->integer);
+        assertf(bytecode->constants->size == tests[t].constants_size, "wrong constants size: expected %d, got %d", tests[t].constants_size, bytecode->constants->size);
+        for (int i=0; i < tests[t].constants_size; i++) {
+            assertf(bytecode->constants->values[i]->integer == tests[t].constants[i], "invalid constant: expected %d, got %d", tests[t].constants[i], bytecode->constants->values[i]->integer);
         }
 
+        free(concatted_str);
+        free(bytecode_str);
+        free(bytecode);
+        free_program(program);
         free_compiler(compiler);
     }
 }

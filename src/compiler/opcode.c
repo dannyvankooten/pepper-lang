@@ -5,39 +5,29 @@
 
 #include "opcode.h"
 
+struct definition definitions[] = {
+    {
+        "OpConstant", 1, {2}
+    },
+    {
+        "OpAdd", 0, {0}
+    },
+    {
+        "OpPop", 0, {0}
+    },
+    {
+        "OpSubtract", 0, {0}
+    },
+    {
+        "OpMultiply", 0, {0}
+    },
+    {
+        "OpDivide", 0, {0}
+    },
+};
+
 struct definition lookup(enum opcode opcode) {
-    switch (opcode) {
-        case OPCODE_CONST: {
-            struct definition def = {
-                .name = "OpConstant",
-                .operand_widths = {2},
-                .operands = 1,
-            };
-            return def;
-        }
-        break;
-        case OPCODE_ADD: {
-            struct definition def = {
-                .name = "OpAdd",
-                .operands = 0,
-            };
-            return def;
-        }
-        break;
-
-        case OPCODE_POP: {
-            struct definition def = {
-                .name = "OpPop",
-                .operands = 0,
-            };
-            return def;
-        }
-        break;
-    }
-
-    struct definition def;
-    sprintf(def.name, "no definition for opcode: %d", opcode);
-    return def;
+    return definitions[opcode - 1];
 }
 
 // TODO: Have this accept an array instead
@@ -46,7 +36,7 @@ struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     struct definition def = lookup(opcode);
     struct instruction *ins = malloc(sizeof *ins);
     
-    ins->bytes = malloc(sizeof *ins->bytes * (def.operands + 1));
+    ins->bytes = malloc(sizeof *ins->bytes * (def.operands + 1) * 3);
     ins->bytes[0] = opcode;
     ins->size = 1;
     ins->cap = (def.operands + 1);      
@@ -55,7 +45,7 @@ struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     for (int op_idx = 0; op_idx < def.operands; op_idx++) {
         int operand = va_arg(operands, int);
         for (int byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
-            ins->bytes[ins->size++] = operand >> (byte_idx * 8) & 0xff;
+            ins->bytes[ins->size++] = (unsigned char) (operand >> (byte_idx * 8) & 0xff);
         }
     }
 
@@ -70,23 +60,31 @@ struct instruction *make_instruction(enum opcode opcode, ...) {
     return ins;
 }
 
+void free_instruction(struct instruction *ins) {
+    free(ins->bytes);
+    free(ins);
+}
+
 struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size) {
     struct instruction *ins = arr[0];
     for (int i = 1; i < size; i++) {
+
+        // TODO: Allocate all at once
         ins->bytes = realloc(ins->bytes, (ins->size + arr[i]->size ) * sizeof(*ins->bytes));
         for (int j=0; j < arr[i]->size; j++) {
             ins->bytes[ins->size++] = arr[i]->bytes[j];
         }
 
-        free(arr[i]);
+        free_instruction(arr[i]);
     }
+
     return ins;
 }
 
 char *instruction_to_str(struct instruction *ins) {
     char *buffer = malloc(1024);
     buffer[0] = '\0';
-    int operands[MAX_OP_SIZE] = {0};
+    int operands[MAX_OP_SIZE] = {0, 0};
 
     for (int i=0; i < ins->size; i++) {
         struct definition def = lookup(ins->bytes[i]);
@@ -100,8 +98,9 @@ char *instruction_to_str(struct instruction *ins) {
             case 1:
                 sprintf(str, "%04d %s %d", i, def.name, operands[0]);
             break;
-
-            // TODO: Add support for opcodes with more operands
+            case 2:
+                sprintf(str, "%04d %s %d %d", i, def.name, operands[0], operands[1]);
+            break;
         }
         strcat(buffer, str);
 

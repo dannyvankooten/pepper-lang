@@ -5,6 +5,7 @@
 #include "compiler.h"
 
 #define COMPILE_ERR_UNKNOWN_OPERATOR 1
+#define COMPILE_ERR_UNKNOWN_EXPR_TYPE 2
 
 int compile_statement(struct compiler *compiler, struct statement *statement);
 int compile_expression(struct compiler *compiler, struct expression *expression);
@@ -12,13 +13,16 @@ int compile_expression(struct compiler *compiler, struct expression *expression)
 struct compiler *make_compiler() {
     struct compiler *c = malloc(sizeof *c);
     c->instructions = malloc(sizeof *c->instructions);
-    c->constants = NULL;
+    c->instructions->bytes = malloc(1);
+    c->instructions->size = 0;
+    c->constants = make_object_list(64);
     return c;
 }
 
 void free_compiler(struct compiler *c) {
+    free(c->instructions->bytes);
     free(c->instructions);
-    free(c->constants);
+    free_object_list(c->constants);
     free(c);
 }
 
@@ -28,15 +32,12 @@ add_instruction(struct compiler *c, struct instruction *ins) {
     for (int i=0; i < ins->size; i++) {
         c->instructions->bytes[c->instructions->size++] = ins->bytes[i];
     }
+    free_instruction(ins);
     return c->instructions->size - 1;
 }
 
 size_t 
 add_constant(struct compiler *c, struct object *obj) {
-    if (!c->constants) {
-        c->constants = make_object_list(16);
-    }
-
     // TODO: Increase list capacity if needed
 
     c->constants->values[c->constants->size++] = obj;
@@ -104,19 +105,31 @@ compile_expression(struct compiler *c, struct expression *expression) {
                 case OP_ADD:
                     compiler_emit(c, OPCODE_ADD);
                 break;
+                case OP_SUBTRACT:
+                    compiler_emit(c, OPCODE_SUBTRACT);
+                break;
+                case OP_MULTIPLY: 
+                    compiler_emit(c, OPCODE_MULTIPLY);
+                break;
+                case OP_DIVIDE: 
+                    compiler_emit(c, OPCODE_DIVIDE);
+                break;
                 default: 
                     return COMPILE_ERR_UNKNOWN_OPERATOR;
                 break;
             }
         }
-        break; 
-        
+        break;   
 
         case EXPR_INT: {
             struct object *obj = make_integer_object(expression->integer);
             compiler_emit(c,  OPCODE_CONST, add_constant(c, obj));
             break;
         }
+
+        default:
+            return COMPILE_ERR_UNKNOWN_EXPR_TYPE;
+        break;
     }
 
     return 0;

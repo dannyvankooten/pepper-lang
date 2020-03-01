@@ -10,6 +10,9 @@ enum opcode {
     OPCODE_CONST = 1,
     OPCODE_ADD,
     OPCODE_POP,
+    OPCODE_SUBTRACT,
+    OPCODE_MULTIPLY,
+    OPCODE_DIVIDE,
 };
 
 struct definition {
@@ -32,6 +35,7 @@ struct bytecode {
 struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, ...);
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands);
+void free_instruction(struct instruction *ins);
 struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size);
 char *instruction_to_str(struct instruction *ins);
 size_t read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, size_t offset);
