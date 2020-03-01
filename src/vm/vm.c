@@ -29,11 +29,14 @@ void vm_stack_push(struct vm *vm, struct object *obj) {
 }
 
 int vm_run(struct vm *vm) {
-    for (int ip=0; ip < vm->instructions->size; ip++) {
-        enum opcode opcode = vm->instructions->bytes[ip];
+    size_t size = vm->instructions->size;
+    char *bytes = vm->instructions->bytes;
+
+    for (int ip=0; ip < size; ip++) {
+        enum opcode opcode = bytes[ip];
         switch (opcode) {
             case OPCODE_CONST: {
-                int idx = read_bytes(vm->instructions->bytes, ip+1, 2);
+                int idx = read_bytes(bytes, ip+1, 2);
                 ip += 2;
                 vm_stack_push(vm, vm->constants->values[idx]);   
             }
@@ -48,15 +51,16 @@ int vm_run(struct vm *vm) {
                 vm_stack_push(vm, result);
             }
             break;
+
+            case OPCODE_POP: {
+                vm_stack_pop(vm);
+            }
+            break;
         }
     }
     return 0;
 }
 
-struct object *vm_stack_top(struct vm *vm) {
-    if  (vm->stack_pointer == 0) {
-        return NULL;
-    }
-
-    return vm->stack[vm->stack_pointer-1];
+struct object *vm_stack_last_popped(struct vm *vm) {
+    return vm->stack[vm->stack_pointer];
 }

@@ -18,11 +18,12 @@ void test_integer_arithmetic() {
             .expected_constants = {1, 2},
             .expected_constants_size = 2,
             .expected_instructions = {
-                make_instruction(OPCODE_CONST, (int[]) {0}),
-                make_instruction(OPCODE_CONST, (int[]) {1}),
-                make_instruction(OPCODE_ADD, (int[]) {})
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_ADD),
+                make_instruction(OPCODE_POP),
             },
-            .expected_instructions_size = 3,
+            .expected_instructions_size = 4,
         }
     };
 

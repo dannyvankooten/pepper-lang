@@ -24,7 +24,7 @@ void test_make_instruction() {
     };
 
     for (int i=0; i < ARRAY_SIZE(tests); i++) {
-        struct instruction *ins = make_instruction(tests[i].opcode, tests[i].operands);
+        struct instruction *ins = make_instruction(tests[i].opcode, tests[i].operands[0]);
         
         assertf(ins->size == tests[i].expected_size, "wrong length: expected %d, got %d", tests[i].expected_size, ins->size);
         for (int j=0; j < tests[i].expected_size; j++) {
@@ -37,9 +37,9 @@ void test_make_instruction() {
 
 void test_instruction_string() {
     struct instruction *instructions[] = {
-        make_instruction(OPCODE_ADD, (int[]) {}),
-        make_instruction(OPCODE_CONST, (int[]) {2}),
-        make_instruction(OPCODE_CONST, (int[]) {65535})
+        make_instruction(OPCODE_ADD),
+        make_instruction(OPCODE_CONST, 2),
+        make_instruction(OPCODE_CONST, 65535)
     };
 
     char *expected_str = "0000 OpAdd\n0001 OpConstant 2\n0004 OpConstant 65535";
@@ -53,7 +53,7 @@ void test_instruction_string() {
 void test_read_operands() {
     struct {
         enum opcode opcode;
-        int operands[8];
+        int operands[MAX_OP_SIZE];
         size_t bytes_read;
     } tests[] = {
         {OPCODE_CONST, {65535}, 2},
@@ -61,7 +61,7 @@ void test_read_operands() {
     };
 
     for (int t = 0; t < ARRAY_SIZE(tests); t++) {
-        struct instruction *ins = make_instruction(tests[t].opcode, tests[t].operands);
+        struct instruction *ins = make_instruction(tests[t].opcode, tests[t].operands[0]);
         struct definition def = lookup(tests[t].opcode);
         int operands[3] = {0};
         size_t bytes_read = read_operands(operands, def, ins, 0);

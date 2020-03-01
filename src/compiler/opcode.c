@@ -24,6 +24,15 @@ struct definition lookup(enum opcode opcode) {
             return def;
         }
         break;
+
+        case OPCODE_POP: {
+            struct definition def = {
+                .name = "OpPop",
+                .operands = 0,
+            };
+            return def;
+        }
+        break;
     }
 
     struct definition def;
@@ -31,10 +40,12 @@ struct definition lookup(enum opcode opcode) {
     return def;
 }
 
-struct instruction *make_instruction(enum opcode opcode, int operands[MAX_OP_SIZE]) {
+// TODO: Have this accept an array instead
+// TODO: Provide helpre function to turn va_list into operands array
+struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     struct definition def = lookup(opcode);
     struct instruction *ins = malloc(sizeof *ins);
-
+    
     ins->bytes = malloc(sizeof *ins->bytes * (def.operands + 1));
     ins->bytes[0] = opcode;
     ins->size = 1;
@@ -42,11 +53,20 @@ struct instruction *make_instruction(enum opcode opcode, int operands[MAX_OP_SIZ
 
      // write operands to remaining bytes
     for (int op_idx = 0; op_idx < def.operands; op_idx++) {
+        int operand = va_arg(operands, int);
         for (int byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
-            ins->bytes[ins->size++] = operands[op_idx] >> (byte_idx * 8) & 0xff;
+            ins->bytes[ins->size++] = operand >> (byte_idx * 8) & 0xff;
         }
     }
 
+    return ins;
+}
+
+struct instruction *make_instruction(enum opcode opcode, ...) {
+    va_list args;
+    va_start(args, opcode);
+    struct instruction *ins = make_instruction_va(opcode, args);
+    va_end(args);
     return ins;
 }
 

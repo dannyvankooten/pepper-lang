@@ -19,7 +19,7 @@ void test_integer_arithmetic() {
         struct bytecode *bc = get_bytecode(c);
         struct vm *vm = make_vm(bc);
         assertf(vm_run(vm) == 0, "vm error");
-        struct object *obj = vm_stack_top(vm);
+        struct object *obj = vm_stack_last_popped(vm);
 
         assertf(obj != NULL, "[%d] expected object, got NULL", t);
         assertf(obj->type == OBJ_INT, "[%d] invalid object type", t);

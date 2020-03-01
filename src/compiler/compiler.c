@@ -22,32 +22,6 @@ void free_compiler(struct compiler *c) {
     free(c);
 }
 
-int
-compile_program(struct compiler *compiler, struct program *program) {
-    int err;
-    for (int i=0; i < program->size; i++) {
-        err = compile_statement(compiler, &program->statements[i]);
-        if (err) {
-            return err;
-        }
-    }
-
-    return 0;
-}
-
-int
-compile_statement(struct compiler *compiler, struct statement *statement) {
-    switch (statement->type) {
-        // TODO: Handle STMT_LET 
-        // TODO: Handle STMT_RETURN
-        case STMT_EXPR: 
-            return compile_expression(compiler, statement->value);
-        break;
-    }
-
-    return 0;
-}
-
 size_t 
 add_instruction(struct compiler *c, struct instruction *ins) {
     c->instructions->bytes = realloc(c->instructions->bytes, (c->instructions->size + ins->size ) * sizeof(*c->instructions->bytes));
@@ -71,15 +45,45 @@ add_constant(struct compiler *c, struct object *obj) {
 
 size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
     va_list args;
-    int i = 0;
-    int operands[MAX_OP_SIZE];
     va_start(args, opcode);
-        operands[i++] = va_arg(args, int);
+    struct instruction *ins = make_instruction_va(opcode, args);
     va_end(args);
-
-    struct instruction *ins = make_instruction(opcode, operands);
     return add_instruction(c, ins);
 }
+
+int
+compile_program(struct compiler *compiler, struct program *program) {
+    int err;
+    for (int i=0; i < program->size; i++) {
+        err = compile_statement(compiler, &program->statements[i]);
+        if (err) {
+            return err;
+        }
+    }
+
+    return 0;
+}
+
+int
+compile_statement(struct compiler *c, struct statement *statement) {
+    int err;
+    switch (statement->type) {
+        // TODO: Handle STMT_LET 
+        // TODO: Handle STMT_RETURN
+        case STMT_EXPR: {
+            err = compile_expression(c, statement->value);
+            if (err) {
+                return err;
+            }
+
+            compiler_emit(c, OPCODE_POP);
+        }
+        break;
+    }
+
+    return 0;
+}
+
 
 int 
 compile_expression(struct compiler *c, struct expression *expression) {
