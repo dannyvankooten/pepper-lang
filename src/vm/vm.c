@@ -4,6 +4,8 @@
 
 #define VM_ERR_INVALID_OP_TYPE 1
 #define VM_ERR_INVALID_INT_OPERATOR 2
+#define VM_ERR_OUT_OF_BOUNDS 3
+#define VM_ERR_STACK_OVERFLOW 4
 
 struct vm *make_vm(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
@@ -17,7 +19,8 @@ struct vm *make_vm(struct bytecode *bc) {
 
 struct object *vm_stack_pop(struct vm *vm) {
     if (vm->stack_pointer == 0) {
-        err(1, "out of bounds");
+        err(VM_ERR_OUT_OF_BOUNDS, "out of bounds");
+        return VM_ERR_OUT_OF_BOUNDS;
     }
 
     return vm->stack[--vm->stack_pointer];
@@ -25,8 +28,8 @@ struct object *vm_stack_pop(struct vm *vm) {
 
 int vm_stack_push(struct vm *vm, struct object *obj) {
     if (vm->stack_pointer >= STACK_SIZE) {
-        err(1, "stack overflow");
-        return 1;
+        err(VM_ERR_STACK_OVERFLOW, "stack overflow");
+        return VM_ERR_STACK_OVERFLOW;
     }
 
     vm->stack[vm->stack_pointer++] = obj;
@@ -182,6 +185,23 @@ int vm_run(struct vm *vm) {
             case OPCODE_LESS_THAN: 
                 err = vm_do_comparision(vm, opcode);
                 if (err) return err;
+            break;
+
+            case OPCODE_JUMP: {
+                int pos = read_bytes(bytes, ip+1, 2);
+                ip = pos - 1;
+            }
+            break;
+
+            case OPCODE_JUMP_NOT_TRUE: {
+                int pos = read_bytes(bytes, ip+1, 2);
+                ip += 2;
+
+                struct object *condition = vm_stack_pop(vm);
+                if (!is_object_truthy(condition)) {
+                    ip = pos - 1;
+                } 
+            }
             break;
 
            

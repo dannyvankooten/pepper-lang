@@ -7,9 +7,16 @@
 #define COMPILE_ERR_UNKNOWN_OPERATOR 1
 #define COMPILE_ERR_UNKNOWN_EXPR_TYPE 2
 
+struct emitted_instruction {
+    enum opcode opcode;
+    size_t position;
+};
+
 struct compiler {
     struct instruction *instructions;
     struct object_list *constants;
+    struct emitted_instruction last_instruction;
+    struct emitted_instruction previous_instruction;
 };
 
 struct compiler *make_compiler();
