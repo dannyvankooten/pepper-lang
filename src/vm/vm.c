@@ -36,16 +36,16 @@ int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, struct obj
     
     switch (opcode) {
         case OPCODE_ADD: 
-            result = left->integer + right->integer;
+            result = left->value.integer + right->value.integer;
         break;
         case OPCODE_SUBTRACT: 
-            result = left->integer - right->integer;
+            result = left->value.integer - right->value.integer;
         break;
         case OPCODE_MULTIPLY: 
-            result = left->integer * right->integer;
+            result = left->value.integer * right->value.integer;
         break;
         case OPCODE_DIVIDE: 
-            result = left->integer / right->integer;
+            result = left->value.integer / right->value.integer;
         break;
         default:
             return VM_ERR_INVALID_INT_OPERATOR;
@@ -69,7 +69,7 @@ int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
 
 int vm_run(struct vm *vm) {
     size_t size = vm->instructions->size;
-    char *bytes = vm->instructions->bytes;
+    unsigned char *bytes = vm->instructions->bytes;
     int err;
 
     for (int ip=0; ip < size; ip++) {

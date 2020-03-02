@@ -3,15 +3,10 @@
 #include "vm/vm.h"
 #include "compiler/compiler.h"
 
-union value {
-    int integer;
-    bool boolean;
-};
-
 void test_integer_arithmetic() {
     struct {
         char *input;
-        union value expected;
+        int expected;
     } tests[] = {
         {"1", 1},
         {"2", 2},
@@ -38,7 +33,7 @@ void test_integer_arithmetic() {
 
         assertf(obj != NULL, "[%d] expected object, got NULL", t);
         assertf(obj->type == OBJ_INT, "[%d] invalid object type", t);
-        assertf(obj->integer == tests[t].expected, "[%d] invalid value: expected %d, got %d", t, tests[t].expected, obj->integer);
+        assertf(obj->value.integer == tests[t].expected, "[%d] invalid value: expected %d, got %d", t, tests[t].expected, obj->value.integer);
     }
 }
 
