@@ -54,6 +54,10 @@ void test_integer_arithmetic() {
         {"5 * 2 + 10", 20},
         {"5 + 2 * 10", 25},
         {"5 * (2 + 10)", 60},
+        {"-5", -5},
+        {"-10", -10},
+        {"-50 + 100 + -50", 0},
+        {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -88,6 +92,12 @@ void test_boolean_expressions() {
         {"(1 < 2) == false", false},
         {"(1 > 2) == true", false},
         {"(1 > 2) == false", true},
+        {"!true", false},
+        {"!false", true},
+        {"!5", false},
+        {"!!true", true},
+        {"!!false", false},
+        {"!!5", true},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {

@@ -22,9 +22,8 @@ void test_object(struct object *obj, enum object_type type, union object_value v
     }
 }
 
-void run_compiler_tests(const char *test_name, struct compiler_test_case tests[], size_t n) {
-    TESTNAME(test_name);
-
+void run_compiler_tests(struct compiler_test_case tests[], size_t n) {
+   
     for (int t=0; t < n; t++) {
         struct program *program = parse_program_str(tests[t].input);
         struct compiler *compiler = make_compiler();
@@ -56,6 +55,8 @@ void run_compiler_tests(const char *test_name, struct compiler_test_case tests[]
 }
 
 void test_integer_arithmetic() {
+    TESTNAME(__FUNCTION__);
+
     struct compiler_test_case tests[] = {
         {
             .input = "1 + 2",
@@ -105,12 +106,35 @@ void test_integer_arithmetic() {
             },
             .instructions_size = 4,
         },
+        {
+            .input = "2 / 1",
+            .constants = {2, 1},
+            .constants_size = 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_DIVIDE),
+                make_instruction(OPCODE_POP),
+            },
+            .instructions_size = 4,
+        },
+        {
+            .input = "-1",
+            .constants = {1}, 1,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_MINUS),
+                make_instruction(OPCODE_POP),
+            }, 3,
+        },
     };
 
-    run_compiler_tests(__FUNCTION__, tests, ARRAY_SIZE(tests));
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
 void test_boolean_expressions() {
+    TESTNAME(__FUNCTION__);
+
     struct compiler_test_case tests[] = {
         {
             .input = "true",
@@ -191,9 +215,18 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_POP),
             }, 4
         },
+         {
+            "!true", 
+            {}, 0,
+            {
+                make_instruction(OPCODE_TRUE),
+                make_instruction(OPCODE_BANG),
+                make_instruction(OPCODE_POP),
+            }, 3
+        },
     };
 
-    run_compiler_tests(__FUNCTION__, tests, ARRAY_SIZE(tests));
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
 int main() {

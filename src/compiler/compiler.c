@@ -148,6 +148,24 @@ compile_expression(struct compiler *c, struct expression *expr) {
         }
         break;   
 
+        case EXPR_PREFIX: {
+            err = compile_expression(c, expr->prefix.right);
+            if (err) {
+                return err;
+            }
+
+            switch (expr->prefix.operator) {
+                case OP_NEGATE: 
+                    compiler_emit(c, OPCODE_BANG);
+                break;
+
+                case OP_SUBTRACT: 
+                    compiler_emit(c, OPCODE_MINUS);
+                break;
+            }   
+        }
+        break;
+
         case EXPR_INT: {
             struct object *obj = make_integer_object(expr->integer);
             compiler_emit(c,  OPCODE_CONST, add_constant(c, obj));

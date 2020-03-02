@@ -43,6 +43,12 @@ struct definition definitions[] = {
     {
         "OpLessThan", 0, {0}
     },
+    {
+        "OpMinus", 0, {0}
+    },
+    {
+        "OpBang", 0, {0}
+    },
 };
 
 struct definition lookup(enum opcode opcode) {

@@ -113,6 +113,22 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
     return VM_ERR_INVALID_OP_TYPE;
 }
 
+int vm_do_bang_operation(struct vm *vm) {
+    struct object *obj = vm_stack_pop(vm);
+    return vm_stack_push(vm, (obj == object_true || obj->type == OBJ_INT) ? object_false : object_true);
+}
+
+int vm_do_minus_operation(struct vm *vm) {
+    struct object *obj = vm_stack_pop(vm);
+
+    if (obj->type != OBJ_INT) {
+        return VM_ERR_INVALID_OP_TYPE;
+    }
+
+    // TODO: Possibly re-use object here?
+    return vm_stack_push(vm, make_integer_object(-obj->value.integer));
+}
+
 int vm_run(struct vm *vm) {
     size_t size = vm->instructions->size;
     unsigned char *bytes = vm->instructions->bytes;
@@ -146,10 +162,18 @@ int vm_run(struct vm *vm) {
             case OPCODE_MULTIPLY:
             case OPCODE_DIVIDE: {
                 err = vm_do_binary_operation(vm, opcode);
-                if (err) {
-                    return err;
-                }
+                if (err) return err;
             }
+            break;
+
+            case OPCODE_BANG: 
+                err = vm_do_bang_operation(vm);
+                if (err) return err;
+            break;
+
+            case OPCODE_MINUS: 
+                err = vm_do_minus_operation(vm);
+                if (err) return err;
             break;
 
             case OPCODE_EQUAL:

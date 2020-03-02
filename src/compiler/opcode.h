@@ -19,6 +19,8 @@ enum opcode {
     OPCODE_NOT_EQUAL,
     OPCODE_GREATER_THAN,
     OPCODE_LESS_THAN,
+    OPCODE_MINUS,
+    OPCODE_BANG,
 };
 
 struct definition {
