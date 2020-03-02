@@ -21,6 +21,8 @@ enum opcode {
     OPCODE_LESS_THAN,
     OPCODE_MINUS,
     OPCODE_BANG,
+    OPCODE_JUMP,
+    OPCODE_JUMP_NOT_TRUE,
 };
 
 struct definition {

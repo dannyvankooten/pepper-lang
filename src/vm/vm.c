@@ -184,6 +184,22 @@ int vm_run(struct vm *vm) {
                 if (err) return err;
             break;
 
+            case OPCODE_JUMP: {
+                int pos = read_bytes(bytes, ip+1, 2);
+                ip = pos - 1;
+            }
+            break;
+
+            case OPCODE_JUMP_NOT_TRUE: {
+                if (!is_object_truthy(vm_stack_pop(vm))) {
+                    int pos = read_bytes(bytes, ip+1, 2);
+                    ip = pos - 1;
+                } else {
+                    ip += 2;
+                }
+            }
+            break;
+
            
         }
     }

@@ -49,14 +49,18 @@ struct definition definitions[] = {
     {
         "OpBang", 0, {0}
     },
+    {
+        "OpJump", 1, {2}
+    },
+    {
+        "OpJumpNotTrue", 1, {2}
+    },
 };
 
 struct definition lookup(enum opcode opcode) {
     return definitions[opcode - 1];
 }
 
-// TODO: Have this accept an array instead
-// TODO: Provide helpre function to turn va_list into operands array
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     struct definition def = lookup(opcode);
     struct instruction *ins = malloc(sizeof *ins);
@@ -107,15 +111,19 @@ struct instruction *flatten_instructions_array(struct instruction *arr[], size_t
 }
 
 char *instruction_to_str(struct instruction *ins) {
-    char *buffer = malloc(1024);
-    buffer[0] = '\0';
+    char *buffer = malloc(ins->size * 32);
     int operands[MAX_OP_SIZE] = {0, 0};
+    buffer[0] = '\0';
 
     for (int i=0; i < ins->size; i++) {
         struct definition def = lookup(ins->bytes[i]);
         size_t bytes_read = read_operands(operands, def, ins, i);
         
-        char str[256] = {'\0'};
+        if (i > 0) {
+            strcat(buffer, "\n");
+        }
+
+        char str[512];
         switch (def.operands) {
             case 0:
                 sprintf(str, "%04d %s", i, def.name);
@@ -128,12 +136,9 @@ char *instruction_to_str(struct instruction *ins) {
             break;
         }
         strcat(buffer, str);
-
         i += bytes_read;
-        if (i < (ins->size - 1)) {
-            strcat(buffer, "\n");
-        }
     }
+
 
     return buffer;
 }

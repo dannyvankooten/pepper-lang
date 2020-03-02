@@ -34,9 +34,10 @@ void run_compiler_tests(struct compiler_test_case tests[], size_t n) {
 
         char *concatted_str = instruction_to_str(concatted);
         char *bytecode_str = instruction_to_str(bytecode->instructions);
-        assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: expected \"%s\", got \"%s\"", concatted_str, bytecode_str);
+        assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", concatted_str, bytecode_str);
+        
         for (int i=0; i < concatted->size; i++) {
-            assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch, expected %s, got %s");
+            assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, concatted->bytes[i], bytecode->instructions->bytes[i], concatted_str, bytecode_str);
         }
 
         assertf(bytecode->constants->size == tests[t].constants_size, "wrong constants size: expected %d, got %d", tests[t].constants_size, bytecode->constants->size);
@@ -229,8 +230,43 @@ void test_boolean_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+void test_conditionals() {
+    TESTNAME(__FUNCTION__);
+
+    struct compiler_test_case tests[] = {
+        {
+            .input = "if (true) { 10; } 3333;",
+            .constants = {10, 3333 }, 2,
+            .instructions = {
+                make_instruction(OPCODE_TRUE),              // 0000
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 7),  // 0001
+                make_instruction(OPCODE_CONST, 0),          // 0004
+                make_instruction(OPCODE_POP),               // 0007
+                make_instruction(OPCODE_CONST, 1),          // 0008
+                make_instruction(OPCODE_POP)                // 0011
+            }, 6
+        },
+        {
+            .input = "if (true) { 10; } else { 20; }; 3333;",
+            .constants = {10, 20,3333 }, 3,
+            .instructions = {
+                make_instruction(OPCODE_TRUE),              // 0000
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 10), // 0001
+                make_instruction(OPCODE_CONST, 0),          // 0004
+                make_instruction(OPCODE_JUMP, 13),          // 0007
+                make_instruction(OPCODE_CONST, 1),          // 0010
+                make_instruction(OPCODE_POP),               // 0013
+                make_instruction(OPCODE_CONST, 2),          // 0014
+                make_instruction(OPCODE_POP),               // 0017
+            }, 8
+        },
+    };
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
+    test_conditionals();
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

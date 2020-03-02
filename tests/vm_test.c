@@ -106,8 +106,31 @@ void test_boolean_expressions() {
      }
 }
 
+void test_conditionals() {
+    TESTNAME(__FUNCTION__);
+
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"if (true) { 10 }", 10},
+        {"if (true) { 10 } else { 20 }", 10},
+        {"if (false) { 10 } else { 20 } ", 20},
+        {"if (1) { 10 }", 10},
+        {"if (1 < 2) { 10 }", 10},
+        {"if (1 < 2) { 10 } else { 20 }", 10},
+        {"if (1 > 2) { 10 } else { 20 }", 20},
+    };
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
+    test_conditionals();
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

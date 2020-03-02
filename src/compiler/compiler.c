@@ -29,26 +29,55 @@ char *compiler_error_str(int err) {
         "Unknown operator",
         "Unknown expression type",
     };
-
     return messages[err];
 }
 
 size_t 
 add_instruction(struct compiler *c, struct instruction *ins) {
+    size_t pos = c->instructions->size;
+
+    /* TODO: Use capacity here so we don't need to realloc on every new addition */
     c->instructions->bytes = realloc(c->instructions->bytes, (c->instructions->size + ins->size ) * sizeof(*c->instructions->bytes));
     for (int i=0; i < ins->size; i++) {
         c->instructions->bytes[c->instructions->size++] = ins->bytes[i];
     }
     free_instruction(ins);
-    return c->instructions->size - 1;
+    return pos;
 }
 
 size_t 
 add_constant(struct compiler *c, struct object *obj) {
-    // TODO: Increase list capacity if needed
-
+    // TODO: Dereference here?
     c->constants->values[c->constants->size++] = obj;
     return c->constants->size - 1;
+}
+
+void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, size_t pos) {
+    struct emitted_instruction previous = c->last_instruction;
+    struct emitted_instruction last = {
+        .position = pos,
+        .opcode = opcode,
+    };
+    c->previous_instruction = previous;
+    c->last_instruction = last;
+}
+
+void compiler_remove_last_instruction(struct compiler *c) {
+    /* set instruction pointer back to position of last emitted instruction */
+    c->instructions->size = c->last_instruction.position;
+    c->last_instruction = c->previous_instruction;
+}
+
+void compiler_replace_instruction(struct compiler *c, size_t pos, struct instruction *ins) {
+    for (int i=0; i < ins->size; i++) {
+        c->instructions->bytes[pos + i] = ins->bytes[i];
+    }
+}
+
+void compiler_change_operand(struct compiler *c, size_t pos, int operand) {
+    enum opcode opcode = c->instructions->bytes[pos];
+    struct instruction *new = make_instruction(opcode, operand);
+    compiler_replace_instruction(c, pos, new);
 }
 
 size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
@@ -56,7 +85,9 @@ size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
     va_start(args, opcode);
     struct instruction *ins = make_instruction_va(opcode, args);
     va_end(args);
-    return add_instruction(c, ins);
+    size_t pos = add_instruction(c, ins);
+    compiler_set_last_instruction(c, opcode, pos);
+    return pos;
 }
 
 int
@@ -64,9 +95,18 @@ compile_program(struct compiler *compiler, struct program *program) {
     int err;
     for (int i=0; i < program->size; i++) {
         err = compile_statement(compiler, &program->statements[i]);
-        if (err) {
-            return err;
-        }
+        if (err) return err;
+    }
+
+    return 0;
+}
+
+int
+compile_block_statement(struct compiler *compiler, struct block_statement *block) {
+    int err;
+    for (int i=0; i < block->size; i++) {
+        err = compile_statement(compiler, &block->statements[i]);
+        if (err) return err;
     }
 
     return 0;
@@ -80,9 +120,7 @@ compile_statement(struct compiler *c, struct statement *statement) {
         // TODO: Handle STMT_RETURN
         case STMT_EXPR: {
             err = compile_expression(c, statement->value);
-            if (err) {
-                return err;
-            }
+            if (err) return err;
 
             compiler_emit(c, OPCODE_POP);
         }
@@ -99,14 +137,10 @@ compile_expression(struct compiler *c, struct expression *expr) {
     switch (expr->type) {
         case EXPR_INFIX: {
             err = compile_expression(c, expr->infix.left);
-            if (err) {
-                return err;
-            }
+            if (err) return err;
 
             err = compile_expression(c, expr->infix.right);
-            if (err) {
-                return err;
-            }
+            if (err) return err;
 
             switch (expr->infix.operator) {
                 case OP_ADD:
@@ -150,9 +184,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
         case EXPR_PREFIX: {
             err = compile_expression(c, expr->prefix.right);
-            if (err) {
-                return err;
-            }
+            if (err) return err;
 
             switch (expr->prefix.operator) {
                 case OP_NEGATE: 
@@ -162,7 +194,46 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 case OP_SUBTRACT: 
                     compiler_emit(c, OPCODE_MINUS);
                 break;
+
+                default: 
+                    return COMPILE_ERR_UNKNOWN_OPERATOR;
+                break;
             }   
+        }
+        break;
+
+        case EXPR_IF: {
+            err = compile_expression(c, expr->ifelse.condition);
+            if (err) return err;
+
+            /* we don't know where to jump yet, so we use 9999 as placeholder */
+            size_t jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
+
+            err = compile_block_statement(c, expr->ifelse.consequence);
+            if (err) { return err; }
+
+            if (c->last_instruction.opcode == OPCODE_POP) {
+                compiler_remove_last_instruction(c);
+            }
+
+            if (expr->ifelse.alternative) {
+                size_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
+                size_t after_conseq_pos = c->instructions->size;
+                compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+
+                err = compile_block_statement(c, expr->ifelse.alternative);
+                if (err) return err; 
+
+                if (c->last_instruction.opcode == OPCODE_POP) {
+                    compiler_remove_last_instruction(c);
+                }
+
+                size_t after_alternative_pos = c->instructions->size;
+                compiler_change_operand(c, jump_pos, after_alternative_pos);
+            } else {
+                size_t after_conseq_pos = c->instructions->size;
+                compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+            }
         }
         break;
 
