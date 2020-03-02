@@ -112,15 +112,35 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 case OP_ADD:
                     compiler_emit(c, OPCODE_ADD);
                 break;
+
                 case OP_SUBTRACT:
                     compiler_emit(c, OPCODE_SUBTRACT);
                 break;
+
                 case OP_MULTIPLY: 
                     compiler_emit(c, OPCODE_MULTIPLY);
                 break;
+
                 case OP_DIVIDE: 
                     compiler_emit(c, OPCODE_DIVIDE);
                 break;
+
+                case OP_GT:
+                    compiler_emit(c, OPCODE_GREATER_THAN);
+                break;
+
+                case OP_EQ: 
+                    compiler_emit(c, OPCODE_EQUAL);
+                break;
+
+                case OP_NOT_EQ:
+                    compiler_emit(c, OPCODE_NOT_EQUAL);
+                break;
+
+                case OP_LT:
+                    compiler_emit(c, OPCODE_LESS_THAN);
+                break;
+
                 default: 
                     return COMPILE_ERR_UNKNOWN_OPERATOR;
                 break;

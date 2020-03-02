@@ -14,7 +14,11 @@ enum opcode {
     OPCODE_MULTIPLY,
     OPCODE_DIVIDE,
     OPCODE_TRUE,
-    OPCODE_FALSE
+    OPCODE_FALSE,
+    OPCODE_EQUAL,
+    OPCODE_NOT_EQUAL,
+    OPCODE_GREATER_THAN,
+    OPCODE_LESS_THAN,
 };
 
 struct definition {

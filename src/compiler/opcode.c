@@ -31,6 +31,18 @@ struct definition definitions[] = {
     {
         "OpFalse", 0, {0}
     },
+    {
+        "OpEqual", 0, {0}
+    },
+    {
+        "OpNotEqual", 0, {0}
+    },
+    {
+        "OpGreaterThan", 0, {0}
+    },
+    {
+        "OpLessThan", 0, {0}
+    },
 };
 
 struct definition lookup(enum opcode opcode) {
