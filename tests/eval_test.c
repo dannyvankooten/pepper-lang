@@ -2,7 +2,7 @@
 #include <string.h> 
 #include <stdbool.h>
 
-#include "eval/eval.h"
+#include "eval.h"
 #include "test_helpers.h"
 
 // declared here so we can free it from other tests

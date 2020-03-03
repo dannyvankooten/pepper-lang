@@ -1,6 +1,7 @@
-#include "compiler/opcode.h"
-#include "test_helpers.h"
+
 #include <string.h> 
+#include "opcode.h"
+#include "test_helpers.h"
 
 void test_make_instruction() {
     struct {

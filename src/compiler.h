@@ -2,7 +2,7 @@
 #define COMPILER_H
 
 #include "opcode.h"
-#include "eval/object.h"
+#include "object.h"
 
 #define COMPILE_ERR_UNKNOWN_OPERATOR 1
 #define COMPILE_ERR_UNKNOWN_EXPR_TYPE 2

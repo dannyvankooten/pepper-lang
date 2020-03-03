@@ -1,5 +1,5 @@
-#include "token.h"
 #include <string.h> 
+#include "token.h"
 
 static const char *token_names[] = {
     "ILLEGAL",

@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <stdarg.h>
-
 #include "compiler.h"
 
 int compile_statement(struct compiler *compiler, struct statement *statement);

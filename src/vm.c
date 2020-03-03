@@ -4,6 +4,8 @@
 
 #define VM_ERR_INVALID_OP_TYPE 1
 #define VM_ERR_INVALID_INT_OPERATOR 2
+#define VM_ERR_OUT_OF_BOUNDS 3
+#define VM_ERR_STACK_OVERFLOW 4
 
 struct vm *make_vm(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
@@ -17,7 +19,8 @@ struct vm *make_vm(struct bytecode *bc) {
 
 struct object *vm_stack_pop(struct vm *vm) {
     if (vm->stack_pointer == 0) {
-        err(1, "out of bounds");
+        err(VM_ERR_OUT_OF_BOUNDS, "out of bounds");
+        return NULL;
     }
 
     return vm->stack[--vm->stack_pointer];
@@ -25,8 +28,8 @@ struct object *vm_stack_pop(struct vm *vm) {
 
 int vm_stack_push(struct vm *vm, struct object *obj) {
     if (vm->stack_pointer >= STACK_SIZE) {
-        err(1, "stack overflow");
-        return 1;
+        err(VM_ERR_STACK_OVERFLOW, "stack overflow");
+        return VM_ERR_STACK_OVERFLOW;
     }
 
     vm->stack[vm->stack_pointer++] = obj;
@@ -86,9 +89,11 @@ int vm_do_integer_comparison(struct vm *vm, enum opcode opcode, struct object *l
         case OPCODE_LESS_THAN:
             return vm_stack_push(vm, make_boolean_object(left->value.integer < right->value.integer)); 
         break;
-    }
 
-    return VM_ERR_INVALID_OP_TYPE;
+        default: 
+            return VM_ERR_INVALID_OP_TYPE;
+        break;
+    }
 }
 
 
@@ -108,9 +113,11 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
         case OPCODE_NOT_EQUAL: 
             return vm_stack_push(vm, make_boolean_object(left->value.boolean != right->value.boolean));
         break;
-    }
 
-    return VM_ERR_INVALID_OP_TYPE;
+        default: 
+            return VM_ERR_INVALID_OP_TYPE;
+        break;
+    }    
 }
 
 int vm_do_bang_operation(struct vm *vm) {
@@ -191,12 +198,13 @@ int vm_run(struct vm *vm) {
             break;
 
             case OPCODE_JUMP_NOT_TRUE: {
-                if (!is_object_truthy(vm_stack_pop(vm))) {
-                    int pos = read_bytes(bytes, ip+1, 2);
+                int pos = read_bytes(bytes, ip+1, 2);
+                ip += 2;
+
+                struct object *condition = vm_stack_pop(vm);
+                if (!is_object_truthy(condition)) {
                     ip = pos - 1;
-                } else {
-                    ip += 2;
-                }
+                } 
             }
             break;
 

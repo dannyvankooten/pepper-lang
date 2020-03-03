@@ -3,8 +3,8 @@
 
 #define STACK_SIZE 2048 
 
-#include "compiler/opcode.h"
-#include "eval/object.h"
+#include "opcode.h"
+#include "object.h"
 
 struct vm {
     struct object_list *constants;

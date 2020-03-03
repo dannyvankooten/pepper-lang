@@ -1,3 +1,6 @@
+#ifndef TEST_HELPERS_H 
+#define TEST_HELPERS_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -28,3 +31,5 @@ void _assertf(int assertion, const char filename[64], const int line, const char
     printf("\n");
     exit(1);
 }
+
+#endif

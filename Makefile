@@ -1,52 +1,53 @@
-CFLAGS += -std=c11 -Wall -Isrc/
-TESTFLAGS = $(CFLAGS) -g -DDEBUG
-BINDIR := bin
+CFLAGS+= -std=c11 -Wall -Isrc/
+TESTFLAGS= $(CFLAGS) -g -DDEBUG
+LIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
-LIBS = -ledit
 
-all: monkey repl tests
+LEXER_SRC= src/lexer.c src/token.c
+PARSER_SRC= src/parser.c $(LEXER_SRC)
+EVAL_SRC= src/eval.c src/object.c src/env.c src/builtins.c $(PARSER_SRC)
+COMPILER_SRC= src/opcode.c src/compiler.c src/object.c $(PARSER_SRC)
+VM_SRC= src/vm.c src/opcode.c src/object.c $(PARSER_SRC)
 
-repl: $(BINDIR)
-	$(CC) $(CFLAGS) src/repl.c src/eval/*.c src/lexer/*.c src/parser/*.c $(LIBS) -o $(BINDIR)/repl
-
-monkey: $(BINDIR)
-	$(CC) $(CFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -finline-limit=1024 -DNDEBUG -o $(BINDIR)/monkey 
-
-tests: $(BINDIR) lexer_test parser_test eval_test compiler_test vm_test
-
-lexer_test:
-	$(CC) $(TESTFLAGS) tests/lexer_test.c src/lexer/*.c -o $(BINDIR)/lexer_test
-	$(BINDIR)/lexer_test	
-
-parser_test:
-	$(CC) $(TESTFLAGS) tests/parser_test.c src/parser/*.c src/lexer/*.c -o $(BINDIR)/parser_test
-	$(BINDIR)/parser_test
-
-eval_test:
-	$(CC) $(TESTFLAGS) tests/eval_test.c src/eval/*.c src/parser/*.c src/lexer/*.c -o $(BINDIR)/eval_test
-	$(BINDIR)/eval_test	
-
-compiler_test:
-	$(CC) $(TESTFLAGS) tests/code_test.c src/compiler/opcode.c -o $(BINDIR)/code_test
-	$(BINDIR)/code_test	
-	$(CC) $(TESTFLAGS) tests/compiler_test.c src/compiler/*.c src/parser/*.c src/lexer/*.c src/eval/object.c -o $(BINDIR)/compiler_test
-	$(BINDIR)/compiler_test	
-
-vm_test:
-	$(CC) $(TESTFLAGS) tests/vm_test.c src/vm/*.c src/compiler/*.c src/eval/object.c src/parser/parser.c src/lexer/*.c -o $(BINDIR)/vm_test
-	$(BINDIR)/vm_test
+all: bin/ bin/monkey bin/repl
+tests: bin/ bin/lexer_test bin/parser_test bin/eval_test bin/compiler_test bin/vm_test
 	
-$(BINDIR):
-	mkdir -p $(BINDIR)
+bin/:
+	mkdir -p bin/
 
-bench: monkey
+bin/repl: src/repl.c $(EVAL_SRC)
+	$(CC) $(CFLAGS) $(LIBS) $^ -o $@
+
+bin/monkey: src/monkey.c $(EVAL_SRC)
+	$(CC) $(CFLAGS) $^ -Ofast -finline-limit=1024 -DNDEBUG -o $@
+
+bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) 
+	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+
+bin/parser_test: tests/parser_test.c $(PARSER_SRC)
+	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+
+bin/eval_test: tests/eval_test.c $(EVAL_SRC)
+	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+
+bin/opcode_test: tests/opcode_test.c src/opcode.c
+	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+
+bin/compiler_test: tests/compiler_test.c $(COMPILER_SRC) 
+	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+
+bin/vm_test: tests/vm_test.c $(VM_SRC) src/compiler.c
+	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+
+.PHONY: bench
+bench: bin/monkey
 	echo "**$(shell date '+%Y-%m-%d %H:%M')** (fib 35)" >> benchmarks.md
 	/usr/bin/time --append -o benchmarks.md ./bin/monkey fibonacci.monkey
 	echo "" >> benchmarks.md
 
 .PHONY: clean
 clean:
-	rm -r $(BINDIR)
+	rm -r bin
 
 .PHONY: watch
 watch:

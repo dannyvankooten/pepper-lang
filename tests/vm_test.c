@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include "test_helpers.h"
-#include "vm/vm.h"
-#include "compiler/compiler.h"
+#include "vm.h"
+#include "compiler.h"
 
 void test_object(struct object *obj, enum object_type type, union object_value value) {
     assertf(obj != NULL, "expected object, got null");
@@ -13,7 +13,9 @@ void test_object(struct object *obj, enum object_type type, union object_value v
         case OBJ_BOOL:
             assertf(obj->value.boolean == value.boolean, "invalid boolean value: expected %d, got %d", value.boolean, obj->value.boolean);
         break;
-
+        default: 
+            assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj->type));
+        break;
     }
 }
 

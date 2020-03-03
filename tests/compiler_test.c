@@ -1,5 +1,5 @@
 #include "test_helpers.h"
-#include "compiler/compiler.h"
+#include "compiler.h"
 
 struct compiler_test_case {
     char *input;
@@ -12,12 +12,17 @@ struct compiler_test_case {
 void test_object(struct object *obj, enum object_type type, union object_value value) {
     assertf(obj != NULL, "expected object, got null");
     assertf(obj->type == type, "invalid object type: expected %s, got %s", object_type_to_str(type), object_type_to_str(obj->type));
+    
     switch (type) {
         case OBJ_INT:
             assertf(obj->value.integer == value.integer, "invalid integer value: expected %d, got %d", value.integer, obj->value.integer);
         break;
         case OBJ_BOOL:
             assertf(obj->value.boolean == value.boolean, "invalid boolean value: expected %d, got %d", value.boolean, obj->value.boolean);
+        break;
+
+        default: 
+            assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj->type));
         break;
     }
 }
@@ -248,7 +253,7 @@ void test_conditionals() {
         },
         {
             .input = "if (true) { 10; } else { 20; }; 3333;",
-            .constants = {10, 20,3333 }, 3,
+            .constants = {10, 20, 3333 }, 3,
             .instructions = {
                 make_instruction(OPCODE_TRUE),              // 0000
                 make_instruction(OPCODE_JUMP_NOT_TRUE, 10), // 0001
