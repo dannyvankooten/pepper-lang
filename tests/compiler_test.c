@@ -31,7 +31,7 @@ void run_compiler_tests(struct compiler_test_case tests[], size_t n) {
    
     for (int t=0; t < n; t++) {
         struct program *program = parse_program_str(tests[t].input);
-        struct compiler *compiler = make_compiler();
+        struct compiler *compiler = compiler_new();
         int err = compile_program(compiler, program);
         assertf(err == 0, "compiler error: %s", compiler_error_str(err));
         struct bytecode *bytecode = get_bytecode(compiler);
@@ -54,7 +54,7 @@ void run_compiler_tests(struct compiler_test_case tests[], size_t n) {
         free(bytecode_str);
         free(bytecode);
         free_program(program);
-        free_compiler(compiler);
+        compiler_free(compiler);
     }
 
     TESTNAME("");
@@ -271,9 +271,49 @@ void test_conditionals() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+void test_global_let_statements() {
+    struct compiler_test_case tests[] = {
+        {
+            .input = "let one = 1; let two = 2;",
+            .constants = {1, 2}, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_SET_GLOBAL, 1),
+            }, 4,
+        },
+        {
+            .input = "let one = 1; one;",
+            .constants = {1}, 1,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_POP),
+            }, 4,
+        },
+        {
+            .input = "let one = 1; let two = one; two;",
+            .constants = {1}, 1,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 1),
+                make_instruction(OPCODE_GET_GLOBAL, 1),
+                make_instruction(OPCODE_POP),
+            }, 6,
+        }
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
     test_conditionals();
+    test_global_let_statements();
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

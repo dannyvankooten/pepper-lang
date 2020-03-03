@@ -24,6 +24,8 @@ enum opcode {
     OPCODE_JUMP,
     OPCODE_JUMP_NOT_TRUE,
     OPCODE_NULL,
+    OPCODE_GET_GLOBAL,
+    OPCODE_SET_GLOBAL,
 };
 
 struct definition {

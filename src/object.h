@@ -10,7 +10,7 @@
 #define make_boolean_object(value) (value ? object_true : object_false)
 
 // TODO: Dynamically allocate this
-#define OBJECT_LIST_MAX_VALUES 64
+#define OBJECT_LIST_MAX_VALUES 512
 
 enum object_type
 {

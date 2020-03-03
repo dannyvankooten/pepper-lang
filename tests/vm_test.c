@@ -21,18 +21,19 @@ void test_object(struct object *obj, enum object_type type, union object_value v
 
 struct object *run_vm_test(char *program_str) {
     struct program *p = parse_program_str(program_str);
-    struct compiler *c = make_compiler();
+    struct compiler *c = compiler_new();
     int err = compile_program(c, p);
     assertf(err == 0, "compiler error: %s", compiler_error_str(err));
     struct bytecode *bc = get_bytecode(c);
-    struct vm *vm = make_vm(bc);
+    struct vm *vm = vm_new(bc);
     err = vm_run(vm);
     assertf(err == 0, "vm error: %d", err);
     struct object *obj = vm_stack_last_popped(vm);
 
     // TODO: Free vm
     free(bc);
-    free_compiler(c);
+    vm_free(vm);
+    compiler_free(c);
     free_program(p);
     return obj;
 }
@@ -147,10 +148,27 @@ void test_nulls() {
      }
 }
 
+void test_global_let_statements() {
+     struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"let one = 1; one", 1},
+        {"let one = 1; let two = 2; one + two", 3},
+        {"let one = 1; let two = one + one; one + two", 3},
+    };
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
     test_conditionals();
     test_nulls();
+    test_global_let_statements();
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

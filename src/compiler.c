@@ -1,24 +1,36 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <stdarg.h>
+#include <assert.h>
 #include "compiler.h"
 
 int compile_statement(struct compiler *compiler, struct statement *statement);
 int compile_expression(struct compiler *compiler, struct expression *expression);
 
-struct compiler *make_compiler() {
+struct compiler *compiler_new() {
     struct compiler *c = malloc(sizeof *c);
     c->instructions = malloc(sizeof *c->instructions);
     c->instructions->bytes = malloc(1);
     c->instructions->size = 0;
     c->constants = make_object_list(64);
+    c->symbol_table = symbol_table_new();
     return c;
 }
 
-void free_compiler(struct compiler *c) {
+struct compiler *compiler_new_with_state(struct symbol_table *t, struct object_list *constants) {
+    struct compiler *c = compiler_new();
+    //symbol_table_free(c->symbol_table);
+    c->symbol_table = t;
+    //free_object_list(c->constants);
+    c->constants = constants;
+    return c;
+}
+
+void compiler_free(struct compiler *c) {
     free(c->instructions->bytes);
     free(c->instructions);
     free_object_list(c->constants);
+    symbol_table_free(c->symbol_table);
     free(c);
 }
 
@@ -116,13 +128,21 @@ int
 compile_statement(struct compiler *c, struct statement *stmt) {
     int err;
     switch (stmt->type) {
-        // TODO: Handle STMT_LET 
         // TODO: Handle STMT_RETURN
         case STMT_EXPR: {
             err = compile_expression(c, stmt->value);
             if (err) return err;
 
             compiler_emit(c, OPCODE_POP);
+        }
+        break;
+
+        case STMT_LET: {
+            err = compile_expression(c, stmt->value);
+            if (err) return err;
+
+            struct symbol *s = symbol_table_define(c->symbol_table, stmt->name.value);
+            compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
         }
         break;
     }
@@ -248,6 +268,13 @@ compile_expression(struct compiler *c, struct expression *expr) {
             } else {
                 compiler_emit(c, OPCODE_FALSE);
             }
+        }
+        break;
+
+        case EXPR_IDENT: {
+            struct symbol *s = symbol_table_resolve(c->symbol_table, expr->ident.value);
+            assert(s != NULL);
+            compiler_emit(c, OPCODE_GET_GLOBAL, s->index);
         }
         break;
 

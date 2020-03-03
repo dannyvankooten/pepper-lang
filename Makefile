@@ -6,16 +6,16 @@ DATE=$(shell date '+%Y-%m-%d')
 LEXER_SRC= src/lexer.c src/token.c
 PARSER_SRC= src/parser.c $(LEXER_SRC)
 EVAL_SRC= src/eval.c src/object.c src/env.c src/builtins.c $(PARSER_SRC)
-COMPILER_SRC= src/opcode.c src/compiler.c src/object.c $(PARSER_SRC)
-VM_SRC= src/vm.c src/opcode.c src/object.c $(PARSER_SRC)
+COMPILER_SRC= src/opcode.c src/compiler.c src/object.c src/symbol_table.c $(PARSER_SRC)
+VM_SRC= src/vm.c src/opcode.c src/object.c src/symbol_table.c $(PARSER_SRC)
 
 all: bin/ bin/monkey bin/repl
-tests: bin/ bin/lexer_test bin/parser_test bin/eval_test bin/compiler_test bin/vm_test
+tests: bin/ bin/lexer_test bin/parser_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test
 	
 bin/:
 	mkdir -p bin/
 
-bin/repl: src/repl.c $(EVAL_SRC)
+bin/repl: src/repl.c $(EVAL_SRC) src/vm.c src/opcode.c src/symbol_table.c src/compiler.c
 	$(CC) $(CFLAGS) $(LIBS) $^ -o $@
 
 bin/monkey: src/monkey.c $(EVAL_SRC)
@@ -38,6 +38,9 @@ bin/compiler_test: tests/compiler_test.c $(COMPILER_SRC)
 
 bin/vm_test: tests/vm_test.c $(VM_SRC) src/compiler.c
 	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+
+bin/symbol_table_test: tests/symbol_table_test.c src/symbol_table.c 
+	$(CC) $(TESTFLAGS) $^ -o $@ && $@	
 
 .PHONY: bench
 bench: bin/monkey

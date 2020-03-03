@@ -7,19 +7,32 @@
 #define VM_ERR_OUT_OF_BOUNDS 3
 #define VM_ERR_STACK_OVERFLOW 4
 
-struct vm *make_vm(struct bytecode *bc) {
+struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     vm->stack_pointer = 0;
     
     // TODO: Dereference here?
+    vm->globals = make_object_list(512);
     vm->instructions = bc->instructions;
     vm->constants = bc->constants;
     return vm;
 }
 
+struct vm *vm_new_with_globals(struct bytecode *bc, struct object_list *globals) {
+    struct vm *vm = vm_new(bc);
+    free_object_list(vm->globals);
+    vm->globals = globals;
+    return vm;
+}
+
+void vm_free(struct vm *vm) {
+    // TODO: Free globals
+    // TODO: Free objects on stack
+    free(vm);
+}
+
 struct object *vm_stack_pop(struct vm *vm) {
     if (vm->stack_pointer == 0) {
-        err(VM_ERR_OUT_OF_BOUNDS, "out of bounds");
         return NULL;
     }
 
@@ -211,6 +224,21 @@ int vm_run(struct vm *vm) {
             case OPCODE_NULL: 
                 err = vm_stack_push(vm, object_null);
                 if (err) return err;
+            break;
+
+            case OPCODE_SET_GLOBAL: {
+                int idx = read_bytes(bytes, ip+1, 2);
+                ip += 2;
+                vm->globals->values[idx] = vm_stack_pop(vm);
+            }
+            break;
+
+            case OPCODE_GET_GLOBAL: {
+                int idx = read_bytes(bytes, ip+1, 2);
+                ip += 2;
+                err = vm_stack_push(vm, vm->globals->values[idx]);
+                if (err) return err;
+            }
             break;
 
            
