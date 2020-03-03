@@ -1,5 +1,5 @@
-CFLAGS+= -std=c11 -Wall -Isrc/
-TESTFLAGS= $(CFLAGS) -g -DDEBUG
+CFLAGS+= -std=c11 -Wall -Isrc/ -g 
+TESTFLAGS= $(CFLAGS) -DDEBUG
 LIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH = src
@@ -8,18 +8,16 @@ PARSER_SRC= parser.c $(LEXER_SRC)
 EVAL_SRC= eval.c object.c env.c builtins.c $(PARSER_SRC)
 COMPILER_SRC= opcode.c compiler.c object.c symbol_table.c $(PARSER_SRC)
 VM_SRC= vm.c opcode.c object.c symbol_table.c $(PARSER_SRC)
+PREFIX = /usr/local
 
-all: bin/monkey bin/repl
-tests: bin/ bin/lexer_test bin/parser_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test
+all: bin/monkey 
+check: bin/ bin/lexer_test bin/parser_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test
 
 bin/:
 	mkdir -p bin/
 
-bin/repl: repl.c $(EVAL_SRC) vm.c opcode.c symbol_table.c compiler.c | bin/
-	$(CC) $(CFLAGS) $(LIBS) $^ -o $@
-
-bin/monkey: monkey.c $(EVAL_SRC)  | bin/
-	$(CC) $(CFLAGS) $^ -Ofast -finline-limit=256 -DNDEBUG -o $@
+bin/monkey: monkey.c $(EVAL_SRC) vm.c opcode.c symbol_table.c compiler.c | bin/
+	$(CC) $(CFLAGS) $^ -Ofast -ledit -finline-limit=256 -DNDEBUG -o $@
 
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) 
 	$(CC) $(TESTFLAGS) $^ -o $@ && $@
@@ -48,13 +46,18 @@ bench: bin/monkey
 	/usr/bin/time --append -o benchmarks.md ./bin/monkey fibonacci.monkey
 	echo "" >> benchmarks.md
 
+.PHONY: install
+install: bin/monkey
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp $< $(DESTDIR)$(PREFIX)/bin/monkey
+
+.PHONY: uninstall
+uninstall:
+    rm -f $(DESTDIR)$(PREFIX)/bin/monkey
+
 .PHONY: clean
 clean:
 	rm -r bin
-
-.PHONY: watch
-watch:
-	find  | entr -s 'make tests'
 
 .PHONY: valgrind
 valgrind: 

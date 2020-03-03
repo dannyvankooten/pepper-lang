@@ -8,22 +8,27 @@ This is my first C project, so expect very few best practices.
 
 ### Usage
 
-Build the REPL: 
+Build Monkey interpreter (and REPL)
 ```
-make bin/repl
-```
-
-Build the interpreter: 
-```
-make bin/monkey
+make 
 ```
 
-Build & run the tests: 
+Launch the REPL
 ```
-make tests
+./bin/monkey
 ```
 
 Interpret a Monkey script: 
 ```
 ./bin/monkey fibonacci.monkey
+```
+
+Install the Monkey interpreter on your system:
+```
+make install
+```
+
+Build & run tests
+```
+make check
 ```
