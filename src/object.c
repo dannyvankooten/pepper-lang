@@ -63,7 +63,6 @@ const char *object_type_to_str(enum object_type t)
     return object_names[t];
 }
 
-
 struct object *make_object(enum object_type type) {
    struct object *obj = object_pool_head;
 

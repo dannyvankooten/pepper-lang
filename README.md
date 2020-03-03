@@ -10,12 +10,12 @@ This is my first C project, so expect very few best practices.
 
 Build the REPL: 
 ```
-make repl
+make bin/repl
 ```
 
 Build the interpreter: 
 ```
-make monkey
+make bin/monkey
 ```
 
 Build & run the tests: 

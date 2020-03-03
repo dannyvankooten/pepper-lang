@@ -19,9 +19,9 @@ struct compiler *compiler_new() {
 
 struct compiler *compiler_new_with_state(struct symbol_table *t, struct object_list *constants) {
     struct compiler *c = compiler_new();
-    //symbol_table_free(c->symbol_table);
+    symbol_table_free(c->symbol_table);
     c->symbol_table = t;
-    //free_object_list(c->constants);
+    free_object_list(c->constants);
     c->constants = constants;
     return c;
 }

@@ -26,14 +26,14 @@ struct vm *vm_new_with_globals(struct bytecode *bc, struct object_list *globals)
 }
 
 void vm_free(struct vm *vm) {
-    // TODO: Free globals
+    free_object_list(vm->globals);
     // TODO: Free objects on stack
     free(vm);
 }
 
 struct object *vm_stack_pop(struct vm *vm) {
     if (vm->stack_pointer == 0) {
-        return NULL;
+        return object_null;
     }
 
     return vm->stack[--vm->stack_pointer];
@@ -222,8 +222,7 @@ int vm_run(struct vm *vm) {
             break;
 
             case OPCODE_NULL: 
-                err = vm_stack_push(vm, object_null);
-                if (err) return err;
+                vm_stack_push(vm, object_null);
             break;
 
             case OPCODE_SET_GLOBAL: {
@@ -236,8 +235,7 @@ int vm_run(struct vm *vm) {
             case OPCODE_GET_GLOBAL: {
                 int idx = read_bytes(bytes, ip+1, 2);
                 ip += 2;
-                err = vm_stack_push(vm, vm->globals->values[idx]);
-                if (err) return err;
+                vm_stack_push(vm, vm->globals->values[idx]);
             }
             break;
 
