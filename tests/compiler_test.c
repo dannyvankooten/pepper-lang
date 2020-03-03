@@ -244,12 +244,14 @@ void test_conditionals() {
             .constants = {10, 3333 }, 2,
             .instructions = {
                 make_instruction(OPCODE_TRUE),              // 0000
-                make_instruction(OPCODE_JUMP_NOT_TRUE, 7),  // 0001
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 10),  // 0001
                 make_instruction(OPCODE_CONST, 0),          // 0004
-                make_instruction(OPCODE_POP),               // 0007
-                make_instruction(OPCODE_CONST, 1),          // 0008
-                make_instruction(OPCODE_POP)                // 0011
-            }, 6
+                make_instruction(OPCODE_JUMP, 11),          // 0007
+                make_instruction(OPCODE_NULL),              // 0010
+                make_instruction(OPCODE_POP),               // 0011
+                make_instruction(OPCODE_CONST, 1),          // 0012
+                make_instruction(OPCODE_POP),               // 0015
+            }, 8
         },
         {
             .input = "if (true) { 10; } else { 20; }; 3333;",

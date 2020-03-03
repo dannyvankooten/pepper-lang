@@ -55,6 +55,9 @@ struct definition definitions[] = {
     {
         "OpJumpNotTrue", 1, {2}
     },
+    {
+        "OpNull", 0, {0}
+    },
 };
 
 struct definition lookup(enum opcode opcode) {

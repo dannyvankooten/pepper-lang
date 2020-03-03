@@ -23,6 +23,7 @@ enum opcode {
     OPCODE_BANG,
     OPCODE_JUMP,
     OPCODE_JUMP_NOT_TRUE,
+    OPCODE_NULL,
 };
 
 struct definition {

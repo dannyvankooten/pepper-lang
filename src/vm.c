@@ -122,7 +122,7 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
 
 int vm_do_bang_operation(struct vm *vm) {
     struct object *obj = vm_stack_pop(vm);
-    return vm_stack_push(vm, (obj == object_true || obj->type == OBJ_INT) ? object_false : object_true);
+    return vm_stack_push(vm, is_object_truthy(obj) ? object_false : object_true);
 }
 
 int vm_do_minus_operation(struct vm *vm) {
@@ -206,6 +206,11 @@ int vm_run(struct vm *vm) {
                     ip = pos - 1;
                 } 
             }
+            break;
+
+            case OPCODE_NULL: 
+                err = vm_stack_push(vm, object_null);
+                if (err) return err;
             break;
 
            

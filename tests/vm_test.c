@@ -100,6 +100,7 @@ void test_boolean_expressions() {
         {"!!true", true},
         {"!!false", false},
         {"!!5", true},
+        {"!(if (false) { 5; })", true},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -122,6 +123,7 @@ void test_conditionals() {
         {"if (1 < 2) { 10 }", 10},
         {"if (1 < 2) { 10 } else { 20 }", 10},
         {"if (1 > 2) { 10 } else { 20 }", 20},
+        {"if ((if (false) { 10 })) { 10 } else { 20 }", 20}
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -130,9 +132,25 @@ void test_conditionals() {
      }
 }
 
+void test_nulls() {
+    struct {
+        char *input;
+        struct object *obj;
+    } tests[] = {
+        {"if (1 > 2) { 10 }", object_null},
+        {"if (false) { 10 }", object_null},
+    };
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        assertf(obj->type == OBJ_NULL, "expected NULL, got %s", object_type_to_str(obj->type));
+     }
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
     test_conditionals();
+    test_nulls();
     printf("\x1b[32mAll tests passed!\033[0m\n");
 }

@@ -22,6 +22,7 @@ void free_compiler(struct compiler *c) {
     free(c);
 }
 
+/* TODO: We probably want dynamic error messages that includes parts of the program string */
 char *compiler_error_str(int err) {
     static char *messages[] = {
         "Success",
@@ -112,13 +113,13 @@ compile_block_statement(struct compiler *compiler, struct block_statement *block
 }
 
 int
-compile_statement(struct compiler *c, struct statement *statement) {
+compile_statement(struct compiler *c, struct statement *stmt) {
     int err;
-    switch (statement->type) {
+    switch (stmt->type) {
         // TODO: Handle STMT_LET 
         // TODO: Handle STMT_RETURN
         case STMT_EXPR: {
-            err = compile_expression(c, statement->value);
+            err = compile_expression(c, stmt->value);
             if (err) return err;
 
             compiler_emit(c, OPCODE_POP);
@@ -215,24 +216,23 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_remove_last_instruction(c);
             }
 
-            if (expr->ifelse.alternative) {
-                size_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
-                size_t after_conseq_pos = c->instructions->size;
-                compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+            size_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
+            size_t after_conseq_pos = c->instructions->size;
+            compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
 
+            if (expr->ifelse.alternative) {
                 err = compile_block_statement(c, expr->ifelse.alternative);
                 if (err) return err; 
 
                 if (c->last_instruction.opcode == OPCODE_POP) {
                     compiler_remove_last_instruction(c);
                 }
-
-                size_t after_alternative_pos = c->instructions->size;
-                compiler_change_operand(c, jump_pos, after_alternative_pos);
             } else {
-                size_t after_conseq_pos = c->instructions->size;
-                compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+                compiler_emit(c, OPCODE_NULL);
             }
+
+            size_t after_alternative_pos = c->instructions->size;
+            compiler_change_operand(c, jump_pos, after_alternative_pos);
         }
         break;
 
