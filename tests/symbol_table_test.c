@@ -51,5 +51,5 @@ void test_resolve_global() {
 int main() {
     test_define();
     test_resolve_global();
-    printf("\x1b[32mAll tests passed!\033[0m\n");
+    printf("\x1b[32mAll symbol table tests passed!\033[0m\n");
 }

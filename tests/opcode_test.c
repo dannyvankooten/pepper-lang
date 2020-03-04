@@ -79,5 +79,5 @@ int main() {
     test_read_operands();
     test_instruction_string();
     
-    printf("\x1b[32mAll tests passed!\033[0m\n");
+    printf("\x1b[32mAll opcode tests passed!\033[0m\n");
 }

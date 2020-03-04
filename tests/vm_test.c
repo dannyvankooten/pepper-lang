@@ -170,5 +170,5 @@ int main() {
     test_conditionals();
     test_nulls();
     test_global_let_statements();
-    printf("\x1b[32mAll tests passed!\033[0m\n");
+    printf("\x1b[32mAll vm tests passed!\033[0m\n");
 }

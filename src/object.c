@@ -56,6 +56,7 @@ static const char *object_names[] = {
     "STRING",
     "BUILTIN",
     "ARRAY",
+    "COMPILED_FUNCTION",
 };
 
 const char *object_type_to_str(enum object_type t)
@@ -145,6 +146,11 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     return obj;
 }
 
+struct object *make_compiled_function_object(struct instruction *ins) {
+    struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
+    obj->value.compiled_function = ins;
+    return obj;
+}   
 
 struct object *copy_object(struct object *obj) {
     switch (obj->type) {
@@ -314,7 +320,11 @@ void object_to_str(char *str, struct object *obj)
             }
         }
         strcat(str, "]");
-    break;
+        break;
+
+    case OBJ_COMPILED_FUNCTION: 
+        strcat(str, "CompiledFunction[...]");
+        break;
     }
 }
 

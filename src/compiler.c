@@ -9,11 +9,14 @@ int compile_expression(struct compiler *compiler, struct expression *expression)
 
 struct compiler *compiler_new() {
     struct compiler *c = malloc(sizeof *c);
-    c->instructions = malloc(sizeof *c->instructions);
-    c->instructions->bytes = malloc(1);
-    c->instructions->size = 0;
+    struct compiler_scope scope;
+    scope.instructions = malloc(sizeof *scope.instructions);
+    scope.instructions->bytes = malloc(1);
+    scope.instructions->size = 0;
     c->constants = make_object_list(64);
     c->symbol_table = symbol_table_new();
+    c->scopes[0] = scope;
+    c->scope_index = 0;
     return c;
 }
 
@@ -27,8 +30,8 @@ struct compiler *compiler_new_with_state(struct symbol_table *t, struct object_l
 }
 
 void compiler_free(struct compiler *c) {
-    free(c->instructions->bytes);
-    free(c->instructions);
+    free(c->scopes[0].instructions->bytes);
+    free(c->scopes[0].instructions);
     free_object_list(c->constants);
     symbol_table_free(c->symbol_table);
     free(c);
@@ -44,14 +47,24 @@ char *compiler_error_str(int err) {
     return messages[err];
 }
 
+struct compiler_scope compiler_current_scope(struct compiler *c) {
+    return c->scopes[c->scope_index];
+}
+
+struct instruction *compiler_current_instructions(struct compiler *c) {
+    struct compiler_scope scope = compiler_current_scope(c);
+    return scope.instructions;
+}
+
 size_t 
 add_instruction(struct compiler *c, struct instruction *ins) {
-    size_t pos = c->instructions->size;
+    struct instruction *cins = compiler_current_instructions(c);
+    size_t pos = cins->size;
 
     /* TODO: Use capacity here so we don't need to realloc on every new addition */
-    c->instructions->bytes = realloc(c->instructions->bytes, (c->instructions->size + ins->size ) * sizeof(*c->instructions->bytes));
+    cins->bytes = realloc(cins->bytes, (cins->size + ins->size ) * sizeof(*cins->bytes));
     for (int i=0; i < ins->size; i++) {
-        c->instructions->bytes[c->instructions->size++] = ins->bytes[i];
+        cins->bytes[cins->size++] = ins->bytes[i];
     }
     free_instruction(ins);
     return pos;
@@ -65,29 +78,43 @@ add_constant(struct compiler *c, struct object *obj) {
 }
 
 void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, size_t pos) {
-    struct emitted_instruction previous = c->last_instruction;
+    struct emitted_instruction previous = compiler_current_scope(c).last_instruction;
     struct emitted_instruction last = {
         .position = pos,
         .opcode = opcode,
     };
-    c->previous_instruction = previous;
-    c->last_instruction = last;
+    c->scopes[c->scope_index].previous_instruction = previous;
+    c->scopes[c->scope_index].last_instruction = last;
 }
 
 void compiler_remove_last_instruction(struct compiler *c) {
     /* set instruction pointer back to position of last emitted instruction */
-    c->instructions->size = c->last_instruction.position;
-    c->last_instruction = c->previous_instruction;
+    c->scopes[c->scope_index].instructions->size = c->scopes[c->scope_index].last_instruction.position;
+    c->scopes[c->scope_index].last_instruction = c->scopes[c->scope_index].previous_instruction;
 }
 
 void compiler_replace_instruction(struct compiler *c, size_t pos, struct instruction *ins) {
     for (int i=0; i < ins->size; i++) {
-        c->instructions->bytes[pos + i] = ins->bytes[i];
+        c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
 }
 
+void compiler_replace_last_instruction(struct compiler *c, struct instruction *ins) {
+    int pos = compiler_current_scope(c).last_instruction.position;
+    compiler_replace_instruction(c, pos, ins);
+    compiler_set_last_instruction(c, ins->bytes[0], pos);
+}
+
+bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode) {
+    if (c->scopes[c->scope_index].instructions->size == 0) {
+        return false;
+    }
+
+    return c->scopes[c->scope_index].last_instruction.opcode == opcode;
+}
+
 void compiler_change_operand(struct compiler *c, size_t pos, int operand) {
-    enum opcode opcode = c->instructions->bytes[pos];
+    enum opcode opcode = c->scopes[c->scope_index].instructions->bytes[pos];
     struct instruction *new = make_instruction(opcode, operand);
     compiler_replace_instruction(c, pos, new);
 }
@@ -128,7 +155,6 @@ int
 compile_statement(struct compiler *c, struct statement *stmt) {
     int err;
     switch (stmt->type) {
-        // TODO: Handle STMT_RETURN
         case STMT_EXPR: {
             err = compile_expression(c, stmt->value);
             if (err) return err;
@@ -143,6 +169,13 @@ compile_statement(struct compiler *c, struct statement *stmt) {
 
             struct symbol *s = symbol_table_define(c->symbol_table, stmt->name.value);
             compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
+        }
+        break;
+
+        case STMT_RETURN: {
+                err = compile_expression(c, stmt->value);
+                if (err) return err;
+                compiler_emit(c, OPCODE_RETURN_VALUE);
         }
         break;
     }
@@ -232,26 +265,26 @@ compile_expression(struct compiler *c, struct expression *expr) {
             err = compile_block_statement(c, expr->ifelse.consequence);
             if (err) { return err; }
 
-            if (c->last_instruction.opcode == OPCODE_POP) {
+            if (compiler_last_instruction_is(c, OPCODE_POP)) {
                 compiler_remove_last_instruction(c);
             }
 
             size_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
-            size_t after_conseq_pos = c->instructions->size;
+            size_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
 
             if (expr->ifelse.alternative) {
                 err = compile_block_statement(c, expr->ifelse.alternative);
                 if (err) return err; 
 
-                if (c->last_instruction.opcode == OPCODE_POP) {
+                if (compiler_last_instruction_is(c, OPCODE_POP)) {
                     compiler_remove_last_instruction(c);
                 }
             } else {
                 compiler_emit(c, OPCODE_NULL);
             }
 
-            size_t after_alternative_pos = c->instructions->size;
+            size_t after_alternative_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_pos, after_alternative_pos);
         }
         break;
@@ -278,6 +311,23 @@ compile_expression(struct compiler *c, struct expression *expr) {
         }
         break;
 
+        case EXPR_FUNCTION: {
+            compiler_enter_scope(c);
+            err = compile_block_statement(c, expr->function.body);
+            if (err) return err;
+
+            if (compiler_last_instruction_is(c, OPCODE_POP)) {
+                compiler_replace_last_instruction(c, make_instruction(OPCODE_RETURN_VALUE));
+            } else if (!compiler_last_instruction_is(c, OPCODE_RETURN_VALUE)) {
+                compiler_emit(c, OPCODE_RETURN);
+            }
+
+            struct instruction *ins = compiler_leave_scope(c);
+            struct object *obj = make_compiled_function_object(ins);
+            compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
+        }
+        break;
+
         default:
             return COMPILE_ERR_UNKNOWN_EXPR_TYPE;
         break;
@@ -289,8 +339,29 @@ compile_expression(struct compiler *c, struct expression *expr) {
 struct bytecode *
 get_bytecode(struct compiler *c) {
     struct bytecode *b = malloc(sizeof *b);
-    b->instructions = c->instructions;
+    b->instructions = compiler_current_instructions(c);
     b->constants = c->constants;
     return b;
 }
 
+void compiler_enter_scope(struct compiler *c) {
+    c->scope_index++;
+
+    struct compiler_scope scope;
+    scope.instructions = malloc(sizeof *scope.instructions);
+    scope.instructions->bytes = malloc(1);
+    scope.instructions->size = 0;
+
+    c->scopes[c->scope_index] = scope;
+}
+
+struct instruction *compiler_leave_scope(struct compiler *c) {
+    struct instruction *ins = c->scopes[c->scope_index].instructions;
+
+    // TODO: Free scope
+    // free(c->scopes[c->scope_index].instructions->bytes);
+    // free(c->scopes[c->scope_index].instructions);
+
+    c->scope_index--;
+    return ins;
+}

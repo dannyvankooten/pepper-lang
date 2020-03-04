@@ -64,6 +64,15 @@ struct definition definitions[] = {
     {
         "OpSetGlobal", 1, {2}
     },
+    {
+        "OpCall", 0, {0},
+    },
+    {
+        "OpReturnValue", 0, {0}
+    },
+    {
+        "OpReturn", 0, {0}
+    }
 };
 
 struct definition lookup(enum opcode opcode) {

@@ -11,7 +11,6 @@ VM_SRC= vm.c opcode.c object.c symbol_table.c $(PARSER_SRC)
 PREFIX = /usr/local
 
 all: bin/monkey 
-check: bin/ bin/lexer_test bin/parser_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test
 
 bin/:
 	mkdir -p bin/
@@ -20,25 +19,28 @@ bin/monkey: monkey.c $(EVAL_SRC) vm.c opcode.c symbol_table.c compiler.c | bin/
 	$(CC) $(CFLAGS) $^ -Ofast -ledit -finline-limit=256 -DNDEBUG -o $@
 
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) 
-	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+	$(CC) $(TESTFLAGS) $^ -o $@
 
 bin/parser_test: tests/parser_test.c $(PARSER_SRC)
-	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+	$(CC) $(TESTFLAGS) $^ -o $@
 
 bin/eval_test: tests/eval_test.c $(EVAL_SRC)
-	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+	$(CC) $(TESTFLAGS) $^ -o $@
 
 bin/opcode_test: tests/opcode_test.c opcode.c
-	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+	$(CC) $(TESTFLAGS) $^ -o $@
 
 bin/compiler_test: tests/compiler_test.c $(COMPILER_SRC) 
-	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+	$(CC) $(TESTFLAGS) $^ -o $@
 
 bin/vm_test: tests/vm_test.c $(VM_SRC) compiler.c
-	$(CC) $(TESTFLAGS) $^ -o $@ && $@
+	$(CC) $(TESTFLAGS) $^ -o $@
 
 bin/symbol_table_test: tests/symbol_table_test.c symbol_table.c 
-	$(CC) $(TESTFLAGS) $^ -o $@ && $@	
+	$(CC) $(TESTFLAGS) $^ -o $@	
+
+check: bin/lexer_test bin/parser_test bin/opcode_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test | bin/
+	for test in $^; do $$test || exit 1; done
 
 .PHONY: bench
 bench: bin/monkey
@@ -53,7 +55,7 @@ install: bin/monkey
 
 .PHONY: uninstall
 uninstall:
-    rm -f $(DESTDIR)$(PREFIX)/bin/monkey
+	rm -f $(DESTDIR)$(PREFIX)/bin/monkey
 
 .PHONY: clean
 clean:

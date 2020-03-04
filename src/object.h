@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "env.h"
 #include "parser.h"
+#include "opcode.h"
 
 #define is_object_error(t) (t == OBJ_ERROR)
 #define is_object_truthy(obj) (obj != object_null && obj != object_false)
@@ -22,6 +23,7 @@ enum object_type
     OBJ_STRING,
     OBJ_BUILTIN,
     OBJ_ARRAY,
+    OBJ_COMPILED_FUNCTION,
 };
 
 struct function {
@@ -46,6 +48,7 @@ union object_value {
     struct function function;
     struct object *(*builtin)(struct object_list *);
     struct object_list *array;
+    struct instruction *compiled_function;
 };
 
 struct object
@@ -70,6 +73,7 @@ struct object *make_string_object(char *str1, char *str2);
 struct object *make_error_object(char *format, ...);
 struct object *make_array_object(struct object_list *elements);
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env);
+struct object *make_compiled_function_object(struct instruction *ins);
 struct object *copy_object(struct object *obj);
 void free_object(struct object *obj);
 void object_to_str(char *str, struct object *obj);
