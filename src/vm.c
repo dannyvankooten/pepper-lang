@@ -300,10 +300,12 @@ int vm_run(struct vm *vm) {
             break;
 
             case OPCODE_CALL: {
-                struct frame f = frame_new(vm->stack[vm->stack_pointer-1], vm->stack_pointer);
+                int num_args = read_bytes(bytes, ip+1, 1);
+                vm->frames[vm->frame_index].ip += 1;
+                struct object *fn = vm->stack[vm->stack_pointer - 1 - num_args];
+                struct frame f = frame_new(fn, vm->stack_pointer - num_args);
                 vm_push_frame(vm, f);
                 vm->stack_pointer = f.base_pointer + f.fn->value.compiled_function.num_locals;
-
                 // to skip incrementing the instruction pointer at the end of this loop
                 continue;
             }

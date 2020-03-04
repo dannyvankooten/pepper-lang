@@ -65,7 +65,7 @@ struct definition definitions[] = {
         "OpSetGlobal", 1, {2}
     },
     {
-        "OpCall", 0, {0},
+        "OpCall", 1, {1},
     },
     {
         "OpReturnValue", 0, {0}

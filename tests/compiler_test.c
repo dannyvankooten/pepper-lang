@@ -491,7 +491,7 @@ void test_function_calls() {
             }, 2,
             .instructions = {
                 make_instruction(OPCODE_CONST, 1),
-                make_instruction(OPCODE_CALL),
+                make_instruction(OPCODE_CALL, 0),
                 make_instruction(OPCODE_POP),
             }, 3,
         };
@@ -512,9 +512,62 @@ void test_function_calls() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_SET_GLOBAL, 0),
                 make_instruction(OPCODE_GET_GLOBAL, 0),
-                make_instruction(OPCODE_CALL),
+                make_instruction(OPCODE_CALL, 0),
                 make_instruction(OPCODE_POP),
             }, 5,
+        };
+        run_compiler_test(t);
+   }
+   {
+        struct instruction *fn_body[] = {
+            make_instruction(OPCODE_GET_LOCAL, 0),
+            make_instruction(OPCODE_RETURN_VALUE),
+        };
+        struct compiler_test_case t = {
+            .input = "let oneArg = fn(a) { a; }; oneArg(24);",
+            .constants = {
+                make_compiled_function_object(flatten_instructions_array(fn_body, 2), 0),
+                make_integer_object(24),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_CALL, 1),
+                make_instruction(OPCODE_POP),
+            }, 6,
+        };
+        run_compiler_test(t);
+   }
+   {
+        struct instruction *fn_body[] = {
+            make_instruction(OPCODE_GET_LOCAL, 0),
+            make_instruction(OPCODE_POP),
+            make_instruction(OPCODE_GET_LOCAL, 1),
+            make_instruction(OPCODE_POP),
+            make_instruction(OPCODE_GET_LOCAL, 2),
+            make_instruction(OPCODE_RETURN_VALUE),
+        };
+        int fn_size = 6;
+        struct compiler_test_case t = {
+            .input = "let manyArg = fn(a, b, c) { a; b; c; }; manyArg(24, 25, 26);",
+            .constants = {
+                make_compiled_function_object(flatten_instructions_array(fn_body, fn_size), 0),
+                make_integer_object(24),
+                make_integer_object(25),
+                make_integer_object(26),
+            }, 4,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_CONST, 2),
+                make_instruction(OPCODE_CONST, 3),
+                make_instruction(OPCODE_CALL, 3),
+                make_instruction(OPCODE_POP),
+            }, 8,
         };
         run_compiler_test(t);
    }

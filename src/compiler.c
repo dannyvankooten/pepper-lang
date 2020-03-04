@@ -313,6 +313,11 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
         case EXPR_FUNCTION: {
             compiler_enter_scope(c);
+
+            for (int i=0; i < expr->function.parameters.size; i++) {
+                symbol_table_define(c->symbol_table, expr->function.parameters.values[i].value);
+            }
+
             err = compile_block_statement(c, expr->function.body);
             if (err) return err;
 
@@ -333,7 +338,13 @@ compile_expression(struct compiler *c, struct expression *expr) {
             err = compile_expression(c, expr->call.function);
             if (err) return err;
 
-            compiler_emit(c, OPCODE_CALL);
+            int i = 0;
+            for (; i < expr->call.arguments.size; i++) {
+                err = compile_expression(c, expr->call.arguments.values[i]);
+                if (err) return err;
+            }
+
+            compiler_emit(c, OPCODE_CALL, i);
         }
         break;
 

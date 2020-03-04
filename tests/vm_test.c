@@ -188,22 +188,6 @@ void test_function_calls() {
      }
 }
 
-void test_fib() {
-    TESTNAME(__FUNCTION__);
-    char *input = "              \
-        let fibonacci = fn(x) {  \
-            if (x < 2) {         \
-                x        \
-            } else {             \
-                return fibonacci(x-1) + fibonacci(x-2); \
-            }                   \
-        };                      \
-        fibonacci(20)";
-    int expected = 6765;
-    struct object *obj = run_vm_test(input);
-    test_object(obj, OBJ_INT, (union object_value) { .integer = expected });    
-}
-
 void test_functions_without_return_value() {
     TESTNAME(__FUNCTION__);
 
@@ -253,6 +237,52 @@ void test_function_calls_with_bindings() {
      }
 }
 
+
+void test_function_calls_with_args_and_bindings() {
+    TESTNAME(__FUNCTION__);
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"let identity = fn(a) { a; }; identity(4);", 4},
+        {"let sum = fn(a, b) { a + b; }; sum(1, 2);", 3},
+        {"let sum = fn(a, b) { let c = a + b; c; }; sum(1, 2);", 3},
+        {"let sum = fn(a, b) { let c = a + b; c; }; sum(1, 2) + sum(3, 4);", 10},
+        {"let sum = fn(a, b) { let c = a + b; c; }; let outer = fn() { sum(1, 2) + sum(3, 4); }; outer();", 10},
+        {"let sum = fn(a, b) { let c = a + b; c; }; let outer = fn() { sum(1, 2) + sum(3, 4); }; outer();", 10},
+        {"let globalNum = 10;\
+          let sum = fn(a, b) {\
+               let c = a + b;\
+               c + globalNum;\
+          };\
+            let outer = fn() {\
+                sum(1, 2) + sum(3, 4) + globalNum;\
+            };\
+            outer() + globalNum;", 50},
+    };
+    
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
+}
+
+
+void test_fib() {
+    TESTNAME(__FUNCTION__);
+    char *input = "              \
+        let fibonacci = fn(x) {  \
+            if (x < 2) {         \
+                x                \
+            }                    \
+            return fibonacci(x-1) + fibonacci(x-2); \
+        };                      \
+        fibonacci(20)";
+    int expected = 6765;
+    struct object *obj = run_vm_test(input);
+    test_object(obj, OBJ_INT, (union object_value) { .integer = expected });    
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
@@ -263,6 +293,7 @@ int main() {
     test_functions_without_return_value();
     test_first_class_functions();
     test_function_calls_with_bindings();
-    //test_fib();
+    test_function_calls_with_args_and_bindings();
+   // test_fib();
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 }
