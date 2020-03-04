@@ -8,11 +8,12 @@
 #define VM_ERR_OUT_OF_BOUNDS 3
 #define VM_ERR_STACK_OVERFLOW 4
 
-struct frame frame_new(struct object *obj) {
+struct frame frame_new(struct object *obj, size_t bp) {
     assert(obj->type == OBJ_COMPILED_FUNCTION);
     struct frame f = {
         .ip = 0,
         .fn = obj,
+        .base_pointer = bp,
     };
 
     #ifdef DEBUG
@@ -22,7 +23,7 @@ struct frame frame_new(struct object *obj) {
 }
 
 struct instruction *frame_instructions(struct frame *f) {
-    return f->fn->value.compiled_function;
+    return f->fn->value.compiled_function.instructions;
 }
 
 struct frame vm_current_frame(struct vm *vm) {
@@ -43,7 +44,7 @@ struct vm *vm_new(struct bytecode *bc) {
     vm->stack_pointer = 0;
     vm->globals = make_object_list(512);
     vm->constants = bc->constants;
-    vm->frames[0] = frame_new(make_compiled_function_object(bc->instructions));
+    vm->frames[0] = frame_new(make_compiled_function_object(bc->instructions, 0), 0);
     vm->frame_index = 0;
     return vm;
 }
@@ -299,8 +300,9 @@ int vm_run(struct vm *vm) {
             break;
 
             case OPCODE_CALL: {
-                struct frame f = frame_new(vm->stack[vm->stack_pointer-1]);
+                struct frame f = frame_new(vm->stack[vm->stack_pointer-1], vm->stack_pointer);
                 vm_push_frame(vm, f);
+                vm->stack_pointer = f.base_pointer + f.fn->value.compiled_function.num_locals;
 
                 // to skip incrementing the instruction pointer at the end of this loop
                 continue;
@@ -309,8 +311,10 @@ int vm_run(struct vm *vm) {
 
             case OPCODE_RETURN_VALUE: {
                 struct object *obj = vm_stack_pop(vm); // pop return value
-                vm_pop_frame(vm);
+                struct frame f = vm_pop_frame(vm);
                 vm_stack_pop(vm); // pop the function
+
+                vm->stack_pointer = f.base_pointer - 1;
 
                 // push return value back on stack
                 vm_stack_push(vm, obj);
@@ -319,9 +323,25 @@ int vm_run(struct vm *vm) {
 
 
             case OPCODE_RETURN: {
-                vm_pop_frame(vm);
-                vm_stack_pop(vm); 
+                struct frame f = vm_pop_frame(vm);
+                vm->stack_pointer = f.base_pointer - 1;
                 vm_stack_push(vm, object_null);
+            }
+            break;
+
+            case OPCODE_SET_LOCAL: {
+                int idx = read_bytes(bytes, ip+1, 1);
+                vm->frames[vm->frame_index].ip += 1;
+                int bp = vm->frames[vm->frame_index].base_pointer;
+                vm->stack[bp + idx] = vm_stack_pop(vm);
+            }
+            break;
+
+            case OPCODE_GET_LOCAL: {
+                int idx = read_bytes(bytes, ip+1, 1);
+                vm->frames[vm->frame_index].ip += 1;
+                int bp = vm->frames[vm->frame_index].base_pointer;
+                vm_stack_push(vm, vm->stack[bp + idx]);
             }
             break;
         }

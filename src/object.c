@@ -146,9 +146,10 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     return obj;
 }
 
-struct object *make_compiled_function_object(struct instruction *ins) {
+struct object *make_compiled_function_object(struct instruction *ins, unsigned int num_locals) {
     struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
-    obj->value.compiled_function = ins;
+    obj->value.compiled_function.num_locals = num_locals;
+    obj->value.compiled_function.instructions = ins;
     return obj;
 }   
 

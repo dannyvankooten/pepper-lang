@@ -73,8 +73,16 @@ struct symbol_table *symbol_table_new() {
 
     t->size = 0;
     t->store = hashmap_new();
+    t->outer = NULL;
     return t;
 }
+
+struct symbol_table *symbol_table_new_enclosed(struct symbol_table *outer) {
+    struct symbol_table *t = symbol_table_new();
+    t->outer = outer;
+    return t;
+}
+
 
 struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
     struct symbol *s = malloc(sizeof *s);
@@ -83,7 +91,7 @@ struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
     // TODO: Copy name? 
     // Should only be required if we free the original program string before evaluating bytecode
     s->name = name;
-    s->scope = SCOPE_GLOBAL;
+    s->scope = t->outer ? SCOPE_LOCAL : SCOPE_GLOBAL;
     s->index = t->size;
 
     // insert into store
@@ -93,7 +101,12 @@ struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
 }
 
 struct symbol *symbol_table_resolve(struct symbol_table *t, char *name) {
-    return (struct symbol *) hashmap_get(t->store, name);
+    void *r = hashmap_get(t->store, name);
+    if (r == NULL && t->outer != NULL) {
+        return symbol_table_resolve(t->outer, name);
+    }
+    
+    return (struct symbol *) r;
 }
 
 void symbol_table_free(struct symbol_table *t) {

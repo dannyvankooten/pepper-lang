@@ -233,6 +233,25 @@ void test_first_class_functions() {
      }
 }
 
+void test_function_calls_with_bindings() {
+    TESTNAME(__FUNCTION__);
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"let one = fn() { let one = 1; one }; one();", 1},
+        {"let oneAndTwo = fn() { let one = 1; let two = 2; one + two; }; oneAndTwo();", 3},
+        {"let oneAndTwo = fn() { let one = 1; let two = 2; one + two; }; let threeAndFour = fn() { let three = 3; let four = 4; three + four; }; oneAndTwo() + threeAndFour();", 10},
+        {"let firstFoobar = fn() { let foobar = 50; foobar; }; let secondFoobar = fn() { let foobar = 100; foobar; }; firstFoobar() + secondFoobar();", 150},
+        {"let globalSeed = 50; let minusOne = fn() { let num = 1; globalSeed - num; } let minusTwo = fn() { let num = 2; globalSeed - num; } minusOne() + minusTwo();", 97},
+    };
+    
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
+}
 
 int main() {
     test_integer_arithmetic();
@@ -243,6 +262,7 @@ int main() {
     test_function_calls();
     test_functions_without_return_value();
     test_first_class_functions();
+    test_function_calls_with_bindings();
     //test_fib();
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 }

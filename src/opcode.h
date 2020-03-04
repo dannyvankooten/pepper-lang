@@ -29,6 +29,8 @@ enum opcode {
     OPCODE_CALL,
     OPCODE_RETURN_VALUE,
     OPCODE_RETURN,
+    OPCODE_GET_LOCAL,
+    OPCODE_SET_LOCAL,
 };
 
 struct definition {

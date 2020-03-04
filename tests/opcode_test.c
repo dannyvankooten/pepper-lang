@@ -13,14 +13,17 @@ void test_make_instruction() {
         {
             .opcode = OPCODE_CONST, 
             .operands = {65534}, 
-            .expected = {OPCODE_CONST, 255, 254},
-            .expected_size = 3
+            .expected = {OPCODE_CONST, 255, 254}, 3
         },
         {
             .opcode = OPCODE_ADD,
             .operands = {},
-            .expected = {OPCODE_ADD},
-            .expected_size = 1,
+            .expected = {OPCODE_ADD}, 1
+        },
+        {
+            .opcode = OPCODE_GET_LOCAL,
+            .operands = {255},
+            .expected = {OPCODE_GET_LOCAL, 255}, 2
         }
     };
 
@@ -39,12 +42,13 @@ void test_make_instruction() {
 void test_instruction_string() {
     struct instruction *instructions[] = {
         make_instruction(OPCODE_ADD),
+        make_instruction(OPCODE_GET_LOCAL, 1),
         make_instruction(OPCODE_CONST, 2),
         make_instruction(OPCODE_CONST, 65535)
     };
 
-    char *expected_str = "0000 OpAdd\n0001 OpConstant 2\n0004 OpConstant 65535";
-    struct instruction *ins = flatten_instructions_array(instructions, 3);
+    char *expected_str = "0000 OpAdd\n0001 OpGetLocal 1\n0003 OpConstant 2\n0006 OpConstant 65535";
+    struct instruction *ins = flatten_instructions_array(instructions, 4);
     char *str = instruction_to_str(ins);
     assertf(strcmp(expected_str, str) == 0, "wrong instruction string: expected \"%s\", got \"%s\"", expected_str, str);
     free_instruction(ins);
@@ -59,6 +63,7 @@ void test_read_operands() {
     } tests[] = {
         {OPCODE_CONST, {65535}, 2},
         {OPCODE_CONST, {1}, 2},
+        {OPCODE_GET_LOCAL, {255}, 1},
     };
 
     for (int t = 0; t < ARRAY_SIZE(tests); t++) {

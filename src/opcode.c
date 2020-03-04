@@ -72,7 +72,13 @@ struct definition definitions[] = {
     },
     {
         "OpReturn", 0, {0}
-    }
+    },
+    {
+        "OpGetLocal", 1, {1}
+    },
+    {
+        "OpSetLocal", 1, {1}
+    },
 };
 
 char *opcode_to_str(enum opcode opcode) {

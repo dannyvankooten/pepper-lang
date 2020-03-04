@@ -168,7 +168,7 @@ compile_statement(struct compiler *c, struct statement *stmt) {
             if (err) return err;
 
             struct symbol *s = symbol_table_define(c->symbol_table, stmt->name.value);
-            compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
+            compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_SET_GLOBAL : OPCODE_SET_LOCAL, s->index);
         }
         break;
 
@@ -307,7 +307,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
         case EXPR_IDENT: {
             struct symbol *s = symbol_table_resolve(c->symbol_table, expr->ident.value);
             assert(s != NULL);
-            compiler_emit(c, OPCODE_GET_GLOBAL, s->index);
+            compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_GET_GLOBAL : OPCODE_GET_LOCAL, s->index);
         }
         break;
 
@@ -322,8 +322,9 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_emit(c, OPCODE_RETURN);
             }
 
+            unsigned int num_locals = c->symbol_table->size;
             struct instruction *ins = compiler_leave_scope(c);
-            struct object *obj = make_compiled_function_object(ins);
+            struct object *obj = make_compiled_function_object(ins, num_locals);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
         }
         break;
@@ -361,6 +362,8 @@ void compiler_enter_scope(struct compiler *c) {
     scope.instructions->size = 0;
 
     c->scopes[c->scope_index] = scope;
+
+    c->symbol_table = symbol_table_new_enclosed(c->symbol_table);
 }
 
 struct instruction *compiler_leave_scope(struct compiler *c) {
@@ -369,6 +372,7 @@ struct instruction *compiler_leave_scope(struct compiler *c) {
     // TODO: Free scope
     // free(c->scopes[c->scope_index].instructions->bytes);
     // free(c->scopes[c->scope_index].instructions);
+    c->symbol_table = c->symbol_table->outer;
 
     c->scope_index--;
     return ins;

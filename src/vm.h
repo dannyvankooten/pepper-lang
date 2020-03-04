@@ -10,6 +10,7 @@
 struct frame {
     struct object *fn;
     size_t ip;
+    size_t base_pointer;
 };
 
 struct vm {
@@ -33,7 +34,7 @@ struct object *vm_stack_last_popped(struct vm *vm);
 struct object *vm_stack_pop(struct vm *vm);
 void vm_free(struct vm *vm);
 
-struct frame frame_new(struct object *obj);
+struct frame frame_new(struct object *obj, size_t bp);
 struct instruction *frame_instructions(struct frame *f);
 
 #endif 

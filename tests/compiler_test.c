@@ -21,11 +21,11 @@ void test_object(struct object *expected, struct object *actual) {
             assertf(actual->value.boolean == expected->value.boolean, "invalid boolean value: expected %d, got %d", expected->value.boolean, actual->value.boolean);
         break;
         case OBJ_COMPILED_FUNCTION: {
-            char *expected_str = instruction_to_str(expected->value.compiled_function);
-            char *actual_str = instruction_to_str(actual->value.compiled_function);
-            assertf(expected->value.compiled_function->size == actual->value.compiled_function->size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
-            for (int i=0; i < expected->value.compiled_function->size; i++) {
-                assertf(expected->value.compiled_function->bytes[i] == actual->value.compiled_function->bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, expected->value.compiled_function->bytes[i], actual->value.compiled_function->bytes[i], expected_str, actual_str);
+            char *expected_str = instruction_to_str(expected->value.compiled_function.instructions);
+            char *actual_str = instruction_to_str(actual->value.compiled_function.instructions);
+            assertf(expected->value.compiled_function.instructions->size == actual->value.compiled_function.instructions->size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
+            for (int i=0; i < expected->value.compiled_function.instructions->size; i++) {
+                assertf(expected->value.compiled_function.instructions->bytes[i] == actual->value.compiled_function.instructions->bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, expected->value.compiled_function.instructions->bytes[i], actual->value.compiled_function.instructions->bytes[i], expected_str, actual_str);
             }
             free(expected_str);
             free(actual_str);
@@ -383,7 +383,7 @@ void test_functions() {
             .constants = {
                 make_integer_object(5),
                 make_integer_object(10),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 4)),
+                make_compiled_function_object(flatten_instructions_array(fn_body, 4), 0),
             }, 3,
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
@@ -404,7 +404,7 @@ void test_functions() {
             .constants = {
                 make_integer_object(5),
                 make_integer_object(10),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 4)),
+                make_compiled_function_object(flatten_instructions_array(fn_body, 4), 0),
             }, 3,
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
@@ -425,7 +425,7 @@ void test_functions() {
             .constants = {
                 make_integer_object(1),
                 make_integer_object(2),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 4)),
+                make_compiled_function_object(flatten_instructions_array(fn_body, 4), 0),
             }, 3,
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
@@ -438,7 +438,7 @@ void test_functions() {
         struct compiler_test_case t = {
             .input = "fn() {}",
             .constants = {
-                make_compiled_function_object(make_instruction(OPCODE_RETURN)),
+                make_compiled_function_object(make_instruction(OPCODE_RETURN), 0),
             }, 1,
             .instructions = {
                 make_instruction(OPCODE_CONST, 0),
@@ -454,6 +454,7 @@ void test_compiler_scopes() {
     struct compiler_scope scope;
     struct compiler *compiler = compiler_new();
     assertf(compiler->scope_index == 0, "wrong scope index: expected %d, got %d", 0, compiler->scope_index);
+    struct symbol_table *globals = compiler->symbol_table;
     compiler_emit(compiler, OPCODE_MULTIPLY);
     compiler_enter_scope(compiler);
     assertf(compiler->scope_index == 1, "wrong scope index: expected %d, got %d", 1, compiler->scope_index);
@@ -461,7 +462,10 @@ void test_compiler_scopes() {
     scope = compiler_current_scope(compiler);
     assertf(scope.instructions->size == 1, "wrong instruction size in scope: expected %d, got %d", 1, scope.instructions->size);
     assertf(scope.last_instruction.opcode == OPCODE_SUBTRACT, "wrong last instruction in scope: expected %d, got %d", OPCODE_SUBTRACT, scope.last_instruction.opcode);
+    assertf(compiler->symbol_table->outer == globals, "compiler did not enclose symbol table");
     compiler_leave_scope(compiler);
+    assertf(compiler->symbol_table == globals, "compiler did not restore global symbol table");
+    assertf(compiler->symbol_table->outer == NULL, "compiler modified global symbol table incorrectly");
     assertf(compiler->scope_index == 0, "wrong scope index: expected %d, got %d", 0, compiler->scope_index);
     compiler_emit(compiler, OPCODE_ADD);
     scope = compiler_current_scope(compiler);
@@ -483,7 +487,7 @@ void test_function_calls() {
             .input = "fn() { 24 }();",
             .constants = {
                 make_integer_object(24),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 2)),
+                make_compiled_function_object(flatten_instructions_array(fn_body, 2), 0),
             }, 2,
             .instructions = {
                 make_instruction(OPCODE_CONST, 1),
@@ -502,7 +506,7 @@ void test_function_calls() {
             .input = "let noArg = fn() { 24 }; noArg();",
             .constants = {
                 make_integer_object(24),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 2)),
+                make_compiled_function_object(flatten_instructions_array(fn_body, 2), 0),
             }, 2,
             .instructions = {
                 make_instruction(OPCODE_CONST, 1),
@@ -516,6 +520,12 @@ void test_function_calls() {
    }
 }
 
+void test_let_statement_scopes() {
+    TESTNAME(__FUNCTION__);
+
+    // TODO: Implement this
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
@@ -524,5 +534,6 @@ int main() {
     test_compiler_scopes();
     test_functions();
     test_function_calls();
+    test_let_statement_scopes();
     printf("\x1b[32mAll compiler tests passed!\033[0m\n");
 }
