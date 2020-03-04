@@ -48,6 +48,7 @@ struct bytecode {
     struct object_list *constants;
 };
 
+char *opcode_to_str(enum opcode opcode);
 struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, ...);
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands);

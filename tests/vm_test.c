@@ -13,6 +13,9 @@ void test_object(struct object *obj, enum object_type type, union object_value v
         case OBJ_BOOL:
             assertf(obj->value.boolean == value.boolean, "invalid boolean value: expected %d, got %d", value.boolean, obj->value.boolean);
         break;
+        case OBJ_NULL: 
+            assertf(obj == object_null, "invalid null object");
+        break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj->type));
         break;
@@ -134,6 +137,7 @@ void test_conditionals() {
 }
 
 void test_nulls() {
+    TESTNAME(__FUNCTION__);
     struct {
         char *input;
         struct object *obj;
@@ -149,7 +153,8 @@ void test_nulls() {
 }
 
 void test_global_let_statements() {
-     struct {
+    TESTNAME(__FUNCTION__);
+    struct {
         char *input;
         int expected;
     } tests[] = {
@@ -164,11 +169,80 @@ void test_global_let_statements() {
      }
 }
 
+void test_function_calls() {
+    TESTNAME(__FUNCTION__);
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();", 15},
+        {"let one = fn() { 1; }; let two = fn() { 2; } one() + two();", 3},
+        {"let a = fn() { 1 }; let b = fn() { a() + 1 }; let c = fn() { b() + 1 }; c();", 3},
+        {"let earlyExit = fn() { return 99; 100; }; earlyExit();", 99},
+        {"let earlyExit = fn() { return 99; return 100; }; earlyExit();", 99},
+    };
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
+}
+
+void test_fib() {
+    TESTNAME(__FUNCTION__);
+    char *input = "              \
+        let fibonacci = fn(x) {  \
+            if (x < 2) {         \
+                x        \
+            } else {             \
+                return fibonacci(x-1) + fibonacci(x-2); \
+            }                   \
+        };                      \
+        fibonacci(20)";
+    int expected = 6765;
+    struct object *obj = run_vm_test(input);
+    test_object(obj, OBJ_INT, (union object_value) { .integer = expected });    
+}
+
+void test_functions_without_return_value() {
+    TESTNAME(__FUNCTION__);
+
+   char *tests[] = {
+        "let noReturn = fn() { }; noReturn();",
+        "let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();"
+    };
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t]);
+        test_object(obj, OBJ_NULL, (union object_value) {});
+     }
+}
+
+void test_first_class_functions() {
+    TESTNAME(__FUNCTION__);
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"let returnsOne = fn() { 1; }; let returnsOneReturner = fn() { returnsOne; }; returnsOneReturner()();", 1},
+    };
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
+}
+
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
     test_conditionals();
     test_nulls();
     test_global_let_statements();
+    test_function_calls();
+    test_functions_without_return_value();
+    test_first_class_functions();
+    //test_fib();
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 }

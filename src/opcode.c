@@ -75,6 +75,10 @@ struct definition definitions[] = {
     }
 };
 
+char *opcode_to_str(enum opcode opcode) {
+    return definitions[opcode - 1].name;
+}
+
 struct definition lookup(enum opcode opcode) {
     return definitions[opcode - 1];
 }

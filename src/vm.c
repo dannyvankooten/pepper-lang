@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include <err.h>
 #include "vm.h"
 
@@ -7,14 +8,43 @@
 #define VM_ERR_OUT_OF_BOUNDS 3
 #define VM_ERR_STACK_OVERFLOW 4
 
+struct frame frame_new(struct object *obj) {
+    assert(obj->type == OBJ_COMPILED_FUNCTION);
+    struct frame f = {
+        .ip = 0,
+        .fn = obj,
+    };
+
+    #ifdef DEBUG
+    printf("Creating frame with instructions size %d\n", obj->value.compiled_function->size);
+    #endif
+    return f;
+}
+
+struct instruction *frame_instructions(struct frame *f) {
+    return f->fn->value.compiled_function;
+}
+
+struct frame vm_current_frame(struct vm *vm) {
+    return vm->frames[vm->frame_index];
+}
+
+struct frame vm_pop_frame(struct vm *vm) {
+    return vm->frames[vm->frame_index--];
+}
+
+void vm_push_frame(struct vm *vm, struct frame f) {
+    vm->frames[++vm->frame_index] = f;
+}
+
+
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     vm->stack_pointer = 0;
-    
-    // TODO: Dereference here?
     vm->globals = make_object_list(512);
-    vm->instructions = bc->instructions;
     vm->constants = bc->constants;
+    vm->frames[0] = frame_new(make_compiled_function_object(bc->instructions));
+    vm->frame_index = 0;
     return vm;
 }
 
@@ -36,7 +66,11 @@ struct object *vm_stack_pop(struct vm *vm) {
         return object_null;
     }
 
-    return vm->stack[--vm->stack_pointer];
+    struct object *obj = vm->stack[--vm->stack_pointer];
+    #ifdef DEBUG 
+    printf("Popping object of type %s from stack position %d\n", object_type_to_str(obj->type), vm->stack_pointer);
+    #endif
+    return obj;
 }
 
 int vm_stack_push(struct vm *vm, struct object *obj) {
@@ -44,6 +78,10 @@ int vm_stack_push(struct vm *vm, struct object *obj) {
         err(VM_ERR_STACK_OVERFLOW, "stack overflow");
         return VM_ERR_STACK_OVERFLOW;
     }
+
+    #ifdef DEBUG 
+    printf("Pushing object of type %s to stack position %d\n", object_type_to_str(obj->type), vm->stack_pointer);
+    #endif
 
     vm->stack[vm->stack_pointer++] = obj;
     return 0;
@@ -150,11 +188,32 @@ int vm_do_minus_operation(struct vm *vm) {
 }
 
 int vm_run(struct vm *vm) {
-    size_t size = vm->instructions->size;
-    unsigned char *bytes = vm->instructions->bytes;
+    unsigned char *bytes;
     int err;
+    int ip;
+    struct frame frame;
+    struct instruction *ins;
 
-    for (int ip=0; ip < size; ip++) {
+    #ifdef DEBUG
+    printf("Running VM: %s\n", instruction_to_str(vm->frames[0].fn->value.compiled_function));
+    #endif
+
+    while (1) {
+        frame = vm_current_frame(vm);
+        ins = frame_instructions(&frame);
+        ip = frame.ip;
+        if (ip >= ins->size) {
+            #ifdef DEBUG
+            printf("Stopping VM\n");
+            #endif
+            break;
+        }
+        bytes = ins->bytes;
+
+        #ifdef DEBUG        
+        printf("Frame: %3d | IP: %3d | opcode: %s\n", vm->frame_index, ip, opcode_to_str(bytes[ip]));
+        #endif 
+                        
         enum opcode opcode = bytes[ip];
         switch (opcode) {
             case OPCODE_TRUE: 
@@ -172,7 +231,7 @@ int vm_run(struct vm *vm) {
             
             case OPCODE_CONST: {
                 int idx = read_bytes(bytes, ip+1, 2);
-                ip += 2;
+                vm->frames[vm->frame_index].ip += 2;
                 vm_stack_push(vm, vm->constants->values[idx]);   
             }
             break;
@@ -206,17 +265,17 @@ int vm_run(struct vm *vm) {
 
             case OPCODE_JUMP: {
                 int pos = read_bytes(bytes, ip+1, 2);
-                ip = pos - 1;
+                vm->frames[vm->frame_index].ip = pos - 1;
             }
             break;
 
             case OPCODE_JUMP_NOT_TRUE: {
                 int pos = read_bytes(bytes, ip+1, 2);
-                ip += 2;
+                vm->frames[vm->frame_index].ip += 2;
 
                 struct object *condition = vm_stack_pop(vm);
                 if (!is_object_truthy(condition)) {
-                    ip = pos - 1;
+                    vm->frames[vm->frame_index].ip = pos - 1;
                 } 
             }
             break;
@@ -227,20 +286,47 @@ int vm_run(struct vm *vm) {
 
             case OPCODE_SET_GLOBAL: {
                 int idx = read_bytes(bytes, ip+1, 2);
-                ip += 2;
+                vm->frames[vm->frame_index].ip += 2;
                 vm->globals->values[idx] = vm_stack_pop(vm);
             }
             break;
 
             case OPCODE_GET_GLOBAL: {
                 int idx = read_bytes(bytes, ip+1, 2);
-                ip += 2;
+                vm->frames[vm->frame_index].ip += 2;
                 vm_stack_push(vm, vm->globals->values[idx]);
             }
             break;
 
-           
+            case OPCODE_CALL: {
+                struct frame f = frame_new(vm->stack[vm->stack_pointer-1]);
+                vm_push_frame(vm, f);
+
+                // to skip incrementing the instruction pointer at the end of this loop
+                continue;
+            }
+            break;
+
+            case OPCODE_RETURN_VALUE: {
+                struct object *obj = vm_stack_pop(vm); // pop return value
+                vm_pop_frame(vm);
+                vm_stack_pop(vm); // pop the function
+
+                // push return value back on stack
+                vm_stack_push(vm, obj);
+            }
+            break;
+
+
+            case OPCODE_RETURN: {
+                vm_pop_frame(vm);
+                vm_stack_pop(vm); 
+                vm_stack_push(vm, object_null);
+            }
+            break;
         }
+
+        vm->frames[vm->frame_index].ip++;
     }
 
     return 0;
