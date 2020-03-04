@@ -22,7 +22,7 @@ void hashmap_insert(struct hashmap *hm, char *key, void *item) {
     // walk list to find existing value with that key
     while (node) {
         if (strcmp(node->key, key) == 0) {
-            free(item);
+            //free(item);
             node->value = item;
             return;
         }
@@ -83,7 +83,6 @@ struct symbol_table *symbol_table_new_enclosed(struct symbol_table *outer) {
     return t;
 }
 
-
 struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
     struct symbol *s = malloc(sizeof *s);
     if (!s) err(EXIT_FAILURE, "out of memory");
@@ -98,6 +97,20 @@ struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
     hashmap_insert(t->store, name, s);
     t->size++;
     return s;
+}
+
+
+struct symbol *symbol_table_define_function(struct symbol_table *t, char *name) {
+    struct symbol *s = malloc(sizeof *s);
+    if (!s) err(EXIT_FAILURE, "out of memory");
+
+    // TODO: Copy name? 
+    // Should only be required if we free the original program string before evaluating bytecode
+    s->name = name;
+    s->scope = SCOPE_FUNCTION;
+    s->index = 0;
+    hashmap_insert(t->store, name, s);
+    return s;    
 }
 
 struct symbol *symbol_table_resolve(struct symbol_table *t, char *name) {

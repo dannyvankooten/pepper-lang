@@ -579,6 +579,35 @@ void test_let_statement_scopes() {
     // TODO: Implement this
 }
 
+void test_recursive_functions() {
+    // struct instruction *fn_body[] = {
+    //     make_instruction(OPCODE_CURRENT_CLOSURE),
+    //     make_instruction(OPCODE_GET_LOCAL, 0),
+    //     make_instruction(OPCODE_CONST, 0),
+    //     make_instruction(OPCODE_SUBTRACT),
+    //     make_instruction(OPCODE_CALL, 1),
+    //     make_instruction(OPCODE_RETURN_VALUE),
+    // };
+    // int fn_size = 6;
+    // struct compiler_test_case t = {
+    //     .input = "let countdown = fn(x) { countDown(x-1); }; countDown(1);",
+    //     .constants = {
+    //         make_integer_object(1),
+    //         make_compiled_function_object(flatten_instructions_array(fn_body, fn_size), 0),
+    //         make_integer_object(1),
+    //     }, 3,
+    //     .instructions = {
+    //         make_instruction(OPCODE_CLOSURE, 1, 0),
+    //         make_instruction(OPCODE_SET_GLOBAL, 0),
+    //         make_instruction(OPCODE_GET_GLOBAL, 0),
+    //         make_instruction(OPCODE_CONST, 2),
+    //         make_instruction(OPCODE_CALL, 1),
+    //         make_instruction(OPCODE_POP),
+    //     }, 6,
+    // };
+    // run_compiler_test(t);
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
@@ -588,5 +617,6 @@ int main() {
     test_functions();
     test_function_calls();
     test_let_statement_scopes();
+    // test_recursive_functions();
     printf("\x1b[32mAll compiler tests passed!\033[0m\n");
 }

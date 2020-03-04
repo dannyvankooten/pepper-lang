@@ -545,6 +545,7 @@ void test_array_literal_parsing() {
 }
 
 void test_index_expression_parsing() {
+    TESTNAME(__FUNCTION__);
     char *input = "myArray[1+2];";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -567,6 +568,7 @@ void test_index_expression_parsing() {
 
 
 void test_while_expression_parsing() {
+    TESTNAME(__FUNCTION__);
     char *input = "while (x < y) { x }";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
@@ -590,6 +592,23 @@ void test_while_expression_parsing() {
     free_program(program);
 }
 
+void test_function_literal_with_name() {
+    TESTNAME(__FUNCTION__);
+
+    char *input = "let myFunction = fn() {};";
+    struct lexer lexer = {input};
+    struct parser parser = new_parser(&lexer);
+    struct program *program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(program, 1);
+
+    struct statement stmt = program->statements[0];
+    struct expression *expr = stmt.value;
+    assertf(expr->type == EXPR_FUNCTION, "invalid statement type: expected %d, got %d\n", EXPR_FUNCTION, stmt.type);
+    assertf(strcmp(expr->function.name, "myFunction") == 0, "wrong function name: expected myFunction, got %s", expr->function.name);
+
+}
+
 int main() {
     test_let_statements();
     test_return_statements();
@@ -608,5 +627,6 @@ int main() {
     test_array_literal_parsing();
     test_index_expression_parsing();
     test_while_expression_parsing();
+    test_function_literal_with_name();
     printf("\x1b[32mAll parsing tests passed!\033[0m\n");
 }

@@ -3,6 +3,10 @@
 #include <err.h>
 #include "vm.h"
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif 
+
 #define VM_ERR_INVALID_OP_TYPE 1
 #define VM_ERR_INVALID_INT_OPERATOR 2
 #define VM_ERR_OUT_OF_BOUNDS 3
@@ -17,7 +21,7 @@ struct frame frame_new(struct object *obj, size_t bp) {
     };
 
     #ifdef DEBUG
-    printf("Creating frame with instructions size %d\n", obj->value.compiled_function->size);
+    printf("Creating frame with instructions size %ld\n", obj->value.compiled_function.instructions->size);
     #endif
     return f;
 }
@@ -69,7 +73,7 @@ struct object *vm_stack_pop(struct vm *vm) {
 
     struct object *obj = vm->stack[--vm->stack_pointer];
     #ifdef DEBUG 
-    printf("Popping object of type %s from stack position %d\n", object_type_to_str(obj->type), vm->stack_pointer);
+    printf("Popping object of type %s from stack position %ld\n", object_type_to_str(obj->type), vm->stack_pointer);
     #endif
     return obj;
 }
@@ -81,7 +85,7 @@ int vm_stack_push(struct vm *vm, struct object *obj) {
     }
 
     #ifdef DEBUG 
-    printf("Pushing object of type %s to stack position %d\n", object_type_to_str(obj->type), vm->stack_pointer);
+    printf("Pushing object of type %s to stack position %ld\n", object_type_to_str(obj->type), vm->stack_pointer);
     #endif
 
     vm->stack[vm->stack_pointer++] = obj;
@@ -196,7 +200,7 @@ int vm_run(struct vm *vm) {
     struct instruction *ins;
 
     #ifdef DEBUG
-    printf("Running VM: %s\n", instruction_to_str(vm->frames[0].fn->value.compiled_function));
+    printf("Running VM: %s\n", instruction_to_str(vm->frames[0].fn->value.compiled_function.instructions));
     #endif
 
     while (1) {
@@ -212,7 +216,7 @@ int vm_run(struct vm *vm) {
         bytes = ins->bytes;
 
         #ifdef DEBUG        
-        printf("Frame: %3d | IP: %3d | opcode: %s\n", vm->frame_index, ip, opcode_to_str(bytes[ip]));
+        printf("Frame: %3ld | IP: %3d | opcode: %s\n", vm->frame_index, ip, opcode_to_str(bytes[ip]));
         #endif 
                         
         enum opcode opcode = bytes[ip];
@@ -314,7 +318,7 @@ int vm_run(struct vm *vm) {
             case OPCODE_RETURN_VALUE: {
                 struct object *obj = vm_stack_pop(vm); // pop return value
                 struct frame f = vm_pop_frame(vm);
-                vm_stack_pop(vm); // pop the function
+                //vm_stack_pop(vm); // pop the function
 
                 vm->stack_pointer = f.base_pointer - 1;
 

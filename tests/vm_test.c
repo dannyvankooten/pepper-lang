@@ -273,14 +273,30 @@ void test_fib() {
     char *input = "              \
         let fibonacci = fn(x) {  \
             if (x < 2) {         \
-                x                \
+                return x;        \
             }                    \
             return fibonacci(x-1) + fibonacci(x-2); \
         };                      \
-        fibonacci(20)";
-    int expected = 6765;
+        fibonacci(8)";
+    int expected = 21;
     struct object *obj = run_vm_test(input);
     test_object(obj, OBJ_INT, (union object_value) { .integer = expected });    
+}
+
+void test_recursive_functions() {
+    TESTNAME(__FUNCTION__);
+    struct {
+        char *input;
+        int expected;
+    } tests[] = {
+        {"let countdown = fn(x) { if (x == 0) { return 0; } else { countdown(x-1); } }; countdown(3);", 0},
+        {"let countdown = fn(x) { if (x < 0) { return 0; } countdown(x-1) + countdown(x-2); }; countdown(3);", 0},
+    };
+    
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object *obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
 }
 
 int main() {
@@ -294,6 +310,7 @@ int main() {
     test_first_class_functions();
     test_function_calls_with_bindings();
     test_function_calls_with_args_and_bindings();
-   // test_fib();
+    test_recursive_functions();
+    test_fib();
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 }

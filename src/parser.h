@@ -94,6 +94,7 @@ struct if_expression {
 };
 
 struct function_literal {
+    char name[MAX_IDENT_LENGTH];
     struct identifier_list parameters;
     struct block_statement *body;
 };

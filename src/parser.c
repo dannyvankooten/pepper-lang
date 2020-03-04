@@ -86,6 +86,9 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     // parse expression
     next_token(p);
     s->value = parse_expression(p, LOWEST);
+    if (s->value->type == EXPR_FUNCTION) {
+        strcpy(s->value->function.name, s->name.value);
+    } 
     if (next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
     }
@@ -459,7 +462,7 @@ struct expression *parse_function_literal(struct parser *p) {
         free(expr);
         return NULL;
     }
-
+    strcpy(expr->function.name, "");
     expr->function.parameters = parse_function_parameters(p);
     if (!expect_next_token(p, TOKEN_LBRACE)) {
         free(expr);
@@ -706,6 +709,12 @@ void expression_to_str(char *str, struct expression *expr) {
 
         case EXPR_FUNCTION:
             strcat(str, expr->token.literal);
+
+            if (strlen(expr->function.name)) {
+                strcat(str, "<");
+                strcat(str, expr->function.name);
+                strcat(str, ">");
+            }
             strcat(str, "(");
             identifier_list_to_str(str, &expr->function.parameters);
             strcat(str, ") ");

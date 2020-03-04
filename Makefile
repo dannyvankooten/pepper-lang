@@ -1,5 +1,5 @@
 CFLAGS+= -std=c11 -Wall -Isrc/ -g 
-TESTFLAGS= $(CFLAGS) 
+TESTFLAGS= $(CFLAGS) -DDEBUG
 LIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH = src

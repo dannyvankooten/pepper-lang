@@ -164,18 +164,17 @@ compile_statement(struct compiler *c, struct statement *stmt) {
         break;
 
         case STMT_LET: {
+            struct symbol *s = symbol_table_define(c->symbol_table, stmt->name.value);
             err = compile_expression(c, stmt->value);
             if (err) return err;
-
-            struct symbol *s = symbol_table_define(c->symbol_table, stmt->name.value);
             compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_SET_GLOBAL : OPCODE_SET_LOCAL, s->index);
         }
         break;
 
         case STMT_RETURN: {
-                err = compile_expression(c, stmt->value);
-                if (err) return err;
-                compiler_emit(c, OPCODE_RETURN_VALUE);
+            err = compile_expression(c, stmt->value);
+            if (err) return err;
+            compiler_emit(c, OPCODE_RETURN_VALUE);
         }
         break;
     }
@@ -313,6 +312,10 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
         case EXPR_FUNCTION: {
             compiler_enter_scope(c);
+
+            // if (strlen(expr->function.name) > 0) {
+            //     symbol_table_define_function(c->symbol_table, expr->function.name);
+            // }
 
             for (int i=0; i < expr->function.parameters.size; i++) {
                 symbol_table_define(c->symbol_table, expr->function.parameters.values[i].value);

@@ -78,9 +78,49 @@ void test_resolve_local() {
     symbol_table_free(global);
 }
 
+void test_define_and_resolve_function_name() {
+    TESTNAME(__FUNCTION__);
+
+    struct symbol_table *g = symbol_table_new();
+    symbol_table_define_function(g, "a");
+    struct symbol expected = {
+        .name = "a",
+        .scope = SCOPE_FUNCTION,
+        .index = 0,
+    };
+
+    struct symbol *s = symbol_table_resolve(g, "a");
+    assertf(s != NULL, "expected symbol, got NULL");
+    assertf(strcmp(s->name, expected.name) == 0, "wrong name: expected %s, got %s", expected.name, s->name);
+    assertf(s->index == expected.index, "wrong index: expected %d, got %d", expected.index, s->index);
+    assertf(s->scope == expected.scope, "wrong scope: expected %d, got %d", expected.scope, s->scope);
+}
+
+void test_shadowing_function_name() {
+    TESTNAME(__FUNCTION__);
+
+    struct symbol_table *g = symbol_table_new();
+    symbol_table_define_function(g, "a");
+    symbol_table_define(g, "a");
+    
+    struct symbol expected = {
+        .name = "a",
+        .scope = SCOPE_GLOBAL,
+        .index = 0,
+    };
+
+    struct symbol *s = symbol_table_resolve(g, "a");
+    assertf(s != NULL, "expected symbol, got NULL");
+    assertf(strcmp(s->name, expected.name) == 0, "wrong name: expected %s, got %s", expected.name, s->name);
+    assertf(s->index == expected.index, "wrong index: expected %d, got %d", expected.index, s->index);
+    assertf(s->scope == expected.scope, "wrong scope: expected %d, got %d", expected.scope, s->scope);
+}
+
 int main() {
     test_define();
     test_resolve_global();
     test_resolve_local();
+    test_define_and_resolve_function_name();
+    test_shadowing_function_name();
     printf("\x1b[32mAll symbol table tests passed!\033[0m\n");
 }

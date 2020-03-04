@@ -37,6 +37,7 @@ int repl() {
 
     while (1)
     {
+        // TODO: Mock this
         char *input = readline("monkey> ");
         add_history(input);
 
@@ -105,18 +106,31 @@ int run_script(char *filename) {
         exit(1);
     }
 
-    struct environment *env = make_environment(26);
-    struct object *obj = eval_program(program, env);
+    struct compiler *compiler = compiler_new();
+    int err = compile_program(compiler, program);
+    if (err) {
+        puts(compiler_error_str(err));
+        return EXIT_FAILURE;
+    }
+
+    struct bytecode *code = get_bytecode(compiler);
+    struct vm *machine = vm_new(code);
+    err = vm_run(machine);
+    if (err) {
+        printf("Error executing bytecode: %d\n", err);
+        return EXIT_FAILURE;
+    }
+
     char output[256];
     output[0] = '\0';
+    struct object *obj = vm_stack_last_popped(machine);
     if (obj != object_null && obj->type != OBJ_BUILTIN && obj->type != OBJ_FUNCTION) {
         object_to_str(output, obj);
         printf("%s\n", output);
     }
 
     free_program(program);
-    free_environment(env);
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int main(int argc, char *argv[]) {

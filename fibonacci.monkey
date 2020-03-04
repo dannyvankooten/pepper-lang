@@ -6,4 +6,4 @@ let fibonacci = fn(x) {
     return fibonacci(x - 1) + fibonacci(x - 2);
 }
 
-puts("Fibonacci #35 is ", fibonacci(35));
+fibonacci(35);
