@@ -58,6 +58,8 @@ void run_compiler_test(struct compiler_test_case t) {
         test_object(t.constants[i], bytecode->constants->values[i]);
     }
 
+    // TODO: Free objects
+
     free(concatted_str);
     free(bytecode_str);
     free(bytecode);
@@ -469,12 +471,58 @@ void test_compiler_scopes() {
     compiler_free(compiler);
 }
 
+void test_function_calls() {
+    TESTNAME(__FUNCTION__);
+
+    {
+        struct instruction *fn_body[] = {
+            make_instruction(OPCODE_CONST, 0),
+            make_instruction(OPCODE_RETURN_VALUE),
+        };
+        struct compiler_test_case t = {
+            .input = "fn() { 24 }();",
+            .constants = {
+                make_integer_object(24),
+                make_compiled_function_object(flatten_instructions_array(fn_body, 2)),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_CALL),
+                make_instruction(OPCODE_POP),
+            }, 3,
+        };
+        run_compiler_test(t);
+   }
+   {
+        struct instruction *fn_body[] = {
+            make_instruction(OPCODE_CONST, 0),
+            make_instruction(OPCODE_RETURN_VALUE),
+        };
+        struct compiler_test_case t = {
+            .input = "let noArg = fn() { 24 }; noArg();",
+            .constants = {
+                make_integer_object(24),
+                make_compiled_function_object(flatten_instructions_array(fn_body, 2)),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CALL),
+                make_instruction(OPCODE_POP),
+            }, 5,
+        };
+        run_compiler_test(t);
+   }
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
     test_conditionals();
     test_global_let_statements();
-    test_functions();
     test_compiler_scopes();
+    test_functions();
+    test_function_calls();
     printf("\x1b[32mAll compiler tests passed!\033[0m\n");
 }

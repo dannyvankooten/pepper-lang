@@ -328,6 +328,14 @@ compile_expression(struct compiler *c, struct expression *expr) {
         }
         break;
 
+        case EXPR_CALL: {
+            err = compile_expression(c, expr->call.function);
+            if (err) return err;
+
+            compiler_emit(c, OPCODE_CALL);
+        }
+        break;
+
         default:
             return COMPILE_ERR_UNKNOWN_EXPR_TYPE;
         break;
