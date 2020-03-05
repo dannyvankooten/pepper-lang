@@ -1,12 +1,12 @@
 CFLAGS+= -std=c11 -Wall -Isrc/ -g 
-TESTFLAGS= $(CFLAGS) -DDEBUG
+TESTFLAGS= $(CFLAGS)
 LIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH = src
 LEXER_SRC= lexer.c token.c
 PARSER_SRC= parser.c $(LEXER_SRC)
-EVAL_SRC= eval.c object.c env.c builtins.c $(PARSER_SRC)
-COMPILER_SRC= opcode.c compiler.c object.c symbol_table.c $(PARSER_SRC)
+EVAL_SRC= eval.c object.c env.c builtins.c opcode.c $(PARSER_SRC)
+COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c $(PARSER_SRC)
 VM_SRC= vm.c opcode.c object.c symbol_table.c $(PARSER_SRC)
 PREFIX = /usr/local
 

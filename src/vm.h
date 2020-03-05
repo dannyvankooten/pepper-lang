@@ -8,31 +8,33 @@
 #include "object.h"
 
 struct frame {
-    struct object *fn;
+    struct compiled_function fn;
     size_t ip;
     size_t base_pointer;
 };
 
 struct vm {
-    struct object_list *constants;
-    struct object_list *globals;
-
     struct frame frames[STACK_SIZE];
     size_t frame_index;
     
-    // TODO: Should we store values on the stack?
-    struct object *stack[STACK_SIZE];
+    struct object constants[STACK_SIZE];
+    struct object globals[STACK_SIZE];
+    struct object stack[STACK_SIZE];
     size_t stack_pointer;
 };
 
+const struct object obj_null;
+const struct object obj_true;
+const struct object obj_false;
+
 struct vm *vm_new(struct bytecode *bc);
-struct vm *vm_new_with_globals(struct bytecode *bc, struct object_list *globals);
+struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_SIZE]);
 int vm_run(struct vm *vm);
-struct object *vm_stack_last_popped(struct vm *vm);
-struct object *vm_stack_pop(struct vm *vm);
+struct object vm_stack_last_popped(struct vm *vm);
+struct object vm_stack_pop(struct vm *vm);
 void vm_free(struct vm *vm);
 
-struct frame frame_new(struct object *obj, size_t bp);
+struct frame frame_new(struct object obj, size_t bp);
 struct instruction *frame_instructions(struct frame *f);
 
 #endif 

@@ -380,13 +380,15 @@ void compiler_enter_scope(struct compiler *c) {
     c->symbol_table = symbol_table_new_enclosed(c->symbol_table);
 }
 
-struct instruction *compiler_leave_scope(struct compiler *c) {
+struct instruction *
+compiler_leave_scope(struct compiler *c) {
     struct instruction *ins = c->scopes[c->scope_index].instructions;
 
-    // TODO: Free scope
-    // free(c->scopes[c->scope_index].instructions->bytes);
-    // free(c->scopes[c->scope_index].instructions);
+    //free(c->scopes[c->scope_index].instructions->bytes);
+    //free(c->scopes[c->scope_index].instructions);
+    struct symbol_table *t = c->symbol_table;
     c->symbol_table = c->symbol_table->outer;
+    symbol_table_free(t);
 
     c->scope_index--;
     return ins;

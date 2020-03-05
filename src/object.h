@@ -33,7 +33,7 @@ struct function {
 };
 
 struct compiled_function {
-    struct instruction *instructions;
+    struct instruction instructions;
     unsigned int num_locals;
 };
 
@@ -53,7 +53,7 @@ union object_value {
     struct function function;
     struct object *(*builtin)(struct object_list *);
     struct object_list *array;
-    struct compiled_function compiled_function;
+    struct compiled_function *compiled_function;
 };
 
 struct object

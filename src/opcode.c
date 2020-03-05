@@ -148,7 +148,7 @@ char *instruction_to_str(struct instruction *ins) {
         size_t bytes_read = read_operands(operands, def, ins, i);
         
         if (i > 0) {
-            strcat(buffer, "\n");
+            strcat(buffer, " | ");
         }
 
         char str[512];

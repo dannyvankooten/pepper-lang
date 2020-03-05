@@ -47,7 +47,7 @@ void test_instruction_string() {
         make_instruction(OPCODE_CONST, 65535)
     };
 
-    char *expected_str = "0000 OpAdd\n0001 OpGetLocal 1\n0003 OpConstant 2\n0006 OpConstant 65535";
+    char *expected_str = "0000 OpAdd | 0001 OpGetLocal 1 | 0003 OpConstant 2 | 0006 OpConstant 65535";
     struct instruction *ins = flatten_instructions_array(instructions, 4);
     char *str = instruction_to_str(ins);
     assertf(strcmp(expected_str, str) == 0, "wrong instruction string: expected \"%s\", got \"%s\"", expected_str, str);

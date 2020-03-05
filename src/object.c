@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stdio.h> 
 
+#include "opcode.h"
 #include "object.h"
 #include "parser.h"
 
@@ -148,8 +149,9 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
 
 struct object *make_compiled_function_object(struct instruction *ins, unsigned int num_locals) {
     struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
-    obj->value.compiled_function.num_locals = num_locals;
-    obj->value.compiled_function.instructions = ins;
+    obj->value.compiled_function = malloc(sizeof *obj->value.compiled_function);
+    obj->value.compiled_function->num_locals = num_locals;
+    obj->value.compiled_function->instructions = *ins;
     return obj;
 }   
 
@@ -220,6 +222,10 @@ void free_object(struct object *obj)
             // free_environment(obj->function.env);
             // obj->function.env = NULL;
             break;
+
+        case OBJ_COMPILED_FUNCTION: 
+            free(obj->value.compiled_function);
+        break;
 
        default:
            // nothing special
@@ -324,7 +330,7 @@ void object_to_str(char *str, struct object *obj)
         break;
 
     case OBJ_COMPILED_FUNCTION: 
-        strcat(str, "CompiledFunction[...]");
+        strcat(str, instruction_to_str(&obj->value.compiled_function->instructions));
         break;
     }
 }

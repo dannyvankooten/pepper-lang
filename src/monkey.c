@@ -33,11 +33,14 @@ int repl() {
 
     struct symbol_table *symbol_table = symbol_table_new();
     struct object_list *constants = make_object_list(128);
-    struct object_list *globals = make_object_list(128);
+    
+    struct object globals[STACK_SIZE];
+    for (int i = 0; i < STACK_SIZE; i++) {
+        globals[i] = obj_null;
+    }
 
     while (1)
     {
-        // TODO: Mock this
         char *input = readline("monkey> ");
         add_history(input);
 
@@ -71,20 +74,20 @@ int repl() {
             continue;
         }
 
-        struct object *obj = vm_stack_last_popped(machine);
-        if (obj->type != OBJ_BUILTIN && obj->type != OBJ_FUNCTION) {
-            object_to_str(output, obj);
+        struct object obj = vm_stack_last_popped(machine);
+        if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION) {
+            object_to_str(output, &obj);
             printf("%s\n", output);
         }
        
         // clear output buffer
         output[0] = '\0';
 
-        free_program(program);
-        // TODO: Free compiler & VM here
-        // Can't right now because we re-use constants, symbol table & globals
-        // compiler_free(compiler);
-        // vm_free(vm);
+        // copy globals out of VM so we can re-use it next iteration
+        for (int i=0; i < STACK_SIZE; i++) {
+            globals[i] = machine->globals[i];
+        }
+
         free(input);
     }
 
@@ -123,9 +126,9 @@ int run_script(char *filename) {
 
     char output[256];
     output[0] = '\0';
-    struct object *obj = vm_stack_last_popped(machine);
-    if (obj != object_null && obj->type != OBJ_BUILTIN && obj->type != OBJ_FUNCTION) {
-        object_to_str(output, obj);
+    struct object obj = vm_stack_last_popped(machine);
+    if (obj.type == OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION) {
+        object_to_str(output, &obj);
         printf("%s\n", output);
     }
 
