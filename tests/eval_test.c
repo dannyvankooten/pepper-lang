@@ -12,8 +12,8 @@ void test_environment() {
     struct environment *env = make_environment();
 
     // set
-    struct object o1 = {.value = 1 };
-    struct object o2 = {.value = 2};
+    struct object o1 = {.value = { .integer = 1} };
+    struct object o2 = {.value = { .integer = 2} };
 
     environment_set(env, "foo", &o1);
     environment_set(env, "bar", &o2);

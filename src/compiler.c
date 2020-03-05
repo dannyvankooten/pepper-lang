@@ -56,10 +56,10 @@ struct instruction *compiler_current_instructions(struct compiler *c) {
     return scope.instructions;
 }
 
-size_t 
+unsigned int 
 add_instruction(struct compiler *c, struct instruction *ins) {
     struct instruction *cins = compiler_current_instructions(c);
-    size_t pos = cins->size;
+    unsigned int pos = cins->size;
 
     /* TODO: Use capacity here so we don't need to realloc on every new addition */
     cins->bytes = realloc(cins->bytes, (cins->size + ins->size ) * sizeof(*cins->bytes));
@@ -70,14 +70,14 @@ add_instruction(struct compiler *c, struct instruction *ins) {
     return pos;
 }
 
-size_t 
+unsigned int 
 add_constant(struct compiler *c, struct object *obj) {
     // TODO: Dereference here?
     c->constants->values[c->constants->size++] = obj;
     return c->constants->size - 1;
 }
 
-void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, size_t pos) {
+void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, unsigned int pos) {
     struct emitted_instruction previous = compiler_current_scope(c).last_instruction;
     struct emitted_instruction last = {
         .position = pos,
@@ -93,7 +93,7 @@ void compiler_remove_last_instruction(struct compiler *c) {
     c->scopes[c->scope_index].last_instruction = c->scopes[c->scope_index].previous_instruction;
 }
 
-void compiler_replace_instruction(struct compiler *c, size_t pos, struct instruction *ins) {
+void compiler_replace_instruction(struct compiler *c, unsigned int pos, struct instruction *ins) {
     for (int i=0; i < ins->size; i++) {
         c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
@@ -113,18 +113,18 @@ bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode) {
     return c->scopes[c->scope_index].last_instruction.opcode == opcode;
 }
 
-void compiler_change_operand(struct compiler *c, size_t pos, int operand) {
+void compiler_change_operand(struct compiler *c, unsigned int pos, int operand) {
     enum opcode opcode = c->scopes[c->scope_index].instructions->bytes[pos];
     struct instruction *new = make_instruction(opcode, operand);
     compiler_replace_instruction(c, pos, new);
 }
 
-size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
+unsigned int compiler_emit(struct compiler *c, enum opcode opcode, ...) {
     va_list args;
     va_start(args, opcode);
     struct instruction *ins = make_instruction_va(opcode, args);
     va_end(args);
-    size_t pos = add_instruction(c, ins);
+    unsigned int pos = add_instruction(c, ins);
     compiler_set_last_instruction(c, opcode, pos);
     return pos;
 }
@@ -259,7 +259,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
             if (err) return err;
 
             /* we don't know where to jump yet, so we use 9999 as placeholder */
-            size_t jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
+            unsigned int jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
 
             err = compile_block_statement(c, expr->ifelse.consequence);
             if (err) { return err; }
@@ -268,8 +268,8 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_remove_last_instruction(c);
             }
 
-            size_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
-            size_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
+            unsigned int jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
+            unsigned int after_conseq_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
 
             if (expr->ifelse.alternative) {
@@ -283,7 +283,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_emit(c, OPCODE_NULL);
             }
 
-            size_t after_alternative_pos = c->scopes[c->scope_index].instructions->size;
+            unsigned int after_alternative_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_pos, after_alternative_pos);
         }
         break;

@@ -7,9 +7,9 @@
 #define MAX_OP_SIZE 16
 
 enum opcode {
-    OPCODE_CONST = 1,
-    OPCODE_ADD,
+    OPCODE_CONST = 0,
     OPCODE_POP,
+    OPCODE_ADD,
     OPCODE_SUBTRACT,
     OPCODE_MULTIPLY,
     OPCODE_DIVIDE,
@@ -35,14 +35,14 @@ enum opcode {
 
 struct definition {
     char name[64];
-    size_t operands;
+    unsigned int operands;
     int operand_widths[MAX_OP_SIZE];
 };
 
 struct instruction {
     unsigned char *bytes;
-    size_t cap;
-    size_t size;
+    unsigned int cap;
+    unsigned int size;
 };
 
 struct bytecode {
@@ -55,8 +55,9 @@ struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, ...);
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands);
 void free_instruction(struct instruction *ins);
-struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size);
+struct instruction *flatten_instructions_array(struct instruction *arr[], unsigned int size);
 char *instruction_to_str(struct instruction *ins);
-size_t read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, size_t offset);
-int read_bytes(unsigned char *bytes, size_t offset, size_t len);
+unsigned int read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, unsigned int offset);
+int read_bytes(unsigned char *bytes, unsigned int offset, unsigned int len);
+
 #endif

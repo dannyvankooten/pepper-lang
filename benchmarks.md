@@ -32,3 +32,16 @@ sys	0m0.040s
 **2020-02-26 11:21** (fib 35)
 4.27user 0.00system 0:04.30elapsed 99%CPU (0avgtext+0avgdata 1560maxresident)k
 0inputs+0outputs (0major+78minor)pagefaults 0swaps
+
+**2020-03-05 14:10** (fib 35, VM)
+3.38user 0.00system 0:03.39elapsed 99%CPU (0avgtext+0avgdata 2020maxresident)k
+0inputs+0outputs (0major+125minor)pagefaults 0swaps
+
+**2020-03-05 14:11** (fib 40, VM)
+38.57user 0.01system 0:38.64elapsed 99%CPU (0avgtext+0avgdata 2072maxresident)k
+0inputs+0outputs (0major+130minor)pagefaults 0swaps
+
+**2020-03-05 15:07** (fib 35)
+3.15user 0.00system 0:03.16elapsed 99%CPU (0avgtext+0avgdata 2312maxresident)k
+0inputs+0outputs (0major+182minor)pagefaults 0swaps
+

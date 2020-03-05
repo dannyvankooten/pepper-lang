@@ -309,7 +309,7 @@ int main() {
     test_first_class_functions();
     test_function_calls_with_bindings();
     test_function_calls_with_args_and_bindings();
-    // test_recursive_functions();
+    test_recursive_functions();
     test_fib();
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 }

@@ -11,10 +11,10 @@ struct definition definitions[] = {
         "OpConstant", 1, {2}
     },
     {
-        "OpAdd", 0, {0}
+        "OpPop", 0, {0}
     },
     {
-        "OpPop", 0, {0}
+        "OpAdd", 0, {0}
     },
     {
         "OpSubtract", 0, {0}
@@ -82,11 +82,11 @@ struct definition definitions[] = {
 };
 
 char *opcode_to_str(enum opcode opcode) {
-    return definitions[opcode - 1].name;
+    return definitions[opcode].name;
 }
 
 struct definition lookup(enum opcode opcode) {
-    return definitions[opcode - 1];
+    return definitions[opcode];
 }
 
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
@@ -122,7 +122,7 @@ void free_instruction(struct instruction *ins) {
     free(ins);
 }
 
-struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size) {
+struct instruction *flatten_instructions_array(struct instruction *arr[], unsigned int size) {
     struct instruction *ins = arr[0];
     for (int i = 1; i < size; i++) {
 
@@ -145,7 +145,7 @@ char *instruction_to_str(struct instruction *ins) {
 
     for (int i=0; i < ins->size; i++) {
         struct definition def = lookup(ins->bytes[i]);
-        size_t bytes_read = read_operands(operands, def, ins, i);
+        unsigned int bytes_read = read_operands(operands, def, ins, i);
         
         if (i > 0) {
             strcat(buffer, " | ");
@@ -171,9 +171,9 @@ char *instruction_to_str(struct instruction *ins) {
     return buffer;
 }
 
-int read_bytes(unsigned char *bytes, size_t offset, size_t len) {
+int read_bytes(unsigned char *bytes, unsigned int offset, unsigned int len) {
     int sum = 0;
-    int shift = (len - 1) * 8;
+    int shift = (len - 1) << 3;
 
     for (int i = 0; i < len; i++) {
         sum += bytes[offset+i] << shift;
@@ -183,8 +183,8 @@ int read_bytes(unsigned char *bytes, size_t offset, size_t len) {
     return sum;
 }
 
-size_t read_operands(int *dest, struct definition def, struct instruction *ins, size_t offset) {
-    size_t bytes_read = 0;
+unsigned int read_operands(int *dest, struct definition def, struct instruction *ins, unsigned int offset) {
+    unsigned int bytes_read = 0;
 
     // skip opcode
     offset += 1;
