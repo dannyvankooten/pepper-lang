@@ -171,14 +171,6 @@ char *instruction_to_str(struct instruction *ins) {
     return buffer;
 }
 
-// uint8_t read_uint8(uint8_t *bytes) {
-//     return bytes[0];
-// }
-
-// uint16_t read_uint16(uint8_t *bytes) {
-//     return (bytes[0] << 8) + bytes[1];
-// }
-
 int read_bytes(uint8_t *bytes, unsigned int len) {
     switch (len) {
         case 1: return read_uint8(bytes);
