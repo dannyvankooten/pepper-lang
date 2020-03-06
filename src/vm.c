@@ -235,10 +235,37 @@ int vm_run(struct vm *vm) {
     /* tmp values used in switch cases */
     int err, idx, pos, num_args;
 
-    // static const void *dispatch_table[] = {
-    //     &&GOTO_OPCODE_CONST,
-    //     &&GOTO_FALLBACK,
-    // };
+    static const void *dispatch_table[] = {
+        &&GOTO_OPCODE_CONST,
+        &&GOTO_OPCODE_POP,
+        &&GOTO_OPCODE_ADD,
+        &&GOTO_OPCODE_SUBTRACT,
+        &&GOTO_OPCODE_MULTIPLY,
+        &&GOTO_OPCODE_DIVIDE,
+        &&GOTO_OPCODE_TRUE,
+        &&GOTO_OPCODE_FALSE,
+        &&GOTO_OPCODE_EQUAL,
+        &&GOTO_OPCODE_NOT_EQUAL,
+        &&GOTO_OPCODE_GREATER_THAN,
+        &&GOTO_OPCODE_LESS_THAN,
+        &&GOTO_OPCODE_MINUS,
+        &&GOTO_OPCODE_BANG,
+        &&GOTO_OPCODE_JUMP,
+        &&GOTO_OPCODE_JUMP_NOT_TRUE,
+        &&GOTO_OPCODE_NULL,
+        &&GOTO_OPCODE_GET_GLOBAL,
+        &&GOTO_OPCODE_SET_GLOBAL,
+        &&GOTO_OPCODE_CALL,
+        &&GOTO_OPCODE_RETURN_VALUE,
+        &&GOTO_OPCODE_RETURN,
+        &&GOTO_OPCODE_GET_LOCAL,
+        &&GOTO_OPCODE_SET_LOCAL,
+    };
+
+    #define DISPATCH()                   \
+        if (ip >= ip_max) { return 0; }  \
+        opcode = bytes[ip];              \
+        goto *dispatch_table[opcode];    \
 
     #ifdef DEBUG
     char str[512];
@@ -256,16 +283,10 @@ int vm_run(struct vm *vm) {
     ip = active_frame->ip;
     ip_max = active_frame->fn.instructions.size;
 
-    while (1) {
-        if (ip >= ip_max) {
-            #ifdef DEBUG
-            printf("Stopping VM\n");
-            #endif
-            break;
-        }
+   
+     #ifdef DEBUG
+     while (1) {    
         opcode = bytes[ip];
-
-        #ifdef DEBUG
         printf("\nFrame: %2ld | IP: %3d/%ld | opcode: %16s | operand: ", vm->frame_index, ip, active_frame->fn.instructions.size - 1, opcode_to_str(bytes[ip]));
         struct definition def = lookup(opcode);
         if (def.operands > 0) {
@@ -289,148 +310,145 @@ int vm_run(struct vm *vm) {
         }
         #endif 
 
-        // goto *dispatch_table[opcode];
+        // intitial dispatch
+        DISPATCH();
 
-        // GOTO_OPCODE_CONST: 
-        //     idx = read_uint16((bytes + ip + 1));
-        //     ip += 3;
-        //     vm_stack_push(vm, vm->constants[idx]);  
+        GOTO_OPCODE_CONST:
+            idx = read_uint16((bytes + ip + 1));
+            ip += 3;
+            vm_stack_push(vm, vm->constants[idx]);   
+            DISPATCH();
 
-        // GOTO_FALLBACK:
-                        
-        switch (opcode) {
-            case OPCODE_CONST:
-                idx = read_uint16((bytes + ip + 1));
-                ip += 3;
-                vm_stack_push(vm, vm->constants[idx]);   
-                continue;
+        GOTO_OPCODE_POP:
+            vm_stack_pop(vm);
+            ip++;
+            DISPATCH();
+        
+        GOTO_OPCODE_CALL: 
+            num_args = read_uint8((bytes + ip + 1));
+            struct object fn = vm->stack[vm->stack_pointer - 1 - num_args];
+            struct frame f = frame_new(fn, vm->stack_pointer - num_args);
+            active_frame->ip = ip + 1;
+            vm_push_frame(vm, f);
+            active_frame = &vm->frames[vm->frame_index];
+            bytes = active_frame->fn.instructions.bytes;
+            ip_max = active_frame->fn.instructions.size;
+            ip = active_frame->ip;
+            vm->stack_pointer = f.base_pointer + f.fn.num_locals;
+            DISPATCH();
 
-            case OPCODE_POP:
-                vm_stack_pop(vm);
-                break;
-            
-            case OPCODE_CALL: {
-                num_args = read_uint8((bytes + ip + 1));
-                struct object fn = vm->stack[vm->stack_pointer - 1 - num_args];
-                struct frame f = frame_new(fn, vm->stack_pointer - num_args);
-                active_frame->ip = ip + 1;
-                vm_push_frame(vm, f);
-                active_frame = &vm->frames[vm->frame_index];
-                bytes = active_frame->fn.instructions.bytes;
-                ip_max = active_frame->fn.instructions.size;
-                ip = active_frame->ip;
-                vm->stack_pointer = f.base_pointer + f.fn.num_locals;
-                continue;
-            }
-            break;
+        GOTO_OPCODE_JUMP:
+            pos = read_uint16((bytes + ip + 1));
+            ip = pos;
+            DISPATCH();
 
-            case OPCODE_JUMP:
-                pos = read_uint16((bytes + ip + 1));
+        GOTO_OPCODE_JUMP_NOT_TRUE: 
+            pos = read_uint16((bytes + ip + 1));
+            ip += 3;
+
+            struct object condition = vm_stack_pop(vm);
+            if (condition.type == OBJ_NULL || (condition.type == OBJ_BOOL && condition.value.boolean == false)) {
                 ip = pos;
-                continue;
+            } 
+            DISPATCH();
 
-            case OPCODE_JUMP_NOT_TRUE: {
-                pos = read_uint16((bytes + ip + 1));
-                ip += 3;
+        GOTO_OPCODE_SET_GLOBAL: 
+            idx = read_uint16((bytes + ip + 1));
+            ip += 3;
+            vm->globals[idx] = vm_stack_pop(vm);
+            DISPATCH();
 
-                struct object condition = vm_stack_pop(vm);
-                if (condition.type == OBJ_NULL || (condition.type == OBJ_BOOL && condition.value.boolean == false)) {
-                    ip = pos;
-                } 
-                continue;
-            }
-            break;
+        GOTO_OPCODE_GET_GLOBAL: 
+            idx = read_uint16((bytes + ip + 1));
+            ip += 3;
+            vm_stack_push(vm, vm->globals[idx]);
+            DISPATCH();
 
-             case OPCODE_SET_GLOBAL: 
-                idx = read_uint16((bytes + ip + 1));
-                ip += 3;
-                vm->globals[idx] = vm_stack_pop(vm);
-                continue;
-
-            case OPCODE_GET_GLOBAL: 
-                idx = read_uint16((bytes + ip + 1));
-                ip += 3;
-                vm_stack_push(vm, vm->globals[idx]);
-                continue;
-
-            case OPCODE_RETURN_VALUE: {
-                struct object obj = vm_stack_pop(vm); // pop return value
-                struct frame f = vm_pop_frame(vm);
-                active_frame = &vm->frames[vm->frame_index];
-                bytes = active_frame->fn.instructions.bytes;
-                ip_max = active_frame->fn.instructions.size;
-                ip = active_frame->ip;
-                vm->stack_pointer = f.base_pointer - 1;
-                vm_stack_push(vm, obj);
-            }
-            break;
-
-            case OPCODE_RETURN: {
-                struct frame f = vm_pop_frame(vm);
-                active_frame = &vm->frames[vm->frame_index];
-                ip = active_frame->ip;
-                ip_max = active_frame->fn.instructions.size;
-                bytes = active_frame->fn.instructions.bytes;
-                vm->stack_pointer = f.base_pointer - 1;
-                vm_stack_push(vm, obj_null);
-            }
-            break;
-
-            case OPCODE_SET_LOCAL:
-                idx = read_uint8((bytes + ip + 1));
-                ip += 2;
-                vm->stack[active_frame->base_pointer + idx] = vm_stack_pop(vm);
-                continue;
-
-            case OPCODE_GET_LOCAL: 
-                idx = read_uint8((bytes + ip + 1));
-                ip += 2;
-                vm_stack_push(vm, vm->stack[active_frame->base_pointer + idx]);
-                continue;
-
-            case OPCODE_ADD:
-            case OPCODE_SUBTRACT:
-            case OPCODE_MULTIPLY:
-            case OPCODE_DIVIDE: 
-                err = vm_do_binary_operation(vm, opcode);
-                if (err) return err;
-                break;
-
-            case OPCODE_BANG: 
-                err = vm_do_bang_operation(vm);
-                if (err) return err;
-                break;
-
-            case OPCODE_MINUS: 
-                err = vm_do_minus_operation(vm);
-                if (err) return err;
-                break;
-
-            case OPCODE_EQUAL:
-            case OPCODE_NOT_EQUAL: 
-            case OPCODE_GREATER_THAN: 
-            case OPCODE_LESS_THAN: 
-                err = vm_do_comparision(vm, opcode);
-                if (err) return err;
-                break;
-
-            case OPCODE_TRUE: 
-                vm_stack_push(vm, obj_true);
-                break;
-
-            case OPCODE_FALSE: 
-                vm_stack_push(vm, obj_false);
-                break;
-
-            case OPCODE_NULL: 
-                vm_stack_push(vm, obj_null);
-                break;
-
+        GOTO_OPCODE_RETURN_VALUE: {
+            struct object obj = vm_stack_pop(vm); // pop return value
+            struct frame f = vm_pop_frame(vm);
+            active_frame = &vm->frames[vm->frame_index];
+            bytes = active_frame->fn.instructions.bytes;
+            ip_max = active_frame->fn.instructions.size;
+            ip = active_frame->ip;
+            vm->stack_pointer = f.base_pointer - 1;
+            vm_stack_push(vm, obj);
+            ip++;
+            DISPATCH();
+        }
+        
+        GOTO_OPCODE_RETURN: {
+            struct frame f = vm_pop_frame(vm);
+            active_frame = &vm->frames[vm->frame_index];
+            ip = active_frame->ip;
+            ip_max = active_frame->fn.instructions.size;
+            bytes = active_frame->fn.instructions.bytes;
+            vm->stack_pointer = f.base_pointer - 1;
+            vm_stack_push(vm, obj_null);
+            DISPATCH();
         }
 
-        ip++;
-    }
+        GOTO_OPCODE_SET_LOCAL:
+            idx = read_uint8((bytes + ip + 1));
+            ip += 2;
+            vm->stack[active_frame->base_pointer + idx] = vm_stack_pop(vm);
+            DISPATCH();
 
+        GOTO_OPCODE_GET_LOCAL: 
+            idx = read_uint8((bytes + ip + 1));
+            ip += 2;
+            vm_stack_push(vm, vm->stack[active_frame->base_pointer + idx]);
+            DISPATCH();
+
+        GOTO_OPCODE_ADD:
+        GOTO_OPCODE_SUBTRACT:
+        GOTO_OPCODE_MULTIPLY:
+        GOTO_OPCODE_DIVIDE: 
+            err = vm_do_binary_operation(vm, opcode);
+            if (err) return err;
+            ip++;
+            DISPATCH();
+
+        GOTO_OPCODE_BANG: 
+            err = vm_do_bang_operation(vm);
+            if (err) return err;
+            ip++;
+            DISPATCH();
+
+        GOTO_OPCODE_MINUS: 
+            err = vm_do_minus_operation(vm);
+            if (err) return err;
+            ip++;
+            DISPATCH();
+
+        GOTO_OPCODE_EQUAL:
+        GOTO_OPCODE_NOT_EQUAL: 
+        GOTO_OPCODE_GREATER_THAN: 
+        GOTO_OPCODE_LESS_THAN: 
+            err = vm_do_comparision(vm, opcode);
+            if (err) return err;
+            ip++;
+            DISPATCH();
+
+        GOTO_OPCODE_TRUE: 
+            vm_stack_push(vm, obj_true);
+            ip++;
+            DISPATCH();
+
+        GOTO_OPCODE_FALSE: 
+            vm_stack_push(vm, obj_false);
+            ip++;
+            DISPATCH();
+
+        GOTO_OPCODE_NULL: 
+            vm_stack_push(vm, obj_null);
+            ip++;
+            DISPATCH();
+
+    #ifdef DEBUG 
+    } // end while
+    #endif 
+    
     return 0;
 }
 
