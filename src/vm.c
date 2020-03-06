@@ -89,6 +89,8 @@ void vm_free(struct vm *vm) {
     free(vm);
 }
 
+#define vm_stack_pop_ignore(vm) vm->stack_pointer--
+
 #ifdef OPT_AGGRESSIVE
 #define vm_stack_pop(vm) vm->stack[--vm->stack_pointer]
 #define vm_stack_push(vm, obj) vm->stack[vm->stack_pointer++] = obj
@@ -324,8 +326,8 @@ int vm_run(struct vm *vm) {
 
     #define DISPATCH()                   \
         if (ip >= ip_max) { return 0; }  \
-        opcode = bytes[ip];              \
-        goto *dispatch_table[opcode];    \
+        opcode = bytes[ip];                \
+        goto *dispatch_table[bytes[ip]];    \
 
     #ifdef DEBUG
     char str[512];
@@ -343,7 +345,6 @@ int vm_run(struct vm *vm) {
     ip = active_frame->ip;
     ip_max = active_frame->fn.instructions.size;
 
-   
      #ifdef DEBUG
      while (1) {    
         opcode = bytes[ip];
@@ -380,7 +381,7 @@ int vm_run(struct vm *vm) {
             DISPATCH();
 
         GOTO_OPCODE_POP:
-            vm_stack_pop(vm);
+            vm_stack_pop_ignore(vm);
             ip++;
             DISPATCH();
         
@@ -465,7 +466,9 @@ int vm_run(struct vm *vm) {
         GOTO_OPCODE_MULTIPLY:
         GOTO_OPCODE_DIVIDE: 
             err = vm_do_binary_operation(vm, opcode);
+            #ifndef UNSAFE
             if (err) return err;
+            #endif
             ip++;
             DISPATCH();
 
@@ -476,7 +479,9 @@ int vm_run(struct vm *vm) {
 
         GOTO_OPCODE_MINUS: 
             err = vm_do_minus_operation(vm);
+            #ifndef UNSAFE
             if (err) return err;
+            #endif
             ip++;
             DISPATCH();
 
@@ -485,7 +490,9 @@ int vm_run(struct vm *vm) {
         GOTO_OPCODE_GREATER_THAN: 
         GOTO_OPCODE_LESS_THAN: 
             err = vm_do_comparision(vm, opcode);
+            #ifndef UNSAFE
             if (err) return err;
+            #endif
             ip++;
             DISPATCH();
 
