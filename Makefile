@@ -1,4 +1,4 @@
-override CFLAGS+= -std=c11 -Wall -Isrc/ -fno-crossjumping
+override CFLAGS+= -std=c11 -Wall -Isrc/ 
 TESTFLAGS= $(CFLAGS) -g
 LIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
@@ -10,13 +10,17 @@ COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c $(PARSER_SRC)
 VM_SRC= vm.c opcode.c object.c symbol_table.c $(PARSER_SRC)
 PREFIX = /usr/local
 
+ifeq "$(CC)" "gcc"
+	CFLAGS += -fno-crossjumping
+endif
+
 all: bin/monkey 
 
 bin/:
 	mkdir -p bin/
 
 bin/monkey: monkey.c $(EVAL_SRC) vm.c opcode.c symbol_table.c compiler.c | bin/
-	$(CC) $(CFLAGS) $^ -O3 -ledit -finline-limit=1024 -DNDEBUG -o $@
+	$(CC) $(CFLAGS) $^ -O3 -DOPT_AGGRESSIVE -DUNSAFE -ledit -DNDEBUG -o $@
 
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/
 	$(CC) $(TESTFLAGS) $^ -o $@
