@@ -25,7 +25,9 @@ const struct object obj_false = {
 };
 
 struct frame frame_new(struct object obj, unsigned int bp) {
+    #ifndef UNSAFE
     assert(obj.type == OBJ_COMPILED_FUNCTION);
+    #endif 
     struct frame f = {
         .ip = 0,
         .fn = *obj.value.compiled_function,
@@ -44,9 +46,11 @@ struct frame vm_pop_frame(struct vm *vm) {
 }
 
 void vm_push_frame(struct vm *vm, struct frame f) {
+    #ifndef UNSAFE
     if ((vm->frame_index + 1) >= STACK_SIZE) {
         err(VM_ERR_STACK_OVERFLOW, "frame overflow");
     }
+    #endif
     vm->frames[++vm->frame_index] = f;
 }
 
@@ -86,22 +90,25 @@ void vm_free(struct vm *vm) {
 }
 
 struct object vm_stack_pop(struct vm *vm) {
+    #ifndef UNSAFE
     if (vm->stack_pointer == 0) {
         return obj_null;
     }
+    #endif
 
     struct object obj = vm->stack[--vm->stack_pointer];
     return obj;
 }
 
-int vm_stack_push(struct vm *vm, struct object obj) {
+void vm_stack_push(struct vm *vm, struct object obj) {
+    #ifndef UNSAFE
     if (vm->stack_pointer >= STACK_SIZE) {
         err(VM_ERR_STACK_OVERFLOW, "stack overflow");
-        return VM_ERR_STACK_OVERFLOW;
+        return;
     }
+    #endif
 
     vm->stack[vm->stack_pointer++] = obj;
-    return 0;
 }
 
 int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int left, int right) {
@@ -137,9 +144,13 @@ int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
     
+    #ifndef UNSAFE
     if (left.type == OBJ_INT && right.type == OBJ_INT) {
+    #endif
         return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
+    #ifndef UNSAFE
     }  
+    #endif 
 
     return VM_ERR_INVALID_OP_TYPE;
 }
@@ -178,16 +189,17 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
 
+    #ifndef UNSAFE
     if (left.type != right.type) {
         return VM_ERR_INVALID_OP_TYPE;
     }
+    #endif
     
     if (left.type == OBJ_INT) {
         return vm_do_integer_comparison(vm, opcode, left.value.integer, right.value.integer);
     }  
 
     bool result;
-
     switch (opcode) {
         case OPCODE_EQUAL: 
             result = left.value.boolean == right.value.boolean;
@@ -202,23 +214,27 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
         break;
     }    
 
-    return vm_stack_push(vm, result ? obj_true : obj_false);
+    vm_stack_push(vm, result ? obj_true : obj_false);
+    return 0;
 }
 
-int vm_do_bang_operation(struct vm *vm) {
+void vm_do_bang_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
-    return vm_stack_push(vm, obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) ? obj_true : obj_false);
+    vm_stack_push(vm, obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) ? obj_true : obj_false);
 }
 
 int vm_do_minus_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
 
+    #ifndef UNSAFE
     if (obj.type != OBJ_INT) {
         return VM_ERR_INVALID_OP_TYPE;
     }
+    #endif
 
     obj.value.integer = -obj.value.integer;
-    return vm_stack_push(vm, obj);
+    vm_stack_push(vm, obj);
+    return 0;
 }
 
 
@@ -235,6 +251,46 @@ int vm_run(struct vm *vm) {
     /* tmp values used in switch cases */
     int err, idx, pos, num_args;
 
+    /* 
+    The following comment is taken from CPython's source: https://github.com/python/cpython/blob/master/Python/ceval.c#L775
+
+    Computed GOTOs, or
+       the-optimization-commonly-but-improperly-known-as-"threaded code"
+   using gcc's labels-as-values extension
+   (http://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html).
+
+   The traditional bytecode evaluation loop uses a "switch" statement, which
+   decent compilers will optimize as a single indirect branch instruction
+   combined with a lookup table of jump addresses. However, since the
+   indirect jump instruction is shared by all opcodes, the CPU will have a
+   hard time making the right prediction for where to jump next (actually,
+   it will be always wrong except in the uncommon case of a sequence of
+   several identical opcodes).
+
+   "Threaded code" in contrast, uses an explicit jump table and an explicit
+   indirect jump instruction at the end of each opcode. Since the jump
+   instruction is at a different address for each opcode, the CPU will make a
+   separate prediction for each of these instructions, which is equivalent to
+   predicting the second opcode of each opcode pair. These predictions have
+   a much better chance to turn out valid, especially in small bytecode loops.
+
+   A mispredicted branch on a modern CPU flushes the whole pipeline and
+   can cost several CPU cycles (depending on the pipeline depth),
+   and potentially many more instructions (depending on the pipeline width).
+   A correctly predicted branch, however, is nearly free.
+
+   At the time of this writing, the "threaded code" version is up to 15-20%
+   faster than the normal "switch" version, depending on the compiler and the
+   CPU architecture.
+
+   We disable the optimization if DYNAMIC_EXECUTION_PROFILE is defined,
+   because it would render the measurements invalid.
+
+   NOTE: care must be taken that the compiler doesn't try to "optimize" the
+   indirect jumps by sharing them between all opcodes. Such optimizations
+   can be disabled on gcc by using the -fno-gcse flag (or possibly
+   -fno-crossjumping).
+*/
     static const void *dispatch_table[] = {
         &&GOTO_OPCODE_CONST,
         &&GOTO_OPCODE_POP,
@@ -410,8 +466,7 @@ int vm_run(struct vm *vm) {
             DISPATCH();
 
         GOTO_OPCODE_BANG: 
-            err = vm_do_bang_operation(vm);
-            if (err) return err;
+            vm_do_bang_operation(vm);
             ip++;
             DISPATCH();
 

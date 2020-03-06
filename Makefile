@@ -1,4 +1,4 @@
-override CFLAGS+= -std=c11 -Wall -Isrc/
+override CFLAGS+= -std=c11 -Wall -Isrc/ -fno-gcse
 TESTFLAGS= $(CFLAGS) -g
 LIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
