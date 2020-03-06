@@ -37,14 +37,14 @@ struct frame frame_new(struct object obj, unsigned int bp) {
     return f;
 }
 
-struct frame vm_current_frame(struct vm *vm) {
-    return vm->frames[vm->frame_index];
-}
 
+#ifdef OPT_AGGRESSIVE
+#define vm_pop_frame(vm) vm->frames[vm->frame_index--]
+#define vm_push_frame(vm, f) vm->frames[++vm->frame_index] = f
+#else
 struct frame vm_pop_frame(struct vm *vm) {
     return vm->frames[vm->frame_index--];
 }
-
 void vm_push_frame(struct vm *vm, struct frame f) {
     #ifndef UNSAFE
     if ((vm->frame_index + 1) >= STACK_SIZE) {
@@ -53,7 +53,7 @@ void vm_push_frame(struct vm *vm, struct frame f) {
     #endif
     vm->frames[++vm->frame_index] = f;
 }
-
+#endif
 
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
@@ -89,6 +89,10 @@ void vm_free(struct vm *vm) {
     free(vm);
 }
 
+#ifdef OPT_AGGRESSIVE
+#define vm_stack_pop(vm) vm->stack[--vm->stack_pointer]
+#define vm_stack_push(vm, obj) vm->stack[vm->stack_pointer++] = obj
+#else 
 struct object vm_stack_pop(struct vm *vm) {
     #ifndef UNSAFE
     if (vm->stack_pointer == 0) {
@@ -96,8 +100,7 @@ struct object vm_stack_pop(struct vm *vm) {
     }
     #endif
 
-    struct object obj = vm->stack[--vm->stack_pointer];
-    return obj;
+    return vm->stack[--vm->stack_pointer];
 }
 
 void vm_stack_push(struct vm *vm, struct object obj) {
@@ -110,6 +113,7 @@ void vm_stack_push(struct vm *vm, struct object obj) {
 
     vm->stack[vm->stack_pointer++] = obj;
 }
+#endif
 
 int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int left, int right) {
     long result;
