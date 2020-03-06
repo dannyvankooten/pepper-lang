@@ -30,7 +30,7 @@ struct frame frame_new(struct object obj, unsigned int bp) {
     #endif 
     struct frame f = {
         .ip = 0,
-        .fn = *obj.value.compiled_function,
+        .fn = obj.value.compiled_function,
         .base_pointer = bp,
     };
 
@@ -388,9 +388,15 @@ int vm_run(struct vm *vm) {
         GOTO_OPCODE_CALL: 
             num_args = read_uint8((bytes + ip + 1));
             struct object fn = vm->stack[vm->stack_pointer - 1 - num_args];
-            struct frame f = frame_new(fn, vm->stack_pointer - num_args);
-            active_frame->ip = ip + 1;
+
+            // grab next new frame from frame stack & re-use
+            struct frame f = vm->frames[vm->frame_index+1];
+            f.ip = 0;
+            f.fn = fn.value.compiled_function;
+            f.base_pointer = vm->stack_pointer - num_args;
             vm_push_frame(vm, f);
+
+            active_frame->ip = ip + 1;
             active_frame = &vm->frames[vm->frame_index];
             bytes = active_frame->fn.instructions.bytes;
             ip_max = active_frame->fn.instructions.size;

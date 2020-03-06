@@ -21,11 +21,11 @@ void test_object(struct object *expected, struct object *actual) {
             assertf(actual->value.boolean == expected->value.boolean, "invalid boolean value: expected %d, got %d", expected->value.boolean, actual->value.boolean);
         break;
         case OBJ_COMPILED_FUNCTION: {
-            char *expected_str = instruction_to_str(&expected->value.compiled_function->instructions);
-            char *actual_str = instruction_to_str(&actual->value.compiled_function->instructions);
-            assertf(expected->value.compiled_function->instructions.size == actual->value.compiled_function->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
-            for (int i=0; i < expected->value.compiled_function->instructions.size; i++) {
-                assertf(expected->value.compiled_function->instructions.bytes[i] == actual->value.compiled_function->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, expected->value.compiled_function->instructions.bytes[i], actual->value.compiled_function->instructions.bytes[i], expected_str, actual_str);
+            char *expected_str = instruction_to_str(&expected->value.compiled_function.instructions);
+            char *actual_str = instruction_to_str(&actual->value.compiled_function.instructions);
+            assertf(expected->value.compiled_function.instructions.size == actual->value.compiled_function.instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
+            for (int i=0; i < expected->value.compiled_function.instructions.size; i++) {
+                assertf(expected->value.compiled_function.instructions.bytes[i] == actual->value.compiled_function.instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, expected->value.compiled_function.instructions.bytes[i], actual->value.compiled_function.instructions.bytes[i], expected_str, actual_str);
             }
             free(expected_str);
             free(actual_str);

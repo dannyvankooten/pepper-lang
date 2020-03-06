@@ -149,9 +149,9 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
 
 struct object *make_compiled_function_object(struct instruction *ins, unsigned int num_locals) {
     struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
-    obj->value.compiled_function = malloc(sizeof *obj->value.compiled_function);
-    obj->value.compiled_function->num_locals = num_locals;
-    obj->value.compiled_function->instructions = *ins;
+    //obj->value.compiled_function = malloc(sizeof *obj->value.compiled_function);
+    obj->value.compiled_function.num_locals = num_locals;
+    obj->value.compiled_function.instructions = *ins;
     return obj;
 }   
 
@@ -224,7 +224,7 @@ void free_object(struct object *obj)
             break;
 
         case OBJ_COMPILED_FUNCTION: 
-            free(obj->value.compiled_function);
+            // free(obj->value.compiled_function);
         break;
 
        default:
@@ -330,7 +330,7 @@ void object_to_str(char *str, struct object *obj)
         break;
 
     case OBJ_COMPILED_FUNCTION: 
-        strcat(str, instruction_to_str(&obj->value.compiled_function->instructions));
+        strcat(str, instruction_to_str(&obj->value.compiled_function.instructions));
         break;
     }
 }
