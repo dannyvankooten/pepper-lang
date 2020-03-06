@@ -2,9 +2,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+#include <err.h>
 
 #include "opcode.h"
-
 
 struct definition definitions[] = {
     {
@@ -102,7 +102,7 @@ struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     for (int op_idx = 0; op_idx < def.operands; op_idx++) {
         int operand = va_arg(operands, int);
         for (int byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
-            ins->bytes[ins->size++] = (unsigned char) (operand >> (byte_idx * 8) & 0xff);
+            ins->bytes[ins->size++] = (uint8_t) (operand >> (byte_idx * 8) & 0xff);
         }
     }
 
@@ -171,19 +171,24 @@ char *instruction_to_str(struct instruction *ins) {
     return buffer;
 }
 
-int read_bytes(unsigned char *bytes, unsigned int offset, unsigned int len) {
-    int sum = 0;
-    int shift = (len - 1) << 3;
+// uint8_t read_uint8(uint8_t *bytes) {
+//     return bytes[0];
+// }
 
-    for (int i = 0; i < len; i++) {
-        sum += bytes[offset+i] << shift;
-        shift -= 8;
+// uint16_t read_uint16(uint8_t *bytes) {
+//     return (bytes[0] << 8) + bytes[1];
+// }
+
+int read_bytes(uint8_t *bytes, unsigned int len) {
+    switch (len) {
+        case 1: return read_uint8(bytes);
+        case 2: return read_uint16(bytes);
     }
 
-    return sum;
+    err(EXIT_FAILURE, "Unsupported byte length");
 }
 
-unsigned int read_operands(int *dest, struct definition def, struct instruction *ins, unsigned int offset) {
+unsigned int read_operands(int dest[], struct definition def, struct instruction *ins, unsigned int offset) {
     unsigned int bytes_read = 0;
 
     // skip opcode
@@ -191,8 +196,14 @@ unsigned int read_operands(int *dest, struct definition def, struct instruction 
 
     // read bytes into dest array
     for (int i=0; i < def.operands; i++) {
-        int sum = read_bytes(ins->bytes, offset, def.operand_widths[i]);
-        dest[i] = sum;
+        switch (def.operand_widths[i]) {
+            case 1: 
+                dest[i] = read_uint8(ins->bytes + offset);
+            break;
+            case 2: 
+                dest[i] = read_uint16(ins->bytes + offset);
+            break;
+        }
         bytes_read += def.operand_widths[i];
     }
 

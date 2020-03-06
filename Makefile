@@ -1,5 +1,5 @@
 override CFLAGS+= -std=c11 -Wall -Isrc/
-TESTFLAGS= $(CFLAGS)
+TESTFLAGS= $(CFLAGS) -g
 LIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH = src

@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #define MAX_OP_SIZE 16
 
@@ -40,7 +41,7 @@ struct definition {
 };
 
 struct instruction {
-    unsigned char *bytes;
+    uint8_t *bytes;
     unsigned int cap;
     unsigned int size;
 };
@@ -58,6 +59,11 @@ void free_instruction(struct instruction *ins);
 struct instruction *flatten_instructions_array(struct instruction *arr[], unsigned int size);
 char *instruction_to_str(struct instruction *ins);
 unsigned int read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, unsigned int offset);
-int read_bytes(unsigned char *bytes, unsigned int offset, unsigned int len);
+int read_bytes(uint8_t *bytes, unsigned int len);
+
+
+#define read_uint8(bytes) (bytes)[0]
+#define read_uint16(bytes) ((bytes)[0] << 8) + (bytes)[1]
+
 
 #endif

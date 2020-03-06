@@ -11,7 +11,8 @@ struct compiler *compiler_new() {
     struct compiler *c = malloc(sizeof *c);
     struct compiler_scope scope;
     scope.instructions = malloc(sizeof *scope.instructions);
-    scope.instructions->bytes = malloc(1);
+    scope.instructions->cap = 1024; // initial capacity of 1024 bytes
+    scope.instructions->bytes = malloc(sizeof *scope.instructions->bytes * scope.instructions->cap);
     scope.instructions->size = 0;
     c->constants = make_object_list(64);
     c->symbol_table = symbol_table_new();
@@ -61,11 +62,16 @@ add_instruction(struct compiler *c, struct instruction *ins) {
     struct instruction *cins = compiler_current_instructions(c);
     unsigned int pos = cins->size;
 
-    /* TODO: Use capacity here so we don't need to realloc on every new addition */
-    cins->bytes = realloc(cins->bytes, (cins->size + ins->size ) * sizeof(*cins->bytes));
+    unsigned int new_size = cins->size + ins->size;
+    if (new_size >= cins->cap) {
+        cins->cap *= 2;
+        cins->bytes = realloc(cins->bytes, cins->cap * sizeof(*cins->bytes));
+    }
+
     for (int i=0; i < ins->size; i++) {
         cins->bytes[cins->size++] = ins->bytes[i];
     }
+
     free_instruction(ins);
     return pos;
 }
@@ -372,9 +378,9 @@ void compiler_enter_scope(struct compiler *c) {
 
     struct compiler_scope scope;
     scope.instructions = malloc(sizeof *scope.instructions);
-    scope.instructions->bytes = malloc(1);
+    scope.instructions->cap = 1024; // initial capacity of 1024 bytes
+    scope.instructions->bytes = malloc(sizeof *scope.instructions->bytes * scope.instructions->cap);
     scope.instructions->size = 0;
-
     c->scopes[c->scope_index] = scope;
 
     c->symbol_table = symbol_table_new_enclosed(c->symbol_table);

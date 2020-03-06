@@ -221,16 +221,24 @@ int vm_do_minus_operation(struct vm *vm) {
     return vm_stack_push(vm, obj);
 }
 
+
+
 int vm_run(struct vm *vm) {
+
     /* values used in main loop */
     unsigned int ip;
     unsigned int ip_max;
-    struct frame *frame;
+    struct frame *active_frame;
     enum opcode opcode;
-    unsigned char *bytes;
+    uint8_t *bytes;
 
     /* tmp values used in switch cases */
     int err, idx, pos, num_args;
+
+    // static const void *dispatch_table[] = {
+    //     &&GOTO_OPCODE_CONST,
+    //     &&GOTO_FALLBACK,
+    // };
 
     #ifdef DEBUG
     char str[512];
@@ -243,10 +251,10 @@ int vm_run(struct vm *vm) {
     }
     #endif
 
-    frame = &vm->frames[vm->frame_index];
-    bytes = frame->fn.instructions.bytes;
-    ip = frame->ip;
-    ip_max = frame->fn.instructions.size;
+    active_frame = &vm->frames[vm->frame_index];
+    bytes = active_frame->fn.instructions.bytes;
+    ip = active_frame->ip;
+    ip_max = active_frame->fn.instructions.size;
 
     while (1) {
         if (ip >= ip_max) {
@@ -258,10 +266,10 @@ int vm_run(struct vm *vm) {
         opcode = bytes[ip];
 
         #ifdef DEBUG
-        printf("\nFrame: %2ld | IP: %3d/%ld | opcode: %16s | operand: ", vm->frame_index, ip, frame->fn.instructions.size - 1, opcode_to_str(bytes[ip]));
+        printf("\nFrame: %2ld | IP: %3d/%ld | opcode: %16s | operand: ", vm->frame_index, ip, active_frame->fn.instructions.size - 1, opcode_to_str(bytes[ip]));
         struct definition def = lookup(opcode);
         if (def.operands > 0) {
-            printf("%3d\n", read_bytes(bytes, ip + 1, def.operand_widths[0]));
+            printf("%3d\n", read_bytes(bytes + ip + 1, def.operand_widths[0]));
         } else {
             printf("-\n");
         }
@@ -280,10 +288,19 @@ int vm_run(struct vm *vm) {
             printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack[i].type), str);
         }
         #endif 
+
+        // goto *dispatch_table[opcode];
+
+        // GOTO_OPCODE_CONST: 
+        //     idx = read_uint16((bytes + ip + 1));
+        //     ip += 3;
+        //     vm_stack_push(vm, vm->constants[idx]);  
+
+        // GOTO_FALLBACK:
                         
         switch (opcode) {
             case OPCODE_CONST:
-                idx = read_bytes(bytes, ip+1, 2);
+                idx = read_uint16((bytes + ip + 1));
                 ip += 3;
                 vm_stack_push(vm, vm->constants[idx]);   
                 continue;
@@ -293,29 +310,27 @@ int vm_run(struct vm *vm) {
                 break;
             
             case OPCODE_CALL: {
-                num_args = read_bytes(bytes, ip + 1, 1);
-                ip += 1;
+                num_args = read_uint8((bytes + ip + 1));
                 struct object fn = vm->stack[vm->stack_pointer - 1 - num_args];
                 struct frame f = frame_new(fn, vm->stack_pointer - num_args);
-                frame->ip = ip;
+                active_frame->ip = ip + 1;
                 vm_push_frame(vm, f);
-                frame = &vm->frames[vm->frame_index];
-                bytes = frame->fn.instructions.bytes;
-                ip_max = frame->fn.instructions.size;
-                ip = frame->ip;
-
+                active_frame = &vm->frames[vm->frame_index];
+                bytes = active_frame->fn.instructions.bytes;
+                ip_max = active_frame->fn.instructions.size;
+                ip = active_frame->ip;
                 vm->stack_pointer = f.base_pointer + f.fn.num_locals;
                 continue;
             }
             break;
 
             case OPCODE_JUMP:
-                pos = read_bytes(bytes, ip+1, 2);
+                pos = read_uint16((bytes + ip + 1));
                 ip = pos;
                 continue;
 
             case OPCODE_JUMP_NOT_TRUE: {
-                pos = read_bytes(bytes, ip + 1, 2);
+                pos = read_uint16((bytes + ip + 1));
                 ip += 3;
 
                 struct object condition = vm_stack_pop(vm);
@@ -327,13 +342,13 @@ int vm_run(struct vm *vm) {
             break;
 
              case OPCODE_SET_GLOBAL: 
-                idx = read_bytes(bytes, ip + 1, 2);
+                idx = read_uint16((bytes + ip + 1));
                 ip += 3;
                 vm->globals[idx] = vm_stack_pop(vm);
                 continue;
 
             case OPCODE_GET_GLOBAL: 
-                idx = read_bytes(bytes, ip + 1, 2);
+                idx = read_uint16((bytes + ip + 1));
                 ip += 3;
                 vm_stack_push(vm, vm->globals[idx]);
                 continue;
@@ -341,10 +356,10 @@ int vm_run(struct vm *vm) {
             case OPCODE_RETURN_VALUE: {
                 struct object obj = vm_stack_pop(vm); // pop return value
                 struct frame f = vm_pop_frame(vm);
-                frame = &vm->frames[vm->frame_index];
-                bytes = frame->fn.instructions.bytes;
-                ip_max = frame->fn.instructions.size;
-                ip = frame->ip;
+                active_frame = &vm->frames[vm->frame_index];
+                bytes = active_frame->fn.instructions.bytes;
+                ip_max = active_frame->fn.instructions.size;
+                ip = active_frame->ip;
                 vm->stack_pointer = f.base_pointer - 1;
                 vm_stack_push(vm, obj);
             }
@@ -352,25 +367,25 @@ int vm_run(struct vm *vm) {
 
             case OPCODE_RETURN: {
                 struct frame f = vm_pop_frame(vm);
-                frame = &vm->frames[vm->frame_index];
-                ip = frame->ip;
-                ip_max = frame->fn.instructions.size;
-                bytes = frame->fn.instructions.bytes;
+                active_frame = &vm->frames[vm->frame_index];
+                ip = active_frame->ip;
+                ip_max = active_frame->fn.instructions.size;
+                bytes = active_frame->fn.instructions.bytes;
                 vm->stack_pointer = f.base_pointer - 1;
                 vm_stack_push(vm, obj_null);
             }
             break;
 
             case OPCODE_SET_LOCAL:
-                idx = read_bytes(bytes, ip+1, 1);
+                idx = read_uint8((bytes + ip + 1));
                 ip += 2;
-                vm->stack[frame->base_pointer + idx] = vm_stack_pop(vm);
+                vm->stack[active_frame->base_pointer + idx] = vm_stack_pop(vm);
                 continue;
 
             case OPCODE_GET_LOCAL: 
-                idx = read_bytes(bytes, ip+1, 1);
+                idx = read_uint8((bytes + ip + 1));
                 ip += 2;
-                vm_stack_push(vm, vm->stack[frame->base_pointer + idx]);
+                vm_stack_push(vm, vm->stack[active_frame->base_pointer + idx]);
                 continue;
 
             case OPCODE_ADD:
