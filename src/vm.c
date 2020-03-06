@@ -25,7 +25,9 @@ const struct object obj_false = {
 };
 
 struct frame frame_new(struct object obj, unsigned int bp) {
+    #ifndef UNSAFE
     assert(obj.type == OBJ_COMPILED_FUNCTION);
+    #endif 
     struct frame f = {
         .ip = 0,
         .fn = *obj.value.compiled_function,
@@ -44,9 +46,11 @@ struct frame vm_pop_frame(struct vm *vm) {
 }
 
 void vm_push_frame(struct vm *vm, struct frame f) {
+    #ifndef UNSAFE
     if ((vm->frame_index + 1) >= STACK_SIZE) {
         err(VM_ERR_STACK_OVERFLOW, "frame overflow");
     }
+    #endif
     vm->frames[++vm->frame_index] = f;
 }
 
@@ -86,22 +90,25 @@ void vm_free(struct vm *vm) {
 }
 
 struct object vm_stack_pop(struct vm *vm) {
+    #ifndef UNSAFE
     if (vm->stack_pointer == 0) {
         return obj_null;
     }
+    #endif
 
     struct object obj = vm->stack[--vm->stack_pointer];
     return obj;
 }
 
-int vm_stack_push(struct vm *vm, struct object obj) {
+void vm_stack_push(struct vm *vm, struct object obj) {
+    #ifndef UNSAFE
     if (vm->stack_pointer >= STACK_SIZE) {
         err(VM_ERR_STACK_OVERFLOW, "stack overflow");
-        return VM_ERR_STACK_OVERFLOW;
+        return;
     }
+    #endif
 
     vm->stack[vm->stack_pointer++] = obj;
-    return 0;
 }
 
 int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int left, int right) {
@@ -137,9 +144,13 @@ int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
     
+    #ifndef UNSAFE
     if (left.type == OBJ_INT && right.type == OBJ_INT) {
+    #endif
         return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
+    #ifndef UNSAFE
     }  
+    #endif 
 
     return VM_ERR_INVALID_OP_TYPE;
 }
@@ -178,16 +189,17 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
 
+    #ifndef UNSAFE
     if (left.type != right.type) {
         return VM_ERR_INVALID_OP_TYPE;
     }
+    #endif
     
     if (left.type == OBJ_INT) {
         return vm_do_integer_comparison(vm, opcode, left.value.integer, right.value.integer);
     }  
 
     bool result;
-
     switch (opcode) {
         case OPCODE_EQUAL: 
             result = left.value.boolean == right.value.boolean;
@@ -202,23 +214,27 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
         break;
     }    
 
-    return vm_stack_push(vm, result ? obj_true : obj_false);
+    vm_stack_push(vm, result ? obj_true : obj_false);
+    return 0;
 }
 
-int vm_do_bang_operation(struct vm *vm) {
+void vm_do_bang_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
-    return vm_stack_push(vm, obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) ? obj_true : obj_false);
+    vm_stack_push(vm, obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) ? obj_true : obj_false);
 }
 
 int vm_do_minus_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
 
+    #ifndef UNSAFE
     if (obj.type != OBJ_INT) {
         return VM_ERR_INVALID_OP_TYPE;
     }
+    #endif
 
     obj.value.integer = -obj.value.integer;
-    return vm_stack_push(vm, obj);
+    vm_stack_push(vm, obj);
+    return 0;
 }
 
 
@@ -450,8 +466,7 @@ int vm_run(struct vm *vm) {
             DISPATCH();
 
         GOTO_OPCODE_BANG: 
-            err = vm_do_bang_operation(vm);
-            if (err) return err;
+            vm_do_bang_operation(vm);
             ip++;
             DISPATCH();
 
