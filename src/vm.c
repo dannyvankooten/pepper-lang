@@ -394,12 +394,11 @@ int vm_run(struct vm *vm) {
             f.ip = 0;
             f.fn = fn.value.compiled_function;
             f.base_pointer = vm->stack_pointer - num_args;
-            vm_push_frame(vm, f);
-
             active_frame->ip = ip + 1;
+            vm_push_frame(vm, f);
             active_frame = &vm->frames[vm->frame_index];
-            bytes = active_frame->fn.instructions.bytes;
-            ip_max = active_frame->fn.instructions.size;
+            bytes = f.fn.instructions.bytes;
+            ip_max = f.fn.instructions.size;
             ip = active_frame->ip;
             vm->stack_pointer = f.base_pointer + f.fn.num_locals;
             DISPATCH();
@@ -409,15 +408,16 @@ int vm_run(struct vm *vm) {
             ip = pos;
             DISPATCH();
 
-        GOTO_OPCODE_JUMP_NOT_TRUE: 
-            pos = read_uint16((bytes + ip + 1));
-            ip += 3;
-
+        GOTO_OPCODE_JUMP_NOT_TRUE: {
             struct object condition = vm_stack_pop(vm);
             if (condition.type == OBJ_NULL || (condition.type == OBJ_BOOL && condition.value.boolean == false)) {
+                pos = read_uint16((bytes + ip + 1));
                 ip = pos;
-            } 
+            } else {
+                ip += 3;
+            }
             DISPATCH();
+        }
 
         GOTO_OPCODE_SET_GLOBAL: 
             idx = read_uint16((bytes + ip + 1));
@@ -432,7 +432,7 @@ int vm_run(struct vm *vm) {
             DISPATCH();
 
         GOTO_OPCODE_RETURN_VALUE: {
-            struct object obj = vm_stack_pop(vm); // pop return value
+            struct object obj = vm_stack_pop(vm); 
             struct frame f = vm_pop_frame(vm);
             active_frame = &vm->frames[vm->frame_index];
             bytes = active_frame->fn.instructions.bytes;
