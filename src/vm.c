@@ -26,37 +26,6 @@ const struct object obj_false = {
     .value = { .boolean = false },
 };
 
-struct frame frame_new(struct object obj, unsigned int bp) {
-    #ifndef UNSAFE
-    assert(obj.type == OBJ_COMPILED_FUNCTION);
-    #endif 
-    struct frame f = {
-        .ip = 0,
-        .fn = obj.value.compiled_function,
-        .base_pointer = bp,
-    };
-
-    return f;
-}
-
-
-#ifdef OPT_AGGRESSIVE
-#define vm_pop_frame(vm) vm->frames[vm->frame_index--]
-#define vm_push_frame(vm, f) vm->frames[++vm->frame_index] = f
-#else
-struct frame vm_pop_frame(struct vm *vm) {
-    return vm->frames[vm->frame_index--];
-}
-void vm_push_frame(struct vm *vm, struct frame f) {
-    #ifndef UNSAFE
-    if ((vm->frame_index + 1) >= STACK_SIZE) {
-        err(VM_ERR_STACK_OVERFLOW, "frame overflow");
-    }
-    #endif
-    vm->frames[++vm->frame_index] = f;
-}
-#endif
-
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     vm->stack_pointer = 0;
@@ -68,7 +37,16 @@ struct vm *vm_new(struct bytecode *bc) {
     }
 
     for (int i=0; i < bc->constants->size; i++) {
-        vm->constants[i] = *bc->constants->values[i];
+       struct object obj = *bc->constants->values[i];
+
+       // copy over string values
+       if (obj.type == OBJ_STRING) {
+            char *dup = malloc(strlen(obj.value.string) + 1);
+            strcpy(dup, obj.value.string);
+            obj.value.string = dup;
+       }
+
+       vm->constants[i] = obj;
     }    
 
     struct object *fn = make_compiled_function_object(bc->instructions, 0);
@@ -90,6 +68,36 @@ struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_
 void vm_free(struct vm *vm) {
     free(vm);
 }
+
+struct frame frame_new(struct object obj, unsigned int bp) {
+    #ifndef UNSAFE
+    assert(obj.type == OBJ_COMPILED_FUNCTION);
+    #endif 
+    struct frame f = {
+        .ip = 0,
+        .fn = obj.value.compiled_function,
+        .base_pointer = bp,
+    };
+
+    return f;
+}
+
+#ifdef OPT_AGGRESSIVE
+#define vm_pop_frame(vm) vm->frames[vm->frame_index--]
+#define vm_push_frame(vm, f) vm->frames[++vm->frame_index] = f
+#else
+struct frame vm_pop_frame(struct vm *vm) {
+    return vm->frames[vm->frame_index--];
+}
+void vm_push_frame(struct vm *vm, struct frame f) {
+    #ifndef UNSAFE
+    if ((vm->frame_index + 1) >= STACK_SIZE) {
+        err(VM_ERR_STACK_OVERFLOW, "frame overflow");
+    }
+    #endif
+    vm->frames[++vm->frame_index] = f;
+}
+#endif
 
 #define vm_stack_pop_ignore(vm) vm->stack_pointer--
 

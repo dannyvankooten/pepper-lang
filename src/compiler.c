@@ -31,8 +31,7 @@ struct compiler *compiler_new_with_state(struct symbol_table *t, struct object_l
 }
 
 void compiler_free(struct compiler *c) {
-    free(c->scopes[0].instructions->bytes);
-    free(c->scopes[0].instructions);
+    free_instruction(c->scopes[0].instructions);
     free_object_list(c->constants);
     symbol_table_free(c->symbol_table);
     free(c);
@@ -103,6 +102,8 @@ void compiler_replace_instruction(struct compiler *c, unsigned int pos, struct i
     for (int i=0; i < ins->size; i++) {
         c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
+
+    free_instruction(ins);
 }
 
 void compiler_replace_last_instruction(struct compiler *c, struct instruction *ins) {
@@ -310,6 +311,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
         break;
 
         case EXPR_STRING: {
+            // FIXME: Copy string here
             struct object *obj = make_string_object(expr->string, NULL);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
         }
@@ -391,9 +393,10 @@ void compiler_enter_scope(struct compiler *c) {
 struct instruction *
 compiler_leave_scope(struct compiler *c) {
     struct instruction *ins = c->scopes[c->scope_index].instructions;
-
-    //free(c->scopes[c->scope_index].instructions->bytes);
-    //free(c->scopes[c->scope_index].instructions);
+    // We transfer ownership of this scope's instructions to a compiled function
+    // So we do not free it here.
+    // free(c->scopes[c->scope_index].instructions->bytes);
+    // free(c->scopes[c->scope_index].instructions);
     struct symbol_table *t = c->symbol_table;
     c->symbol_table = c->symbol_table->outer;
     symbol_table_free(t);

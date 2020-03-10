@@ -124,8 +124,8 @@ void free_instruction(struct instruction *ins) {
 
 struct instruction *flatten_instructions_array(struct instruction *arr[], unsigned int size) {
     struct instruction *ins = arr[0];
+    
     for (int i = 1; i < size; i++) {
-
         // TODO: Allocate all at once
         ins->bytes = realloc(ins->bytes, (ins->size + arr[i]->size ) * sizeof(*ins->bytes));
         for (int j=0; j < arr[i]->size; j++) {

@@ -37,8 +37,7 @@ struct object run_vm_test(char *program_str) {
 
     free(bc);
     vm_free(vm);
-    // string objects are owned by compiler, so we can't free it currently
-    // compiler_free(c);
+    compiler_free(c);
     free_program(p);
     return obj;
 }

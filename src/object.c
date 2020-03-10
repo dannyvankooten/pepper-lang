@@ -224,7 +224,7 @@ void free_object(struct object *obj)
             break;
 
         case OBJ_COMPILED_FUNCTION: 
-            // free(obj->value.compiled_function);
+            //free_instruction(&obj->value.compiled_function.instructions);
         break;
 
        default:

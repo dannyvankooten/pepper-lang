@@ -16,6 +16,8 @@ void test_object(struct object *expected, struct object *actual) {
     switch (expected->type) {
         case OBJ_INT:
             assertf(actual->value.integer == expected->value.integer, "invalid integer value: expected %d, got %d", expected->value.integer, actual->value.integer);
+            free(actual);
+            free(expected);
         break;
         case OBJ_BOOL:
             assertf(actual->value.boolean == expected->value.boolean, "invalid boolean value: expected %d, got %d", expected->value.boolean, actual->value.boolean);
@@ -29,10 +31,18 @@ void test_object(struct object *expected, struct object *actual) {
             }
             free(expected_str);
             free(actual_str);
+            free(expected->value.compiled_function.instructions.bytes);
+            free(actual->value.compiled_function.instructions.bytes);
+            free(actual);
+            free(expected);
         }
         break;
         case OBJ_STRING: 
             assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected %s, got %s", expected->value.string, actual->value.string);
+            free(actual->value.string);
+            free(actual);
+            free(expected->value.string);
+            free(expected);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(actual->type));
@@ -65,6 +75,7 @@ void run_compiler_test(struct compiler_test_case t) {
     free(concatted_str);
     free(bytecode_str);
     free(bytecode);
+    free_instruction(concatted);
     free_program(program);
     compiler_free(compiler);
 }
