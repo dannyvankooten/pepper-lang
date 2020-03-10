@@ -15,6 +15,9 @@ void test_object(struct object obj, enum object_type type, union object_value va
         break;
         case OBJ_NULL: 
         break;
+        case OBJ_STRING: 
+            assertf(strcmp(value.string, obj.value.string) == 0, "invalid string value: expected %s, got %s", value.string, obj.value.string);
+        break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj.type));
         break;
@@ -32,10 +35,10 @@ struct object run_vm_test(char *program_str) {
     assertf(err == 0, "vm error: %d", err);
     struct object obj = vm_stack_last_popped(vm);
 
-    // TODO: Free vm
     free(bc);
     vm_free(vm);
-    compiler_free(c);
+    // string objects are owned by compiler, so we can't free it currently
+    // compiler_free(c);
     free_program(p);
     return obj;
 }
@@ -298,6 +301,25 @@ void test_recursive_functions() {
      }
 }
 
+void test_string_expressions() {
+    TESTNAME(__FUNCTION__);
+
+    struct {
+        char *input;
+        char *expected;
+    } tests[] = {
+        {"\"monkey\"", "monkey"},
+        {"\"mon\" + \"key\"", "monkey"},
+        {"\"mon\" + \"key\" + \"banana\"", "monkeybanana"},
+    };
+    
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_STRING, (union object_value) { .string = tests[t].expected });
+     }
+
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
@@ -311,5 +333,6 @@ int main() {
     test_function_calls_with_args_and_bindings();
     test_recursive_functions();
     test_fib();
+    test_string_expressions();
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 }

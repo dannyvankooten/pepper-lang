@@ -62,7 +62,6 @@ void run_compiler_test(struct compiler_test_case t) {
     }
 
     // TODO: Free objects
-
     free(concatted_str);
     free(bytecode_str);
     free(bytecode);

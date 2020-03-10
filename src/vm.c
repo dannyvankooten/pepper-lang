@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
+
 #include <err.h>
 #include "vm.h"
 
@@ -146,19 +148,30 @@ int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int left, 
     return 0;
 }
 
+int vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left, char *right) {
+    struct object obj = {
+        .type = OBJ_STRING,
+    };
+
+    // FIXME: Re-use allocation here?
+    obj.value.string = malloc(strlen(left) + strlen(right) + 1);
+    strcpy(obj.value.string, left);
+    strcat(obj.value.string, right);
+    vm_stack_push(vm, obj);
+    return 0;
+}
+
 int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
-    
-    #ifndef UNSAFE
-    if (left.type == OBJ_INT && right.type == OBJ_INT) {
-    #endif
-        return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
-    #ifndef UNSAFE
-    }  
-    #endif 
 
-    return VM_ERR_INVALID_OP_TYPE;
+    // FIXME: left and right type should be equal
+
+    switch (left.type) {
+        case OBJ_INT: return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
+        case OBJ_STRING: return vm_do_binary_string_operation(vm, opcode, left.value.string, right.value.string);
+        default: return VM_ERR_INVALID_OP_TYPE;
+    }
 }
 
 int vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int left, int right) { 
