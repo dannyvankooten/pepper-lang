@@ -31,6 +31,9 @@ void test_object(struct object *expected, struct object *actual) {
             free(actual_str);
         }
         break;
+        case OBJ_STRING: 
+            assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected %s, got %s", expected->value.string, actual->value.string);
+        break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(actual->type));
         break;
@@ -608,6 +611,38 @@ void test_recursive_functions() {
     run_compiler_test(t);
 }
 
+void test_string_expressions() {
+    TESTNAME(__FUNCTION__);
+
+    struct compiler_test_case tests[] = {
+        {
+            .input = "\"monkey\"",
+            .constants = {
+                make_string_object("monkey", NULL),
+            }, 1,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_POP),
+            }, 2,
+        },
+        {
+            .input = "\"mon\" + \"key\"",
+            .constants = {
+               make_string_object("mon", NULL),
+               make_string_object("key", NULL),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_ADD),
+                make_instruction(OPCODE_POP),
+            }, 4,
+        },
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
@@ -618,5 +653,6 @@ int main() {
     test_function_calls();
     test_let_statement_scopes();
     test_recursive_functions();
+    test_string_expressions();
     printf("\x1b[32mAll compiler tests passed!\033[0m\n");
 }

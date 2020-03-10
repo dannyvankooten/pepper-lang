@@ -309,6 +309,12 @@ compile_expression(struct compiler *c, struct expression *expr) {
         }
         break;
 
+        case EXPR_STRING: {
+            struct object *obj = make_string_object(expr->string, NULL);
+            compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
+        }
+        break;
+
         case EXPR_IDENT: {
             struct symbol *s = symbol_table_resolve(c->symbol_table, expr->ident.value);
             assert(s != NULL);
@@ -318,10 +324,6 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
         case EXPR_FUNCTION: {
             compiler_enter_scope(c);
-
-            // if (strlen(expr->function.name) > 0) {
-            //     symbol_table_define_function(c->symbol_table, expr->function.name);
-            // }
 
             for (int i=0; i < expr->function.parameters.size; i++) {
                 symbol_table_define(c->symbol_table, expr->function.parameters.values[i].value);
