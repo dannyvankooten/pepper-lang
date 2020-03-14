@@ -1,6 +1,5 @@
-override CFLAGS+= -std=c11 -Wall -Isrc/ 
-TESTFLAGS= $(CFLAGS) -g
-LIBS= -ledit
+override CFLAGS+= -std=c11 -Wall -Isrc/ -g
+LDLIBS= -ledit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH = src
 LEXER_SRC= lexer.c token.c
@@ -20,28 +19,15 @@ bin/:
 	mkdir -p bin/
 
 bin/monkey: monkey.c $(EVAL_SRC) vm.c opcode.c symbol_table.c compiler.c | bin/
-	$(CC) $(CFLAGS) $^ -O3 -DOPT_AGGRESSIVE -DUNSAFE -ledit -DNDEBUG -o $@
+	$(CC) $(CFLAGS) $^ -O3 -DOPT_AGGRESSIVE -DUNSAFE -DNDEBUG -o $@ $(LDLIBS)
 
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/
-	$(CC) $(TESTFLAGS) $^ -o $@
-
 bin/parser_test: tests/parser_test.c $(PARSER_SRC) | bin/
-	$(CC) $(TESTFLAGS) $^ -o $@
-
 bin/eval_test: tests/eval_test.c $(EVAL_SRC) | bin/
-	$(CC) $(TESTFLAGS) $^ -o $@
-
 bin/opcode_test: tests/opcode_test.c opcode.c | bin/
-	$(CC) $(TESTFLAGS) $^ -o $@
-
 bin/compiler_test: tests/compiler_test.c $(COMPILER_SRC) | bin/
-	$(CC) $(TESTFLAGS) $^ -o $@
-
 bin/vm_test: tests/vm_test.c $(VM_SRC) compiler.c | bin/
-	$(CC) $(TESTFLAGS) $^ -o $@
-
 bin/symbol_table_test: tests/symbol_table_test.c symbol_table.c | bin/
-	$(CC) $(TESTFLAGS) $^ -o $@	
 
 check: bin/lexer_test bin/parser_test bin/opcode_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test 
 	for test in $^; do $$test || exit 1; done
