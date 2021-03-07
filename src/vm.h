@@ -23,9 +23,9 @@ struct vm {
     unsigned int stack_pointer;
 };
 
-const struct object obj_null;
-const struct object obj_true;
-const struct object obj_false;
+extern const struct object obj_null;
+extern const struct object obj_true;
+extern const struct object obj_false;
 
 struct vm *vm_new(struct bytecode *bc);
 struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_SIZE]);

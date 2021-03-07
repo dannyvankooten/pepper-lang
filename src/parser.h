@@ -137,7 +137,8 @@ struct expression {
         struct index_expression index;
         struct while_expression whilst;
     };
-} expression;
+};
+extern struct expression expression;
 
 struct program {
     struct statement *statements;

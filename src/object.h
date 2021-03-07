@@ -65,12 +65,12 @@ struct object
     struct object *next;
 };
 
-struct object *object_null;
-struct object *object_null_return;
-struct object *object_true;
-struct object *object_false;
-struct object *object_true_return;
-struct object *object_false_return;
+extern struct object *object_null;
+extern struct object *object_null_return;
+extern struct object *object_true;
+extern struct object *object_false;
+extern struct object *object_true_return;
+extern struct object *object_false_return;
 
 const char *object_type_to_str(enum object_type t);
 struct object *make_integer_object(long value);
