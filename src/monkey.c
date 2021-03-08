@@ -26,6 +26,7 @@ int repl() {
         puts("Failed to allocate memory for output buffer");
         exit(1);
     }
+    output[0] = '\0';
 
     struct lexer lexer;
     struct parser parser;

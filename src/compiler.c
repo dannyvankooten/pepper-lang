@@ -319,8 +319,11 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
         case EXPR_IDENT: {
             struct symbol *s = symbol_table_resolve(c->symbol_table, expr->ident.value);
-            assert(s != NULL);
-            compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_GET_GLOBAL : OPCODE_GET_LOCAL, s->index);
+            if (s != NULL) {
+                compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_GET_GLOBAL : OPCODE_GET_LOCAL, s->index);
+            } else {
+                compiler_emit(c, OPCODE_NULL);
+            }
         }
         break;
 

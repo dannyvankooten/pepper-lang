@@ -115,8 +115,12 @@ struct symbol *symbol_table_define_function(struct symbol_table *t, char *name) 
 
 struct symbol *symbol_table_resolve(struct symbol_table *t, char *name) {
     void *r = hashmap_get(t->store, name);
-    if (r == NULL && t->outer != NULL) {
-        return symbol_table_resolve(t->outer, name);
+    if (r == NULL) {
+        if (t->outer) {
+            return symbol_table_resolve(t->outer, name);
+        }
+
+        return NULL;
     }
     
     return (struct symbol *) r;
