@@ -42,6 +42,9 @@ struct vm *vm_new(struct bytecode *bc) {
        // copy over string values
        if (obj.type == OBJ_STRING) {
             char *dup = malloc(strlen(obj.value.string) + 1);
+            if (!dup) {
+                err(EXIT_FAILURE, "out of memory");
+            }
             strcpy(dup, obj.value.string);
             obj.value.string = dup;
        }
@@ -69,7 +72,7 @@ void vm_free(struct vm *vm) {
     free(vm);
 }
 
-struct frame frame_new(struct object obj, unsigned int bp) {
+struct frame frame_new(struct object obj, size_t bp) {
     #ifndef UNSAFE
     assert(obj.type == OBJ_COMPILED_FUNCTION);
     #endif 
@@ -173,7 +176,9 @@ int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
 
-    // FIXME: left and right type should be equal
+    if (left.type != right.type) {
+        return VM_ERR_INVALID_OP_TYPE;
+    }
 
     switch (left.type) {
         case OBJ_INT: return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
@@ -269,8 +274,8 @@ int vm_do_minus_operation(struct vm *vm) {
 int vm_run(struct vm *vm) {
 
     /* values used in main loop */
-    unsigned int ip;
-    unsigned int ip_max;
+    size_t ip;
+    size_t ip_max;
     struct frame *active_frame;
     enum opcode opcode;
     uint8_t *bytes;

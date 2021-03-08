@@ -103,7 +103,7 @@ struct object *make_string_object(char *str1, char *str2)
     struct object *obj = make_object(OBJ_STRING);
     
     // allocate enough memory to fit both strings
-    int l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
+    size_t l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
     obj->value.string = malloc(l);
     if (!obj->value.string) {
         err(EXIT_FAILURE, "out of memory");
@@ -147,7 +147,7 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     return obj;
 }
 
-struct object *make_compiled_function_object(struct instruction *ins, unsigned int num_locals) {
+struct object *make_compiled_function_object(struct instruction *ins, size_t num_locals) {
     struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
     //obj->value.compiled_function = malloc(sizeof *obj->value.compiled_function);
     obj->value.compiled_function.num_locals = num_locals;
@@ -181,6 +181,9 @@ struct object *copy_object(struct object *obj) {
 
         case OBJ_ARRAY: 
             return make_array_object(obj->value.array);
+            break;
+
+        case OBJ_COMPILED_FUNCTION:
             break;
     }
 
@@ -238,7 +241,7 @@ void free_object(struct object *obj)
 }
 
 
-struct object_list *make_object_list(unsigned int cap) {
+struct object_list *make_object_list(size_t cap) {
    struct object_list *list = object_list_pool_head;
 
    if (!list) {
@@ -271,8 +274,8 @@ void free_object_list(struct object_list *list) {
 
 struct object_list *copy_object_list(struct object_list *original) {
     struct object_list *new = make_object_list(original->size);
-    int size = original->size;
-    for (int i=0; i < size; i++) {
+    size_t size = original->size;
+    for (size_t i=0; i < size; i++) {
         new->values[i] = copy_object(original->values[i]);
     }
     new->size = size;
@@ -320,7 +323,7 @@ void object_to_str(char *str, struct object *obj)
 
     case OBJ_ARRAY: 
         strcat(str, "[");
-        for (int i=0; i < obj->value.array->size; i++) {
+        for (size_t i=0; i < obj->value.array->size; i++) {
             object_to_str(str, obj->value.array->values[i]);
             if (i < (obj->value.array->size - 1)) {
                 strcat(str, ", ");

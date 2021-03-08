@@ -44,7 +44,7 @@ struct object *environment_get(struct environment *env, char *key) {
     struct object *node = env->table[pos];
 
     while (node) {
-        if (memcmp(node->name, key, MAX_KEY_LENGTH) == 0) {
+        if (strcmp(node->name, key) == 0) {
             return node;
         }
 
@@ -69,7 +69,7 @@ void environment_set(struct environment *env, char *key, struct object *value) {
 
     // find existing node with that key
     while (node) {
-        if (memcmp(node->name, key, MAX_KEY_LENGTH) == 0) {
+        if (strcmp(node->name, key) == 0) {
             if (prev) {
                 prev->next = value;
             } else {
@@ -97,7 +97,7 @@ void free_environment(struct environment *env) {
     struct object *next;
 
     // free all objects in env
-    for (int i=0; i < ENV_TABLE_SIZE; i++) {
+    for (size_t i=0; i < ENV_TABLE_SIZE; i++) {
         node = env->table[i];
 
         while (node) {

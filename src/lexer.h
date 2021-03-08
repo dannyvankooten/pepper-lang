@@ -1,11 +1,12 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <stddef.h>
 #include "token.h"
 
 struct lexer {
     char *input;
-    unsigned int pos;
+    size_t pos;
 };
 
 int gettoken(struct lexer *l, struct token *t);

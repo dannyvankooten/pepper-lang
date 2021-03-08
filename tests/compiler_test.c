@@ -1,5 +1,5 @@
 #include "test_helpers.h"
-#include "compiler.h"
+#include "../src/compiler.h"
 
 struct compiler_test_case {
     char *input;
@@ -16,7 +16,7 @@ void test_object(struct object *expected, struct object *actual) {
     switch (expected->type) {
         case OBJ_INT:
             assertf(actual->value.integer == expected->value.integer, "invalid integer value: expected %d, got %d", expected->value.integer, actual->value.integer);
-            free(actual);
+            //free(actual);
             free(expected);
         break;
         case OBJ_BOOL:
@@ -33,14 +33,14 @@ void test_object(struct object *expected, struct object *actual) {
             free(actual_str);
             free(expected->value.compiled_function.instructions.bytes);
             free(actual->value.compiled_function.instructions.bytes);
-            free(actual);
+            //free(actual);
             free(expected);
         }
         break;
         case OBJ_STRING: 
             assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected %s, got %s", expected->value.string, actual->value.string);
             free(actual->value.string);
-            free(actual);
+            //free(actual);
             free(expected->value.string);
             free(expected);
         break;
@@ -71,7 +71,6 @@ void run_compiler_test(struct compiler_test_case t) {
         test_object(t.constants[i], bytecode->constants->values[i]);
     }
 
-    // TODO: Free objects
     free(concatted_str);
     free(bytecode_str);
     free(bytecode);

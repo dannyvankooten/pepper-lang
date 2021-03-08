@@ -2,7 +2,7 @@
 #include <err.h>
 #include <string.h>
 #include <stdio.h>
-
+#include <stddef.h>
 #include "parser.h"
 
 struct expression *parse_expression(struct parser *p, int precedence);
@@ -76,7 +76,11 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     struct identifier id = {
         .token = p->current_token,
     };
-    strncpy(id.value, p->current_token.literal, MAX_IDENT_LENGTH);
+    size_t i = 0;
+    for(; p->current_token.literal[i] != '\0'; i++){
+        id.value[i] = p->current_token.literal[i];
+    }
+    id.value[i] = '\0';
     s->name = id;
 
     if (!expect_next_token(p, TOKEN_ASSIGN)) {
@@ -87,7 +91,12 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     next_token(p);
     s->value = parse_expression(p, LOWEST);
     if (s->value->type == EXPR_FUNCTION) {
-        strcpy(s->value->function.name, s->name.value);
+        size_t i = 0;
+        while (s->name.value[i] != '\0') {
+            s->value->function.name[i] = s->name.value[i];
+            i++;
+        }
+        s->value->function.name[i] = '\0';
     } 
     if (next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
@@ -119,7 +128,7 @@ struct expression *parse_identifier_expression(struct parser *p) {
 
     expr->type = EXPR_IDENT;
     expr->token = expr->ident.token = p->current_token;
-    strncpy(expr->ident.value, p->current_token.literal, MAX_IDENT_LENGTH);
+    strcpy(expr->ident.value, p->current_token.literal);
     return expr;
 }
 
@@ -129,14 +138,14 @@ struct expression *parse_string_literal(struct parser *p) {
         err(EXIT_FAILURE, "out of memory");
     }
 
-    int len = strlen(p->current_token.literal) + 1;
+    size_t len = strlen(p->current_token.literal) + 1;
     expr->string = malloc(len);
     if (!expr->string) {
         err(EXIT_FAILURE, "out of memory");
     }
     expr->type = EXPR_STRING;
     expr->token = p->current_token;
-    strncpy(expr->string, p->current_token.literal, len);
+    strcpy(expr->string, p->current_token.literal);
     return expr;
 }
 
@@ -423,7 +432,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
     next_token(p);
     struct identifier i;
     i.token = p->current_token;
-    strncpy(i.value, i.token.literal, MAX_IDENT_LENGTH);
+    strcpy(i.value, i.token.literal);
     params.values[params.size++] = i;
 
     while (next_token_is(p, TOKEN_COMMA)) {
@@ -432,7 +441,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
 
         struct identifier i;
         i.token = p->current_token;
-        strncpy(i.value, i.token.literal, MAX_IDENT_LENGTH);
+        strcpy(i.value, i.token.literal);
         params.values[params.size++] = i;
 
         if (params.size >= params.cap) {
@@ -811,8 +820,8 @@ char *operator_to_str(enum operator operator) {
     return "???";
 }
 
-void free_statements(struct statement *stmts, unsigned int size) {
-    for (int i=0; i < size; i++) {
+void free_statements(struct statement *stmts, size_t size) {
+    for (size_t i=0; i < size; i++) {
         free_expression(stmts[i].value);
     }
     
@@ -859,7 +868,7 @@ void free_expression(struct expression *expr) {
         break;
 
         case EXPR_CALL:
-            for (int i=0; i < expr->call.arguments.size; i++) {
+            for (size_t i=0; i < expr->call.arguments.size; i++) {
                 free_expression(expr->call.arguments.values[i]);
             }
             free(expr->call.arguments.values);
@@ -871,7 +880,7 @@ void free_expression(struct expression *expr) {
         break;
 
        case EXPR_ARRAY: 
-            for (int i=0; i < expr->array.size; i++) {
+            for (size_t i=0; i < expr->array.size; i++) {
                 free_expression(expr->array.values[i]);
             }
             free(expr->array.values);

@@ -328,7 +328,7 @@ void test_let_statements() {
         char *input;
         int expected;
     } tests[] = {
-        {"let a = 5; a;", 5},
+        {"let ba = 5; ba;", 5},
         {"let a = 5 * 5; a;", 25},
         {"let a = 5; let b = a; b;", 5},
         {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
@@ -337,7 +337,7 @@ void test_let_statements() {
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
     {
-        struct object *obj = test_eval(tests[i].input, false);
+        struct object *obj = test_eval(tests[i].input, true);
         test_integer_object(obj, tests[i].expected);
         free_object(obj);
     }

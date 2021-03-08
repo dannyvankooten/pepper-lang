@@ -15,7 +15,7 @@ struct hashmap *hashmap_new() {
 }
 
 void hashmap_insert(struct hashmap *hm, char *key, void *item) {
-    unsigned int pos = hash(key);
+    int pos = hash(key);
     struct hashmap_node *head = hm->table[pos];
     struct hashmap_node *node = head;
 

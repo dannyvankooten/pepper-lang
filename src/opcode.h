@@ -36,14 +36,14 @@ enum opcode {
 
 struct definition {
     char name[64];
-    unsigned int operands;
-    int operand_widths[MAX_OP_SIZE];
+    size_t operands;
+    size_t operand_widths[MAX_OP_SIZE];
 };
 
 struct instruction {
     uint8_t *bytes;
-    unsigned int cap;
-    unsigned int size;
+    size_t cap;
+    size_t size;
 };
 
 struct bytecode {
@@ -56,10 +56,10 @@ struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, ...);
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands);
 void free_instruction(struct instruction *ins);
-struct instruction *flatten_instructions_array(struct instruction *arr[], unsigned int size);
+struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size);
 char *instruction_to_str(struct instruction *ins);
-unsigned int read_operands(int dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, unsigned int offset);
-int read_bytes(uint8_t *bytes, unsigned int len);
+size_t read_operands(size_t dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, size_t offset);
+int read_bytes(uint8_t *bytes, size_t len);
 
 
 #define read_uint8(bytes) (bytes)[0]

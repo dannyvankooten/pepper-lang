@@ -122,13 +122,13 @@ void free_instruction(struct instruction *ins) {
     free(ins);
 }
 
-struct instruction *flatten_instructions_array(struct instruction *arr[], unsigned int size) {
+struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size) {
     struct instruction *ins = arr[0];
     
-    for (int i = 1; i < size; i++) {
+    for (size_t i = 1; i < size; i++) {
         // TODO: Allocate all at once
         ins->bytes = realloc(ins->bytes, (ins->size + arr[i]->size ) * sizeof(*ins->bytes));
-        for (int j=0; j < arr[i]->size; j++) {
+        for (size_t j=0; j < arr[i]->size; j++) {
             ins->bytes[ins->size++] = arr[i]->bytes[j];
         }
 
@@ -140,12 +140,12 @@ struct instruction *flatten_instructions_array(struct instruction *arr[], unsign
 
 char *instruction_to_str(struct instruction *ins) {
     char *buffer = malloc(ins->size * 32);
-    int operands[MAX_OP_SIZE] = {0, 0};
+    size_t operands[MAX_OP_SIZE] = {0, 0};
     buffer[0] = '\0';
 
-    for (int i=0; i < ins->size; i++) {
+    for (size_t i=0; i < ins->size; i++) {
         struct definition def = lookup(ins->bytes[i]);
-        unsigned int bytes_read = read_operands(operands, def, ins, i);
+        size_t bytes_read = read_operands(operands, def, ins, i);
         
         if (i > 0) {
             strcat(buffer, " | ");
@@ -154,24 +154,23 @@ char *instruction_to_str(struct instruction *ins) {
         char str[512];
         switch (def.operands) {
             case 0:
-                sprintf(str, "%04d %s", i, def.name);
+                sprintf(str, "%04ld %s", i, def.name);
             break;
             case 1:
-                sprintf(str, "%04d %s %d", i, def.name, operands[0]);
+                sprintf(str, "%04ld %s %ld", i, def.name, operands[0]);
             break;
             case 2:
-                sprintf(str, "%04d %s %d %d", i, def.name, operands[0], operands[1]);
+                sprintf(str, "%04ld %s %ld %ld", i, def.name, operands[0], operands[1]);
             break;
         }
         strcat(buffer, str);
         i += bytes_read;
     }
 
-
     return buffer;
 }
 
-int read_bytes(uint8_t *bytes, unsigned int len) {
+int read_bytes(uint8_t *bytes, size_t len) {
     switch (len) {
         case 1: return read_uint8(bytes);
         case 2: return read_uint16(bytes);
@@ -180,14 +179,14 @@ int read_bytes(uint8_t *bytes, unsigned int len) {
     err(EXIT_FAILURE, "Unsupported byte length");
 }
 
-unsigned int read_operands(int dest[], struct definition def, struct instruction *ins, unsigned int offset) {
-    unsigned int bytes_read = 0;
+size_t read_operands(size_t dest[], struct definition def, struct instruction *ins, size_t offset) {
+    size_t bytes_read = 0;
 
     // skip opcode
     offset += 1;
 
     // read bytes into dest array
-    for (int i=0; i < def.operands; i++) {
+    for (size_t i=0; i < def.operands; i++) {
         switch (def.operand_widths[i]) {
             case 1: 
                 dest[i] = read_uint8(ins->bytes + offset);

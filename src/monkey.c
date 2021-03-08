@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 
 char *read_file(char *filename) {
     char *input = malloc(1024);
-    unsigned int size = 0;
+    size_t size = 0;
 
     FILE *f = fopen(filename, "r");
     if (!f) {
@@ -159,7 +159,7 @@ char *read_file(char *filename) {
         exit(1);
     }
 
-    unsigned int read = 0;
+    size_t read = 0;
     while ( (read = fread(input, 512, 1024, f)) > 0) {
         size += read;
         input = realloc(input, size + 1024);

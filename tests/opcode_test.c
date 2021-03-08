@@ -6,7 +6,7 @@
 void test_make_instruction() {
     struct {
         enum opcode opcode;
-        int operands[MAX_OP_SIZE];
+        size_t operands[MAX_OP_SIZE];
         unsigned char expected[MAX_OP_SIZE];
         size_t expected_size;
     } tests[] = {
@@ -58,7 +58,7 @@ void test_instruction_string() {
 void test_read_operands() {
     struct {
         enum opcode opcode;
-        int operands[MAX_OP_SIZE];
+        size_t operands[MAX_OP_SIZE];
         size_t bytes_read;
     } tests[] = {
         {OPCODE_CONST, {65535}, 2},
@@ -69,10 +69,10 @@ void test_read_operands() {
     for (int t = 0; t < ARRAY_SIZE(tests); t++) {
         struct instruction *ins = make_instruction(tests[t].opcode, tests[t].operands[0]);
         struct definition def = lookup(tests[t].opcode);
-        int operands[3] = {0};
+        size_t operands[3] = {0};
         size_t bytes_read = read_operands(operands, def, ins, 0);
         assertf(bytes_read == tests[t].bytes_read, "wrong number of bytes read: expected %d, got %d", tests[t].bytes_read, bytes_read);
-        for (int i=0; i < def.operands; i++) {
+        for (size_t i=0; i < def.operands; i++) {
             assertf(tests[t].operands[i] == operands[i], "wrong operand: expected %d, got %d", tests[t].operands[i], operands[i]);
         }
         free_instruction(ins);

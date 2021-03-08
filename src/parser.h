@@ -1,6 +1,7 @@
 #ifndef PARSER_H 
 #define PARSER_H
 
+#include <stddef.h>
 #include <stdbool.h>
 #include "lexer.h"
 
@@ -69,8 +70,8 @@ struct identifier {
 
 struct identifier_list {
     struct identifier *values;
-    unsigned int size;
-    unsigned int cap;
+    size_t size;
+    size_t cap;
 };
 
 struct statement {
@@ -83,8 +84,8 @@ struct statement {
 struct block_statement {
     struct token token;
     struct statement *statements;
-    unsigned int size;
-    unsigned int cap;
+    size_t size;
+    size_t cap;
 };
 
 struct if_expression {
@@ -100,8 +101,8 @@ struct function_literal {
 };
 
 struct expression_list {
-    unsigned int size;
-    unsigned int cap;
+    size_t size;
+    size_t cap;
     struct expression **values;
 };
 
@@ -142,8 +143,8 @@ extern struct expression expression;
 
 struct program {
     struct statement *statements;
-    unsigned int cap;
-    unsigned int size;
+    size_t cap;
+    size_t size;
 };
 
 struct parser {
