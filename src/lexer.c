@@ -14,15 +14,17 @@ int is_digit(char ch) {
 
 int gettoken(struct lexer *l, struct token *t) {
     char ch = l->input[l->pos++];
+
     // skip whitespace
     while (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
         ch = l->input[l->pos++];
     }
 
-    char ch_next = l->input[l->pos];
-
+    char ch_next;
+    
     switch (ch) {
         case '=':
+            ch_next = l->input[l->pos];
             if (ch_next == '=') {
                 t->type = TOKEN_EQ;
                 strcpy(t->literal, "==");
@@ -71,6 +73,7 @@ int gettoken(struct lexer *l, struct token *t) {
         break;
 
         case '!':
+            ch_next = l->input[l->pos];
             if (ch_next == '=') {
                 t->type = TOKEN_NOT_EQ;
                 strcpy(t->literal, "!=");
@@ -132,7 +135,7 @@ int gettoken(struct lexer *l, struct token *t) {
 
         case '"': {
             t->type = TOKEN_STRING;
-            int i;
+            int i = 0;
             char ch;
             for (i=0; (ch = l->input[l->pos + i]) && ch != '"' && ch != '\0'; i++) {
                 t->literal[i] = ch;
@@ -186,7 +189,7 @@ int gettoken(struct lexer *l, struct token *t) {
 struct lexer new_lexer(char *input) {
     struct lexer lexer = {
         .input = input, 
-        .pos = 0
+        .pos = 0,
     };
     return lexer;
 }

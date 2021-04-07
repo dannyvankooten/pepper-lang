@@ -102,8 +102,6 @@ void compiler_replace_instruction(struct compiler *c, unsigned int pos, struct i
     for (size_t i=0; i < ins->size; i++) {
         c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
-
-    free_instruction(ins);
 }
 
 void compiler_replace_last_instruction(struct compiler *c, struct instruction *ins) {

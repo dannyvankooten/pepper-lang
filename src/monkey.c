@@ -12,7 +12,7 @@
 // TODO: perhaps mock this in case it's not installed, since it's not super necessary
 #include <editline/readline.h>
 
-char *read_file(char *filename);
+char *read_file(const char *filename);
 
 void print_version() {
     printf("Monkey-C %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
@@ -21,7 +21,7 @@ void print_version() {
 int repl() {
     print_version();
     printf("press CTRL+c to exit\n\n");
-    char *output = malloc(1024);
+    char *output = (char *) malloc(1024);
     if (!output) {
         puts("Failed to allocate memory for output buffer");
         exit(1);
@@ -125,10 +125,9 @@ int run_script(char *filename) {
         return EXIT_FAILURE;
     }
 
-    char output[256];
-    output[0] = '\0';
+    char output[BUFSIZ] = {0};
     struct object obj = vm_stack_last_popped(machine);
-    if (obj.type == OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION) {
+    if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION) {
         object_to_str(output, &obj);
         printf("%s\n", output);
     }
@@ -150,8 +149,9 @@ int main(int argc, char *argv[]) {
     return run_script(argv[1]);
 }
 
-char *read_file(char *filename) {
-    char *input = malloc(1024);
+char *read_file(const char *filename) {
+    char *input = (char *) malloc(BUFSIZ);
+    input[0] = '\0';
     size_t size = 0;
 
     FILE *f = fopen(filename, "r");
@@ -161,9 +161,12 @@ char *read_file(char *filename) {
     }
 
     size_t read = 0;
-    while ( (read = fread(input, 512, 1024, f)) > 0) {
+    while ( (read = fread(input, sizeof(char), BUFSIZ, f)) > 0) {
         size += read;
-        input = realloc(input, size + 1024);
+
+        if (read >= BUFSIZ) {
+            input = (char*) realloc(input, size + BUFSIZ);
+        }
     }
     fclose(f);
     return input;

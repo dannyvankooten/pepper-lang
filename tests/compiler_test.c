@@ -39,7 +39,7 @@ void test_object(struct object *expected, struct object *actual) {
         break;
         case OBJ_STRING: 
             assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected %s, got %s", expected->value.string, actual->value.string);
-            free(actual->value.string);
+            // free(actual->value.string);
             //free(actual);
             free(expected->value.string);
             free(expected);

@@ -5,5 +5,4 @@ let fibonacci = fn(x) {
 
     return fibonacci(x - 1) + fibonacci(x - 2);
 }
-
-fibonacci(40);
+puts(fibonacci(3))

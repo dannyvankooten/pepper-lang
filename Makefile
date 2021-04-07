@@ -1,4 +1,4 @@
-override CFLAGS+= -std=c11 -Wall -Isrc/ -g
+CFLAGS+= -Werror -Wall -Isrc/ -g
 LDLIBS=-l edit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH= src
@@ -9,17 +9,13 @@ COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c $(PARSER_SRC)
 VM_SRC= vm.c opcode.c object.c symbol_table.c $(PARSER_SRC)
 PREFIX= /usr/local
 
-ifeq "$(CC)" "gcc"
-	CFLAGS += -fno-crossjumping
-endif
-
 all: bin/monkey 
 
 bin/:
 	mkdir -p bin/
 
 bin/monkey: monkey.c $(EVAL_SRC) vm.c opcode.c symbol_table.c compiler.c | bin/
-	$(CC) $(CFLAGS) $^ -O3 -DOPT_AGGRESSIVE -DNDEBUG -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -Ofast -march=native -DNDEBUG  -o $@ $(LDLIBS)
 
 # tests
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/
@@ -41,6 +37,7 @@ check: bin/lexer_test bin/parser_test bin/opcode_test bin/eval_test bin/compiler
 	for test in $^; do $$test || exit 1; done
 
 .PHONY: bench
+bench: CFLAGS += -DUNSAFE -DOPT_AGGRESSIVE
 bench: bin/monkey
 	echo "**$(shell date '+%Y-%m-%d %H:%M')** (fib 35)" >> benchmarks.md
 	time --append -o benchmarks.md ./bin/monkey fibonacci.monkey

@@ -75,7 +75,8 @@ void vm_free(struct vm *vm) {
 struct frame frame_new(struct object obj, size_t bp) {
     #ifndef UNSAFE
     assert(obj.type == OBJ_COMPILED_FUNCTION);
-    #endif 
+    #endif
+
     struct frame f = {
         .ip = 0,
         .fn = obj.value.compiled_function,
@@ -176,9 +177,11 @@ int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
 
+    #ifndef UNSAFE
     if (left.type != right.type) {
         return VM_ERR_INVALID_OP_TYPE;
     }
+    #endif
 
     switch (left.type) {
         case OBJ_INT: return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
@@ -282,6 +285,7 @@ int vm_run(struct vm *vm) {
 
     /* tmp values used in switch cases */
     int err, idx, pos, num_args;
+    struct frame frame;
 
     /* 
     The following comment is taken from CPython's source: https://github.com/python/cpython/blob/master/Python/ceval.c#L775
@@ -413,20 +417,20 @@ int vm_run(struct vm *vm) {
         
         GOTO_OPCODE_CALL: 
             num_args = read_uint8((bytes + ip + 1));
-            struct object fn = vm->stack[vm->stack_pointer - 1 - num_args];
+            //struct object fn = vm->stack[vm->stack_pointer - 1 - num_args];
 
             // grab next new frame from frame stack & re-use
-            struct frame f = vm->frames[vm->frame_index+1];
-            f.ip = 0;
-            f.fn = fn.value.compiled_function;
-            f.base_pointer = vm->stack_pointer - num_args;
+            frame = vm->frames[vm->frame_index+1];
+            frame.ip = 0;
+            frame.fn = vm->stack[vm->stack_pointer - 1 - num_args].value.compiled_function;
+            frame.base_pointer = vm->stack_pointer - num_args;
             active_frame->ip = ip + 1;
-            vm_push_frame(vm, f);
+            vm_push_frame(vm, frame);
             active_frame = &vm->frames[vm->frame_index];
-            bytes = f.fn.instructions.bytes;
-            ip_max = f.fn.instructions.size;
+            bytes = frame.fn.instructions.bytes;
+            ip_max = frame.fn.instructions.size;
             ip = active_frame->ip;
-            vm->stack_pointer = f.base_pointer + f.fn.num_locals;
+            vm->stack_pointer = frame.base_pointer + frame.fn.num_locals;
             DISPATCH();
 
         GOTO_OPCODE_JUMP:
