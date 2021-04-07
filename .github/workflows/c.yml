@@ -13,5 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install libedit-dev
+      run: sudo apt-get install -y libedit-dev
     - name: make check
       run: make check
