@@ -16,33 +16,26 @@ void test_object(struct object *expected, struct object *actual) {
     switch (expected->type) {
         case OBJ_INT:
             assertf(actual->value.integer == expected->value.integer, "invalid integer value: expected %d, got %d", expected->value.integer, actual->value.integer);
-            //free(actual);
-            free(expected);
+            free_object(expected);
         break;
         case OBJ_BOOL:
             assertf(actual->value.boolean == expected->value.boolean, "invalid boolean value: expected %d, got %d", expected->value.boolean, actual->value.boolean);
         break;
         case OBJ_COMPILED_FUNCTION: {
-            char *expected_str = instruction_to_str(&expected->value.compiled_function.instructions);
-            char *actual_str = instruction_to_str(&actual->value.compiled_function.instructions);
-            assertf(expected->value.compiled_function.instructions.size == actual->value.compiled_function.instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
-            for (int i=0; i < expected->value.compiled_function.instructions.size; i++) {
-                assertf(expected->value.compiled_function.instructions.bytes[i] == actual->value.compiled_function.instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, expected->value.compiled_function.instructions.bytes[i], actual->value.compiled_function.instructions.bytes[i], expected_str, actual_str);
+            char *expected_str = instruction_to_str(&expected->value.compiled_function->instructions);
+            char *actual_str = instruction_to_str(&actual->value.compiled_function->instructions);
+            assertf(expected->value.compiled_function->instructions.size == actual->value.compiled_function->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
+            for (int i=0; i < expected->value.compiled_function->instructions.size; i++) {
+                assertf(expected->value.compiled_function->instructions.bytes[i] == actual->value.compiled_function->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, expected->value.compiled_function->instructions.bytes[i], actual->value.compiled_function->instructions.bytes[i], expected_str, actual_str);
             }
             free(expected_str);
             free(actual_str);
-            free(expected->value.compiled_function.instructions.bytes);
-            free(actual->value.compiled_function.instructions.bytes);
-            //free(actual);
-            free(expected);
+            free_object(expected);
         }
         break;
         case OBJ_STRING: 
             assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected %s, got %s", expected->value.string, actual->value.string);
-            // free(actual->value.string);
-            //free(actual);
-            free(expected->value.string);
-            free(expected);
+            free_object(expected);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(actual->type));
@@ -382,20 +375,19 @@ void test_global_let_statements() {
 
 void test_functions() {
     TESTNAME(__FUNCTION__);
-
     {
-        struct instruction *fn_body[] = {
+        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
             make_instruction(OPCODE_CONST, 1),
             make_instruction(OPCODE_ADD),
             make_instruction(OPCODE_RETURN_VALUE),
-        };
+        }, 4);
         struct compiler_test_case t = {
             .input = "fn() { return 5 + 10 }",
             .constants = {
                 make_integer_object(5),
                 make_integer_object(10),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 4), 0),
+                make_compiled_function_object(fn_body, 0),
             }, 3,
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
@@ -405,18 +397,18 @@ void test_functions() {
         run_compiler_test(t);
    }
    {
-        struct instruction *fn_body[] = {
+       struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
             make_instruction(OPCODE_CONST, 1),
             make_instruction(OPCODE_ADD),
             make_instruction(OPCODE_RETURN_VALUE),
-        };
+        }, 4);
         struct compiler_test_case t = {
             .input = "fn() { 5 + 10 }",
             .constants = {
                 make_integer_object(5),
                 make_integer_object(10),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 4), 0),
+                make_compiled_function_object(fn_body, 0),
             }, 3,
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
@@ -426,18 +418,18 @@ void test_functions() {
         run_compiler_test(t);
     }
     {
-        struct instruction *fn_body[] = {
+        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
             make_instruction(OPCODE_POP),
             make_instruction(OPCODE_CONST, 1),
             make_instruction(OPCODE_RETURN_VALUE),
-        };
+        }, 4);
         struct compiler_test_case t = {
             .input = "fn() { 1; 2 }",
             .constants = {
                 make_integer_object(1),
                 make_integer_object(2),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 4), 0),
+                make_compiled_function_object(fn_body, 0),
             }, 3,
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
@@ -447,10 +439,14 @@ void test_functions() {
         run_compiler_test(t);
     }
     {
+        // test function without return value
+        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
+            make_instruction(OPCODE_RETURN),
+        }, 1);
         struct compiler_test_case t = {
             .input = "fn() {}",
             .constants = {
-                make_compiled_function_object(make_instruction(OPCODE_RETURN), 0),
+                make_compiled_function_object(fn_body, 0),
             }, 1,
             .instructions = {
                 make_instruction(OPCODE_CONST, 0),
@@ -475,7 +471,10 @@ void test_compiler_scopes() {
     assertf(scope.instructions->size == 1, "wrong instruction size in scope: expected %d, got %d", 1, scope.instructions->size);
     assertf(scope.last_instruction.opcode == OPCODE_SUBTRACT, "wrong last instruction in scope: expected %d, got %d", OPCODE_SUBTRACT, scope.last_instruction.opcode);
     assertf(compiler->symbol_table->outer == globals, "compiler did not enclose symbol table");
-    compiler_leave_scope(compiler);
+    // we have to manually free this instruction here because we don't hand it over to 
+    // a compiled function
+    struct instruction* ins = compiler_leave_scope(compiler);
+    free_instruction(ins);
     assertf(compiler->symbol_table == globals, "compiler did not restore global symbol table");
     assertf(compiler->symbol_table->outer == NULL, "compiler modified global symbol table incorrectly");
     assertf(compiler->scope_index == 0, "wrong scope index: expected %d, got %d", 0, compiler->scope_index);
@@ -489,17 +488,16 @@ void test_compiler_scopes() {
 
 void test_function_calls() {
     TESTNAME(__FUNCTION__);
-
     {
-        struct instruction *fn_body[] = {
+        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
             make_instruction(OPCODE_RETURN_VALUE),
-        };
+        }, 2);
         struct compiler_test_case t = {
             .input = "fn() { 24 }();",
             .constants = {
                 make_integer_object(24),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 2), 0),
+                make_compiled_function_object(fn_body, 0),
             }, 2,
             .instructions = {
                 make_instruction(OPCODE_CONST, 1),
@@ -510,15 +508,15 @@ void test_function_calls() {
         run_compiler_test(t);
    }
    {
-        struct instruction *fn_body[] = {
+       struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
             make_instruction(OPCODE_RETURN_VALUE),
-        };
+        }, 2);
         struct compiler_test_case t = {
             .input = "let noArg = fn() { 24 }; noArg();",
             .constants = {
                 make_integer_object(24),
-                make_compiled_function_object(flatten_instructions_array(fn_body, 2), 0),
+                make_compiled_function_object(fn_body, 0),
             }, 2,
             .instructions = {
                 make_instruction(OPCODE_CONST, 1),
@@ -530,15 +528,15 @@ void test_function_calls() {
         };
         run_compiler_test(t);
    }
-   {
-        struct instruction *fn_body[] = {
+   { 
+        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_GET_LOCAL, 0),
             make_instruction(OPCODE_RETURN_VALUE),
-        };
+        }, 2);
         struct compiler_test_case t = {
             .input = "let oneArg = fn(a) { a; }; oneArg(24);",
             .constants = {
-                make_compiled_function_object(flatten_instructions_array(fn_body, 2), 0),
+                make_compiled_function_object(fn_body, 0),
                 make_integer_object(24),
             }, 2,
             .instructions = {
@@ -553,19 +551,18 @@ void test_function_calls() {
         run_compiler_test(t);
    }
    {
-        struct instruction *fn_body[] = {
+        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_GET_LOCAL, 0),
             make_instruction(OPCODE_POP),
             make_instruction(OPCODE_GET_LOCAL, 1),
             make_instruction(OPCODE_POP),
             make_instruction(OPCODE_GET_LOCAL, 2),
             make_instruction(OPCODE_RETURN_VALUE),
-        };
-        int fn_size = 6;
+        }, 6);
         struct compiler_test_case t = {
             .input = "let manyArg = fn(a, b, c) { a; b; c; }; manyArg(24, 25, 26);",
             .constants = {
-                make_compiled_function_object(flatten_instructions_array(fn_body, fn_size), 0),
+                make_compiled_function_object(fn_body, 0),
                 make_integer_object(24),
                 make_integer_object(25),
                 make_integer_object(26),
@@ -583,29 +580,128 @@ void test_function_calls() {
         };
         run_compiler_test(t);
    }
+   {
+        // test code with multiple functions to exercise scope logic (entering and leaving scopes)
+        struct instruction *fn_one = flatten_instructions_array((struct instruction *[]) {
+            make_instruction(OPCODE_CONST, 0),
+            make_instruction(OPCODE_RETURN_VALUE),
+        }, 2);
+        struct instruction *fn_two = flatten_instructions_array((struct instruction *[]) {
+            make_instruction(OPCODE_CONST, 2),
+            make_instruction(OPCODE_RETURN_VALUE),
+        }, 2);
+        struct compiler_test_case t = {
+            .input = "let one = fn() { 1; }; let two = fn() { 2; } one() + two();",
+            .constants = {
+                make_integer_object(1),
+                make_compiled_function_object(fn_one, 0),
+                make_integer_object(2),
+                make_compiled_function_object(fn_two, 0),                
+            }, 4,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 3),
+                make_instruction(OPCODE_SET_GLOBAL, 1),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CALL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 1),
+                make_instruction(OPCODE_CALL, 0),
+                make_instruction(OPCODE_ADD),                
+                make_instruction(OPCODE_POP),
+            }, 10,
+        };
+        run_compiler_test(t);
+   }
 }
+
 
 void test_let_statement_scopes() {
     TESTNAME(__FUNCTION__);
 
-    // TODO: Implement this
+    {
+       struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
+            make_instruction(OPCODE_GET_GLOBAL, 0),
+            make_instruction(OPCODE_RETURN_VALUE),
+        }, 2);
+        struct compiler_test_case t = {
+            .input = "let num = 55;\nfn() { num }",
+            .constants = {
+                make_integer_object(55),
+                make_compiled_function_object(fn_body, 0),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_POP),
+            }, 4,
+        };
+        run_compiler_test(t);
+   }
+   {
+       struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
+            make_instruction(OPCODE_CONST, 0),
+            make_instruction(OPCODE_SET_LOCAL, 0),
+            make_instruction(OPCODE_GET_LOCAL, 0),
+            make_instruction(OPCODE_RETURN_VALUE),
+        }, 4);
+        struct compiler_test_case t = {
+            .input = "fn() { let num = 55; num }",
+            .constants = {
+                make_integer_object(55),
+                make_compiled_function_object(fn_body, 0),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_POP),
+            }, 2,
+        };
+        run_compiler_test(t);
+   }
+   {
+       struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
+            make_instruction(OPCODE_CONST, 0),
+            make_instruction(OPCODE_SET_LOCAL, 0),
+            make_instruction(OPCODE_CONST, 1),
+            make_instruction(OPCODE_SET_LOCAL, 1),
+            make_instruction(OPCODE_GET_LOCAL, 0),
+            make_instruction(OPCODE_GET_LOCAL, 1),
+            make_instruction(OPCODE_ADD),
+            make_instruction(OPCODE_RETURN_VALUE),
+        }, 8);
+        struct compiler_test_case t = {
+            .input = "fn() { let a = 55; let b = 77; a + b }",
+            .constants = {
+                make_integer_object(55),
+                make_integer_object(77),
+                make_compiled_function_object(fn_body, 0),
+            }, 3,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 2),
+                make_instruction(OPCODE_POP),
+            }, 2,
+        };
+        run_compiler_test(t);
+   }
+
+
 }
 
 void test_recursive_functions() {
-    struct instruction *fn_body[] = {
+    struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
         make_instruction(OPCODE_GET_GLOBAL, 0),
         make_instruction(OPCODE_GET_LOCAL, 0),
         make_instruction(OPCODE_CONST, 0),
         make_instruction(OPCODE_SUBTRACT),
         make_instruction(OPCODE_CALL, 1),
         make_instruction(OPCODE_RETURN_VALUE),
-    };
-    int fn_size = 6;
+        }, 6);
     struct compiler_test_case t = {
         .input = "let countdown = fn(x) { return countdown(x-1); }; countdown(1);",
         .constants = {
             make_integer_object(1),
-            make_compiled_function_object(flatten_instructions_array(fn_body, fn_size), 0),
+            make_compiled_function_object(fn_body, 0),
             make_integer_object(1),
         }, 3,
         .instructions = {   
@@ -652,6 +748,7 @@ void test_string_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+
 int main() {
     test_integer_arithmetic();
     test_boolean_expressions();
@@ -661,7 +758,11 @@ int main() {
     test_functions();
     test_function_calls();
     test_let_statement_scopes();
-    test_recursive_functions();
     test_string_expressions();
+    test_recursive_functions();
+
     printf("\x1b[32mAll compiler tests passed!\033[0m\n");
+
+    free_object_pool();
+    free_object_list_pool();
 }

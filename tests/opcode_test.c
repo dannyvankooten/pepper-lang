@@ -1,6 +1,6 @@
 
 #include <string.h> 
-#include "opcode.h"
+#include "../src/opcode.h"
 #include "test_helpers.h"
 
 void test_make_instruction() {

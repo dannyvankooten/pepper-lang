@@ -1,5 +1,4 @@
-#ifndef PARSER_H 
-#define PARSER_H
+#pragma once 
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -165,5 +164,3 @@ void identifier_list_to_str(char *str, struct identifier_list *identifiers);
 char *program_to_str(struct program *p);
 void free_program(struct program *p);
 char *operator_to_str(enum operator operator);
-
-#endif

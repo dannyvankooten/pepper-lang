@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,7 +97,7 @@ int repl() {
     return 0;
 }
 
-int run_script(char *filename) {
+int run_script(const char *filename) {
     char *input = read_file(filename);
     struct lexer lexer = new_lexer(input);
     struct parser parser = new_parser(&lexer);
@@ -151,6 +152,7 @@ int main(int argc, char *argv[]) {
 
 char *read_file(const char *filename) {
     char *input = (char *) malloc(BUFSIZ);
+    assert(input != NULL);
     input[0] = '\0';
     size_t size = 0;
 
@@ -166,6 +168,7 @@ char *read_file(const char *filename) {
 
         if (read >= BUFSIZ) {
             input = (char*) realloc(input, size + BUFSIZ);
+            assert(input != NULL);
         }
     }
     fclose(f);

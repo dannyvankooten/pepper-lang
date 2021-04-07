@@ -14,4 +14,4 @@ let fibonacci = fn(n) {
     return c;
 }
 
-puts("Fibonacci #5 is ", fibonacci(5));
+puts("Fibonacci #35 is ", fibonacci(35));

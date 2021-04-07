@@ -1,5 +1,5 @@
 #include "test_helpers.h"
-#include "symbol_table.h"
+#include "../src/symbol_table.h"
 
 void test_define() {
     TESTNAME(__FUNCTION__);
@@ -76,6 +76,7 @@ void test_resolve_local() {
     }
 
     symbol_table_free(global);
+    symbol_table_free(local);
 }
 
 void test_define_and_resolve_function_name() {
@@ -94,13 +95,14 @@ void test_define_and_resolve_function_name() {
     assertf(strcmp(s->name, expected.name) == 0, "wrong name: expected %s, got %s", expected.name, s->name);
     assertf(s->index == expected.index, "wrong index: expected %d, got %d", expected.index, s->index);
     assertf(s->scope == expected.scope, "wrong scope: expected %d, got %d", expected.scope, s->scope);
+    symbol_table_free(g);
 }
 
 void test_shadowing_function_name() {
     TESTNAME(__FUNCTION__);
 
     struct symbol_table *g = symbol_table_new();
-    symbol_table_define_function(g, "a");
+    struct symbol *f = symbol_table_define_function(g, "a");
     symbol_table_define(g, "a");
     
     struct symbol expected = {
@@ -114,6 +116,8 @@ void test_shadowing_function_name() {
     assertf(strcmp(s->name, expected.name) == 0, "wrong name: expected %s, got %s", expected.name, s->name);
     assertf(s->index == expected.index, "wrong index: expected %d, got %d", expected.index, s->index);
     assertf(s->scope == expected.scope, "wrong scope: expected %d, got %d", expected.scope, s->scope);
+    symbol_table_free(g);
+    free(f);
 }
 
 int main() {

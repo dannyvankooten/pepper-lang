@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
@@ -22,7 +23,6 @@ void hashmap_insert(struct hashmap *hm, char *key, void *item) {
     // walk list to find existing value with that key
     while (node) {
         if (strcmp(node->key, key) == 0) {
-            //free(item);
             node->value = item;
             return;
         }
@@ -32,6 +32,7 @@ void hashmap_insert(struct hashmap *hm, char *key, void *item) {
 
     // insert new node at start of list
     node = malloc(sizeof *node);
+    assert(node != NULL);
     node->key = key;
     node->value = item;
     node->next = head;

@@ -1,5 +1,4 @@
-#ifndef VM_H 
-#define VM_H 
+#pragma once
 
 #define STACK_SIZE 2048
 #define MAX_GLOBALS 65536
@@ -8,7 +7,7 @@
 #include "object.h"
 
 struct frame {
-    struct compiled_function fn;
+    struct compiled_function* fn;
     size_t ip;
     size_t base_pointer;
 };
@@ -36,5 +35,3 @@ void vm_free(struct vm *vm);
 
 struct frame frame_new(struct object obj, size_t bp);
 struct instruction *frame_instructions(struct frame *f);
-
-#endif 

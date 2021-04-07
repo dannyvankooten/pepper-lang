@@ -28,6 +28,7 @@ const struct object obj_false = {
 
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
+    assert(vm != NULL);
     vm->stack_pointer = 0;
 
     for (int i = 0; i < STACK_SIZE; i++) {
@@ -37,25 +38,16 @@ struct vm *vm_new(struct bytecode *bc) {
     }
 
     for (int i=0; i < bc->constants->size; i++) {
-       struct object obj = *bc->constants->values[i];
-
-       // copy over string values
-       if (obj.type == OBJ_STRING) {
-            char *dup = malloc(strlen(obj.value.string) + 1);
-            if (!dup) {
-                err(EXIT_FAILURE, "out of memory");
-            }
-            strcpy(dup, obj.value.string);
-            obj.value.string = dup;
-       }
-
-       vm->constants[i] = obj;
+       vm->constants[i] = *bc->constants->values[i];
     }    
 
-    struct object *fn = make_compiled_function_object(bc->instructions, 0);
+    // copy instructions here
+    struct instruction *ins = malloc(sizeof (struct instruction));
+    memcpy(ins, bc->instructions, sizeof(struct instruction));
+    struct object *fn = make_compiled_function_object(ins, 0);
     vm->frames[0] = frame_new(*fn, 0);
     vm->frame_index = 0;
-    free_object(fn);
+    free_object_shallow(fn);
     return vm;
 }
 
@@ -69,14 +61,12 @@ struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_
 }
 
 void vm_free(struct vm *vm) {
+    free(vm->frames[0].fn);
     free(vm);
 }
 
 struct frame frame_new(struct object obj, size_t bp) {
-    #ifndef UNSAFE
     assert(obj.type == OBJ_COMPILED_FUNCTION);
-    #endif
-
     struct frame f = {
         .ip = 0,
         .fn = obj.value.compiled_function,
@@ -94,11 +84,7 @@ struct frame vm_pop_frame(struct vm *vm) {
     return vm->frames[vm->frame_index--];
 }
 void vm_push_frame(struct vm *vm, struct frame f) {
-    #ifndef UNSAFE
-    if ((vm->frame_index + 1) >= STACK_SIZE) {
-        err(VM_ERR_STACK_OVERFLOW, "frame overflow");
-    }
-    #endif
+    assert(vm->frame_index + 1 < STACK_SIZE);
     vm->frames[++vm->frame_index] = f;
 }
 #endif
@@ -165,8 +151,11 @@ int vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left,
         .type = OBJ_STRING,
     };
 
-    // FIXME: Re-use allocation here?
+    // TODO: Fix this... This allocation is not freed yet
+    // We should probably assume ownership of all objects entering the VM
+    // So that this becomes a lot easier
     obj.value.string = malloc(strlen(left) + strlen(right) + 1);
+    assert(obj.value.string != NULL);
     strcpy(obj.value.string, left);
     strcat(obj.value.string, right);
     vm_stack_push(vm, obj);
@@ -176,12 +165,7 @@ int vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left,
 int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
-
-    #ifndef UNSAFE
-    if (left.type != right.type) {
-        return VM_ERR_INVALID_OP_TYPE;
-    }
-    #endif
+    assert(left.type == right.type);
 
     switch (left.type) {
         case OBJ_INT: return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
@@ -224,11 +208,7 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
 
-    #ifndef UNSAFE
-    if (left.type != right.type) {
-        return VM_ERR_INVALID_OP_TYPE;
-    }
-    #endif
+    assert(left.type == right.type);
     
     if (left.type == OBJ_INT) {
         return vm_do_integer_comparison(vm, opcode, left.value.integer, right.value.integer);
@@ -260,19 +240,11 @@ void vm_do_bang_operation(struct vm *vm) {
 
 int vm_do_minus_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
-
-    #ifndef UNSAFE
-    if (obj.type != OBJ_INT) {
-        return VM_ERR_INVALID_OP_TYPE;
-    }
-    #endif
-
+    assert(obj.type == OBJ_INT);
     obj.value.integer = -obj.value.integer;
     vm_stack_push(vm, obj);
     return 0;
 }
-
-
 
 int vm_run(struct vm *vm) {
 
@@ -361,7 +333,7 @@ int vm_run(struct vm *vm) {
 
     #ifdef DEBUG
     char str[512];
-    printf("Running VM\nInstructions: %s\n", instruction_to_str(&vm->frames[0].fn.instructions));
+    printf("Running VM\nInstructions: %s\n", instruction_to_str(&vm->frames[0].fn->instructions));
     printf("Constants: \n");
     for (int i = 0; i < 4; i++) {
         str[0] = '\0';
@@ -371,9 +343,9 @@ int vm_run(struct vm *vm) {
     #endif
 
     active_frame = &vm->frames[vm->frame_index];
-    bytes = active_frame->fn.instructions.bytes;
+    bytes = active_frame->fn->instructions.bytes;
     ip = active_frame->ip;
-    ip_max = active_frame->fn.instructions.size;
+    ip_max = active_frame->fn->instructions.size;
 
      #ifdef DEBUG
      while (1) {    
@@ -404,12 +376,14 @@ int vm_run(struct vm *vm) {
         // intitial dispatch
         DISPATCH();
 
+        // loads a constant on the stack
         GOTO_OPCODE_CONST:
             idx = read_uint16((bytes + ip + 1));
             ip += 3;
             vm_stack_push(vm, vm->constants[idx]);   
             DISPATCH();
 
+        // pop last value off the stack and discard it
         GOTO_OPCODE_POP:
             vm_stack_pop_ignore(vm);
             ip++;
@@ -427,10 +401,10 @@ int vm_run(struct vm *vm) {
             active_frame->ip = ip + 1;
             vm_push_frame(vm, frame);
             active_frame = &vm->frames[vm->frame_index];
-            bytes = frame.fn.instructions.bytes;
-            ip_max = frame.fn.instructions.size;
+            bytes = frame.fn->instructions.bytes;
+            ip_max = frame.fn->instructions.size;
             ip = active_frame->ip;
-            vm->stack_pointer = frame.base_pointer + frame.fn.num_locals;
+            vm->stack_pointer = frame.base_pointer + frame.fn->num_locals;
             DISPATCH();
 
         GOTO_OPCODE_JUMP:
@@ -465,8 +439,8 @@ int vm_run(struct vm *vm) {
             struct object obj = vm_stack_pop(vm); 
             struct frame f = vm_pop_frame(vm);
             active_frame = &vm->frames[vm->frame_index];
-            bytes = active_frame->fn.instructions.bytes;
-            ip_max = active_frame->fn.instructions.size;
+            bytes = active_frame->fn->instructions.bytes;
+            ip_max = active_frame->fn->instructions.size;
             ip = active_frame->ip;
             vm->stack_pointer = f.base_pointer - 1;
             vm_stack_push(vm, obj);
@@ -478,8 +452,8 @@ int vm_run(struct vm *vm) {
             struct frame f = vm_pop_frame(vm);
             active_frame = &vm->frames[vm->frame_index];
             ip = active_frame->ip;
-            ip_max = active_frame->fn.instructions.size;
-            bytes = active_frame->fn.instructions.bytes;
+            ip_max = active_frame->fn->instructions.size;
+            bytes = active_frame->fn->instructions.bytes;
             vm->stack_pointer = f.base_pointer - 1;
             vm_stack_push(vm, obj_null);
             DISPATCH();

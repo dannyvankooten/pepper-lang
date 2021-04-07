@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <err.h> 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -8,8 +9,6 @@
 #include "opcode.h"
 #include "object.h"
 #include "parser.h"
-
-struct object_list *copy_object_list(struct object_list *original);
 
 static struct object _object_null = {
     .type = OBJ_NULL,
@@ -149,9 +148,12 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
 
 struct object *make_compiled_function_object(struct instruction *ins, size_t num_locals) {
     struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
-    //obj->value.compiled_function = malloc(sizeof *obj->value.compiled_function);
-    obj->value.compiled_function.num_locals = num_locals;
-    obj->value.compiled_function.instructions = *ins;
+    struct compiled_function *f = malloc(sizeof (struct compiled_function));
+    assert(f != NULL);
+    f->num_locals = num_locals;
+    f->instructions = *ins;
+    free(ins);
+    obj->value.compiled_function = f;
     return obj;
 }   
 
@@ -187,13 +189,19 @@ struct object *copy_object(struct object *obj) {
             break;
     }
 
-    // TODO: This should not be reached, but also potential problem later on
-    return obj;
+    err(EXIT_FAILURE, "unhandled object type passed to copy_object()");
 }
 
+void free_object_shallow(struct object *obj)
+{   
+    // add to start of free object list
+    obj->next = object_pool_head;
+    object_pool_head = obj;
+}
 
 void free_object(struct object *obj)
 {   
+    // TODO Do we need this?
     if (obj->name) {
         return;
     }
@@ -227,7 +235,9 @@ void free_object(struct object *obj)
             break;
 
         case OBJ_COMPILED_FUNCTION: 
-            //free_instruction(&obj->value.compiled_function.instructions);
+            free(obj->value.compiled_function->instructions.bytes);
+            free(obj->value.compiled_function);
+            obj->value.compiled_function = NULL;
         break;
 
        default:
@@ -235,9 +245,7 @@ void free_object(struct object *obj)
            break;
     }
 
-     // add to start of free object list
-    obj->next = object_pool_head;
-    object_pool_head = obj;
+    free_object_shallow(obj);
 }
 
 
@@ -333,7 +341,7 @@ void object_to_str(char *str, struct object *obj)
         break;
 
     case OBJ_COMPILED_FUNCTION: 
-        strcat(str, instruction_to_str(&obj->value.compiled_function.instructions));
+        strcat(str, instruction_to_str(&obj->value.compiled_function->instructions));
         break;
     }
 }

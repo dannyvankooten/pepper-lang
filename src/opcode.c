@@ -1,12 +1,14 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <err.h>
+#include <assert.h>
 
 #include "opcode.h"
 
-struct definition definitions[] = {
+static struct definition definitions[] = {
     {
         "OpConstant", 1, {2}
     },
@@ -92,8 +94,10 @@ struct definition lookup(enum opcode opcode) {
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     struct definition def = lookup(opcode);
     struct instruction *ins = malloc(sizeof *ins);
+    assert(ins != NULL);
     
     ins->bytes = malloc(sizeof *ins->bytes * (def.operands + 1) * 3);
+    assert(ins->bytes != NULL);
     ins->bytes[0] = opcode;
     ins->size = 1;
     ins->cap = (def.operands + 1);      
@@ -124,10 +128,15 @@ void free_instruction(struct instruction *ins) {
 
 struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size) {
     struct instruction *ins = arr[0];
+
+    // add all instructions to first instruction in the list
     
     for (size_t i = 1; i < size; i++) {
         // TODO: Allocate all at once
         ins->bytes = realloc(ins->bytes, (ins->size + arr[i]->size ) * sizeof(*ins->bytes));
+        assert(ins->bytes != NULL);
+
+        // TODO: Use memcpy here?
         for (size_t j=0; j < arr[i]->size; j++) {
             ins->bytes[ins->size++] = arr[i]->bytes[j];
         }
@@ -140,6 +149,7 @@ struct instruction *flatten_instructions_array(struct instruction *arr[], size_t
 
 char *instruction_to_str(struct instruction *ins) {
     char *buffer = malloc(ins->size * 32);
+    assert(buffer != NULL);
     size_t operands[MAX_OP_SIZE] = {0, 0};
     buffer[0] = '\0';
 
@@ -170,7 +180,7 @@ char *instruction_to_str(struct instruction *ins) {
     return buffer;
 }
 
-int read_bytes(uint8_t *bytes, size_t len) {
+int read_bytes(uint8_t *bytes, uint8_t len) {
     switch (len) {
         case 1: return read_uint8(bytes);
         case 2: return read_uint16(bytes);

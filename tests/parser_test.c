@@ -3,7 +3,7 @@
 #include <stdlib.h> 
 #include <stdarg.h> 
 
-#include "parser.h"
+#include "../src/parser.h"
 #include "test_helpers.h"
 
 union expression_value {
@@ -606,7 +606,7 @@ void test_function_literal_with_name() {
     struct expression *expr = stmt.value;
     assertf(expr->type == EXPR_FUNCTION, "invalid statement type: expected %d, got %d\n", EXPR_FUNCTION, stmt.type);
     assertf(strcmp(expr->function.name, "myFunction") == 0, "wrong function name: expected myFunction, got %s", expr->function.name);
-
+    free_program(program);
 }
 
 int main() {

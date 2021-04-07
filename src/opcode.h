@@ -59,7 +59,7 @@ void free_instruction(struct instruction *ins);
 struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size);
 char *instruction_to_str(struct instruction *ins);
 size_t read_operands(size_t dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, size_t offset);
-int read_bytes(uint8_t *bytes, size_t len);
+int read_bytes(uint8_t *bytes, uint8_t len);
 
 
 #define read_uint8(bytes) (bytes)[0]

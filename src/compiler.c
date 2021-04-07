@@ -2,20 +2,30 @@
 #include <string.h> 
 #include <stdarg.h>
 #include <assert.h>
+#include <sys/types.h>
 #include "compiler.h"
+#include "object.h"
+#include "opcode.h"
+#include "vm.h"
 
 int compile_statement(struct compiler *compiler, struct statement *statement);
 int compile_expression(struct compiler *compiler, struct expression *expression);
 
 struct compiler *compiler_new() {
     struct compiler *c = malloc(sizeof *c);
+    assert(c != NULL);
     struct compiler_scope scope;
     scope.instructions = malloc(sizeof *scope.instructions);
-    scope.instructions->cap = 1024; // initial capacity of 1024 bytes
-    scope.instructions->bytes = malloc(sizeof *scope.instructions->bytes * scope.instructions->cap);
+    assert(scope.instructions != NULL);
+    scope.instructions->cap = 2048; // initial capacity of 1024 bytes
+    scope.instructions->bytes = calloc(scope.instructions->cap, sizeof *scope.instructions->bytes);
+    assert(scope.instructions->bytes != NULL);
     scope.instructions->size = 0;
     c->constants = make_object_list(64);
     c->symbol_table = symbol_table_new();
+    for (int i=0; i < 64; i++) {
+        c->scopes[i].instructions = NULL;
+    }
     c->scopes[0] = scope;
     c->scope_index = 0;
     return c;
@@ -38,8 +48,8 @@ void compiler_free(struct compiler *c) {
 }
 
 /* TODO: We probably want dynamic error messages that includes parts of the program string */
-char *compiler_error_str(int err) {
-    static char *messages[] = {
+const char *compiler_error_str(int err) {
+    static const char *messages[] = {
         "Success",
         "Unknown operator",
         "Unknown expression type",
@@ -65,8 +75,10 @@ add_instruction(struct compiler *c, struct instruction *ins) {
     if (new_size >= cins->cap) {
         cins->cap *= 2;
         cins->bytes = realloc(cins->bytes, cins->cap * sizeof(*cins->bytes));
+        assert(cins->bytes != NULL);
     }
 
+    // TODO: Use memcpy here?
     for (size_t i=0; i < ins->size; i++) {
         cins->bytes[cins->size++] = ins->bytes[i];
     }
@@ -77,7 +89,6 @@ add_instruction(struct compiler *c, struct instruction *ins) {
 
 size_t
 add_constant(struct compiler *c, struct object *obj) {
-    // TODO: Dereference here?
     c->constants->values[c->constants->size++] = obj;
     return c->constants->size - 1;
 }
@@ -102,12 +113,15 @@ void compiler_replace_instruction(struct compiler *c, unsigned int pos, struct i
     for (size_t i=0; i < ins->size; i++) {
         c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
+
+    free_instruction(ins);
 }
 
 void compiler_replace_last_instruction(struct compiler *c, struct instruction *ins) {
     size_t pos = compiler_current_scope(c).last_instruction.position;
+    enum opcode first = ins->bytes[0];
     compiler_replace_instruction(c, pos, ins);
-    compiler_set_last_instruction(c, ins->bytes[0], pos);
+    compiler_set_last_instruction(c, first, pos);
 }
 
 bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode) {
@@ -309,7 +323,6 @@ compile_expression(struct compiler *c, struct expression *expr) {
         break;
 
         case EXPR_STRING: {
-            // FIXME: Copy string here
             struct object *obj = make_string_object(expr->string, NULL);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
         }
@@ -373,36 +386,30 @@ compile_expression(struct compiler *c, struct expression *expr) {
 struct bytecode *
 get_bytecode(struct compiler *c) {
     struct bytecode *b = malloc(sizeof *b);
+    assert(b != NULL);
     b->instructions = compiler_current_instructions(c);
-    // TODO: Copy object list here?
-    b->constants = c->constants;
+    b->constants = c->constants; // pointer, no copy
     return b;
 }
 
 void compiler_enter_scope(struct compiler *c) {
-    c->scope_index++;
-
     struct compiler_scope scope;
     scope.instructions = malloc(sizeof *scope.instructions);
+    assert(scope.instructions != NULL);
     scope.instructions->cap = 1024; // initial capacity of 1024 bytes
-    scope.instructions->bytes = malloc(sizeof *scope.instructions->bytes * scope.instructions->cap);
+    scope.instructions->bytes = calloc(scope.instructions->cap, sizeof *scope.instructions->bytes);
+    assert(scope.instructions->bytes != NULL);
     scope.instructions->size = 0;
-    c->scopes[c->scope_index] = scope;
-
+    c->scopes[++c->scope_index] = scope;
     c->symbol_table = symbol_table_new_enclosed(c->symbol_table);
 }
 
 struct instruction *
 compiler_leave_scope(struct compiler *c) {
-    struct instruction *ins = c->scopes[c->scope_index].instructions;
-    // We transfer ownership of this scope's instructions to a compiled function
-    // So we do not free it here.
-    // free(c->scopes[c->scope_index].instructions->bytes);
-    // free(c->scopes[c->scope_index].instructions);
+    struct instruction *ins = c->scopes[c->scope_index].instructions;   
     struct symbol_table *t = c->symbol_table;
     c->symbol_table = c->symbol_table->outer;
     symbol_table_free(t);
-
     c->scope_index--;
     return ins;
 }

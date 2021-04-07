@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <err.h>
 #include <string.h>
@@ -188,7 +189,7 @@ struct expression_list parse_expression_list(struct parser *p, enum token_type e
 
     // allocate memory here, so we do not need an alloc for calls without any arguments
     list.cap = 4;
-    list.values = malloc(list.cap * sizeof *list.values);
+    list.values = malloc(list.cap * sizeof **list.values);
     if (!list.values) {
         err(EXIT_FAILURE, "out of memory");
     }
@@ -204,7 +205,8 @@ struct expression_list parse_expression_list(struct parser *p, enum token_type e
         // double capacity if needed
         if (list.size >= list.cap) {
             list.cap *= 2;
-            list.values = realloc(list.values, list.cap * sizeof *list.values);
+            list.values = realloc(list.values, list.cap * sizeof **list.values);
+            assert(list.values != NULL);
         }
     }
 
@@ -321,6 +323,7 @@ struct block_statement *parse_block_statement(struct parser *p) {
             if (b->size >= b->cap) {
                 b->cap *= 2;
                 b->statements = realloc(b->statements, b->cap * sizeof *b->statements);
+                assert(b->statements != NULL);
             }
         }
         next_token(p);
@@ -616,6 +619,7 @@ struct program *parse_program(struct parser *parser) {
         if (program->size >= program->cap) {
             program->cap *= 2;
             program->statements = realloc(program->statements, sizeof *program->statements * program->cap);
+            assert(program->statements != NULL);
         }
 
         next_token(parser);        
@@ -766,20 +770,14 @@ void expression_to_str(char *str, struct expression *expr) {
 }
 
 char *program_to_str(struct program *p) {
-    // TODO: Use some kind of buffer here that dynamically grows
-    char *str = malloc(256);
+    char *str = malloc(BUFSIZ);
     if (!str) {
         err(EXIT_FAILURE, "out of memory");
     }
-
     *str = '\0';
 
     for (int i = 0; i < p->size; i++) {  
         statement_to_str(str, &p->statements[i]);
-        
-        if (i < p->size -1) {
-            str = realloc(str, sizeof str + 256);
-        }
     }    
 
     return str;

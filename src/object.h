@@ -1,5 +1,4 @@
-#ifndef OBJECT_H
-#define OBJECT_H
+#pragma once 
 
 #include <stdbool.h>
 #include "env.h"
@@ -53,7 +52,7 @@ union object_value {
     struct function function;
     struct object *(*builtin)(struct object_list *);
     struct object_list *array;
-    struct compiled_function compiled_function;
+    struct compiled_function* compiled_function;
 };
 
 struct object
@@ -81,11 +80,11 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
 struct object *make_compiled_function_object(struct instruction *ins, size_t num_locals);
 struct object *copy_object(struct object *obj);
 void free_object(struct object *obj);
+void free_object_shallow(struct object *obj);
 void object_to_str(char *str, struct object *obj);
 
 struct object_list *make_object_list(size_t cap);
+struct object_list *copy_object_list(struct object_list *original);
 void free_object_list(struct object_list *list);
 void free_object_list_pool();
 void free_object_pool();
-
-#endif

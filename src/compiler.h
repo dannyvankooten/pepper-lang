@@ -1,5 +1,4 @@
-#ifndef COMPILER_H 
-#define COMPILER_H
+#pragma once 
 
 #include "opcode.h"
 #include "object.h"
@@ -32,10 +31,8 @@ void compiler_free(struct compiler *c);
 int compile_program(struct compiler *compiler, struct program *program);
 struct bytecode *get_bytecode(struct compiler *c);
 void concat_instructions(struct instruction *ins1, struct instruction *ins2);
-char *compiler_error_str(int err);
+const char *compiler_error_str(int err);
 size_t compiler_emit(struct compiler *c, enum opcode opcode, ...);
 void compiler_enter_scope(struct compiler *c);
 struct instruction *compiler_leave_scope(struct compiler *c);
 struct compiler_scope compiler_current_scope(struct compiler *c);
-
-#endif
