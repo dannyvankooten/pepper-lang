@@ -25,7 +25,7 @@ void assert_parser_errors(struct parser *p) {
     }
 }
 
-void assert_program_size(struct program *p, unsigned int expected_size) {
+void assert_program_size(struct program *p, uint32_t expected_size) {
     assertf(p->size == expected_size, "wrong program size. expected %d, got %d\n", expected_size, p->size); 
 }
 

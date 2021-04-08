@@ -8,18 +8,18 @@
 
 struct frame {
     struct compiled_function* fn;
-    size_t ip;
-    size_t base_pointer;
+    uint32_t ip;
+    uint32_t base_pointer;
 };
 
 struct vm {
     struct frame frames[STACK_SIZE];
-    size_t frame_index;
+    uint32_t frame_index;
     
     struct object constants[STACK_SIZE];
     struct object globals[STACK_SIZE];
     struct object stack[STACK_SIZE];
-    size_t stack_pointer;
+    uint32_t stack_pointer;
 };
 
 extern const struct object obj_null;
@@ -33,5 +33,5 @@ struct object vm_stack_last_popped(struct vm *vm);
 struct object vm_stack_pop(struct vm *vm);
 void vm_free(struct vm *vm);
 
-struct frame frame_new(struct object obj, size_t bp);
+struct frame frame_new(struct object obj, uint32_t bp);
 struct instruction *frame_instructions(struct frame *f);

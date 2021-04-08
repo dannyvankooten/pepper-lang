@@ -4,9 +4,9 @@
 struct compiler_test_case {
     char *input;
     struct object *constants[16];
-    size_t constants_size;
+    uint32_t constants_size;
     struct instruction *instructions[16];
-    size_t instructions_size;
+    uint32_t instructions_size;
 };
 
 void test_object(struct object *expected, struct object *actual) {
@@ -72,7 +72,7 @@ void run_compiler_test(struct compiler_test_case t) {
     compiler_free(compiler);
 }
 
-void run_compiler_tests(struct compiler_test_case tests[], size_t n) {
+void run_compiler_tests(struct compiler_test_case tests[], uint32_t n) {
     for (int t=0; t < n; t++) {
        run_compiler_test(tests[t]);
     }

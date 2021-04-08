@@ -103,9 +103,9 @@ struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     ins->cap = (def.operands + 1);      
 
      // write operands to remaining bytes
-    for (int op_idx = 0; op_idx < def.operands; op_idx++) {
-        int operand = va_arg(operands, int);
-        for (int byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
+    for (uint8_t op_idx = 0; op_idx < def.operands; op_idx++) {
+        int64_t operand = va_arg(operands, int);
+        for (int8_t byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
             ins->bytes[ins->size++] = (uint8_t) (operand >> (byte_idx * 8) & 0xff);
         }
     }
@@ -126,18 +126,17 @@ void free_instruction(struct instruction *ins) {
     free(ins);
 }
 
-struct instruction *flatten_instructions_array(struct instruction *arr[], size_t size) {
+struct instruction *flatten_instructions_array(struct instruction *arr[], uint32_t size) {
     struct instruction *ins = arr[0];
 
     // add all instructions to first instruction in the list
-    
-    for (size_t i = 1; i < size; i++) {
+    for (uint32_t i = 1; i < size; i++) {
         // TODO: Allocate all at once
         ins->bytes = realloc(ins->bytes, (ins->size + arr[i]->size ) * sizeof(*ins->bytes));
         assert(ins->bytes != NULL);
 
         // TODO: Use memcpy here?
-        for (size_t j=0; j < arr[i]->size; j++) {
+        for (uint32_t j=0; j < arr[i]->size; j++) {
             ins->bytes[ins->size++] = arr[i]->bytes[j];
         }
 
@@ -150,12 +149,12 @@ struct instruction *flatten_instructions_array(struct instruction *arr[], size_t
 char *instruction_to_str(struct instruction *ins) {
     char *buffer = malloc(ins->size * 32);
     assert(buffer != NULL);
-    size_t operands[MAX_OP_SIZE] = {0, 0};
+    uint32_t operands[MAX_OP_SIZE] = {0, 0};
     buffer[0] = '\0';
 
-    for (size_t i=0; i < ins->size; i++) {
+    for (uint32_t i=0; i < ins->size; i++) {
         struct definition def = lookup(ins->bytes[i]);
-        size_t bytes_read = read_operands(operands, def, ins, i);
+        uint32_t bytes_read = read_operands(operands, def, ins, i);
         
         if (i > 0) {
             strcat(buffer, " | ");
@@ -164,13 +163,13 @@ char *instruction_to_str(struct instruction *ins) {
         char str[512];
         switch (def.operands) {
             case 0:
-                sprintf(str, "%04ld %s", i, def.name);
+                sprintf(str, "%04d %s", i, def.name);
             break;
             case 1:
-                sprintf(str, "%04ld %s %ld", i, def.name, operands[0]);
+                sprintf(str, "%04d %s %d", i, def.name, operands[0]);
             break;
             case 2:
-                sprintf(str, "%04ld %s %ld %ld", i, def.name, operands[0], operands[1]);
+                sprintf(str, "%04d %s %d %d", i, def.name, operands[0], operands[1]);
             break;
         }
         strcat(buffer, str);
@@ -189,14 +188,14 @@ int read_bytes(uint8_t *bytes, uint8_t len) {
     err(EXIT_FAILURE, "Unsupported byte length");
 }
 
-size_t read_operands(size_t dest[], struct definition def, struct instruction *ins, size_t offset) {
-    size_t bytes_read = 0;
+uint32_t read_operands(uint32_t dest[], struct definition def, struct instruction *ins, uint32_t offset) {
+    uint32_t bytes_read = 0;
 
     // skip opcode
     offset += 1;
 
     // read bytes into dest array
-    for (size_t i=0; i < def.operands; i++) {
+    for (uint8_t i=0; i < def.operands; i++) {
         switch (def.operand_widths[i]) {
             case 1: 
                 dest[i] = read_uint8(ins->bytes + offset);

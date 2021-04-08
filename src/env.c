@@ -20,7 +20,7 @@ struct environment *make_environment() {
             err(EXIT_FAILURE, "out of memory");
         }
 
-        for (int i = 0; i < ENV_TABLE_SIZE; i++) {
+        for (uint32_t i = 0; i < ENV_TABLE_SIZE; i++) {
             env->table[i] = NULL;
         }
     } else {
@@ -39,8 +39,8 @@ struct environment *make_closed_environment(struct environment *parent) {
     return env;
 }
 
-struct object *environment_get(struct environment *env, char *key) {
-    unsigned int pos = hash(key);
+struct object *environment_get(struct environment *env, const char *key) {
+    uint32_t pos = hash(key);
     struct object *node = env->table[pos];
 
     while (node) {
@@ -59,8 +59,8 @@ struct object *environment_get(struct environment *env, char *key) {
     return NULL;
 }
 
-void environment_set(struct environment *env, char *key, struct object *value) {
-    unsigned int pos = hash(key);
+void environment_set(struct environment *env, const char *key, struct object *value) {
+    uint32_t pos = hash(key);
     struct object *node = env->table[pos];
     struct object *prev = NULL;
 
@@ -97,7 +97,7 @@ void free_environment(struct environment *env) {
     struct object *next;
 
     // free all objects in env
-    for (size_t i=0; i < ENV_TABLE_SIZE; i++) {
+    for (uint32_t i=0; i < ENV_TABLE_SIZE; i++) {
         node = env->table[i];
 
         while (node) {

@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <err.h> 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -102,7 +103,7 @@ struct object *make_string_object(char *str1, char *str2)
     struct object *obj = make_object(OBJ_STRING);
     
     // allocate enough memory to fit both strings
-    size_t l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
+    uint32_t l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
     obj->value.string = malloc(l);
     if (!obj->value.string) {
         err(EXIT_FAILURE, "out of memory");
@@ -123,7 +124,7 @@ struct object *make_error_object(char *format, ...) {
 
     struct object *obj = make_object(OBJ_ERROR);
 
-    size_t l = strlen(format);
+    uint32_t l = strlen(format);
     obj->value.error = malloc(l + 64);
     if (!obj->value.error) {
         err(EXIT_FAILURE, "out of memory");
@@ -146,7 +147,7 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
     return obj;
 }
 
-struct object *make_compiled_function_object(struct instruction *ins, size_t num_locals) {
+struct object *make_compiled_function_object(struct instruction *ins, uint32_t num_locals) {
     struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
     struct compiled_function *f = malloc(sizeof (struct compiled_function));
     assert(f != NULL);
@@ -249,7 +250,7 @@ void free_object(struct object *obj)
 }
 
 
-struct object_list *make_object_list(size_t cap) {
+struct object_list *make_object_list(uint32_t cap) {
    struct object_list *list = object_list_pool_head;
 
    if (!list) {
@@ -268,7 +269,7 @@ struct object_list *make_object_list(size_t cap) {
 
 void free_object_list(struct object_list *list) {
     // reset list values and size
-    for (int i=0; i < list->size; i++) {
+    for (uint32_t i=0; i < list->size; i++) {
         free_object(list->values[i]);
         list->values[i] = NULL;
     }
@@ -282,8 +283,8 @@ void free_object_list(struct object_list *list) {
 
 struct object_list *copy_object_list(struct object_list *original) {
     struct object_list *new = make_object_list(original->size);
-    size_t size = original->size;
-    for (size_t i=0; i < size; i++) {
+    uint32_t size = original->size;
+    for (uint32_t i=0; i < size; i++) {
         new->values[i] = copy_object(original->values[i]);
     }
     new->size = size;
@@ -306,7 +307,9 @@ void object_to_str(char *str, struct object *obj)
         break;
         
     case OBJ_BOOL:
-        strcat(str, (obj == object_true  || obj == object_true_return) ? "true" : "false");
+        // We could do pointer comparison here, but since we've already followed the pointer above
+        // It wouldn't really make a difference. So we check the actual value, as it's less error prone.
+        strcat(str, obj->value.boolean ? "true" : "false");
         break;
         
     case OBJ_ERROR: 
@@ -331,7 +334,7 @@ void object_to_str(char *str, struct object *obj)
 
     case OBJ_ARRAY: 
         strcat(str, "[");
-        for (size_t i=0; i < obj->value.array->size; i++) {
+        for (uint32_t i=0; i < obj->value.array->size; i++) {
             object_to_str(str, obj->value.array->values[i]);
             if (i < (obj->value.array->size - 1)) {
                 strcat(str, ", ");

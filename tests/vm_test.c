@@ -3,33 +3,29 @@
 #include "../src/vm.h"
 #include "../src/compiler.h"
 
-void test_object(struct object* obj, enum object_type type, union object_value value) {
-    assertf(obj != NULL, "expected object, got null");
-    assertf(obj->type == type, "invalid object type");
+void test_object(struct object obj, enum object_type type, union object_value value) {
+    assertf(obj.type == type, "invalid object type");
     switch (type) {
         case OBJ_INT:
-            assertf(obj->value.integer == value.integer, "invalid integer value: expected %d, got %d", value.integer, obj->value.integer);
-            // free_object(obj);
+            assertf(obj.value.integer == value.integer, "invalid integer value: expected %d, got %d", value.integer, obj.value.integer);
         break;
         case OBJ_BOOL:
-            assertf(obj->value.boolean == value.boolean, "invalid boolean value: expected %d, got %d", value.boolean, obj->value.boolean);
+            assertf(obj.value.boolean == value.boolean, "invalid boolean value: expected %d, got %d", value.boolean, obj.value.boolean);
         break;
         case OBJ_NULL: 
-        // nothing to do
+            // nothing to do as null objects have no further contents
         break;
         case OBJ_STRING: 
-            assertf(strcmp(value.string, obj->value.string) == 0, "invalid string value: expected %s, got %s", value.string, obj->value.string);
-            free(obj->value.string);
+            assertf(strcmp(value.string, obj.value.string) == 0, "invalid string value: expected %s, got %s", value.string, obj.value.string);
+            free(obj.value.string);
         break;
         default: 
-            assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj->type));
+            assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj.type));
         break;
     }
 }
 
-struct object obj_copy;
-
-struct object*
+struct object 
 run_vm_test(char *program_str) {
     struct program *p = parse_program_str(program_str);
     struct compiler *c = compiler_new();
@@ -40,17 +36,16 @@ run_vm_test(char *program_str) {
     err = vm_run(vm);
     assertf(err == 0, "vm error: %d", err);
     struct object obj = vm_stack_last_popped(vm);
-    obj_copy = obj;
 
     if (obj.type == OBJ_STRING) {
-        obj_copy.value.string = strdup(obj.value.string);
+        obj.value.string = strdup(obj.value.string);
     }
     
     free(bc);
     free_program(p);
     compiler_free(c);
     vm_free(vm);
-    return &obj_copy;;
+    return obj;;
 }
 
 void test_integer_arithmetic() {
@@ -79,7 +74,7 @@ void test_integer_arithmetic() {
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -93,34 +88,34 @@ void test_boolean_expressions() {
     } tests[] = {
         {"true", true},
         {"false", false},
-        // {"1 < 2", true},
-        // {"1 > 2", false},
-        // {"1 < 1", false},
-        // {"1 > 1", false},
-        // {"1 == 1", true},
-        // {"1 != 1", false},
-        // {"1 == 2", false},
-        // {"1 != 2", true},
-        // {"true == true", true},
-        // {"false == false", true},
-        // {"true == false", false},
-        // {"true != false", true},
-        // {"false != true", true},
-        // {"(1 < 2) == true", true},
-        // {"(1 < 2) == false", false},
-        // {"(1 > 2) == true", false},
-        // {"(1 > 2) == false", true},
-        // {"!true", false},
-        // {"!false", true},
-        // {"!5", false},
-        // {"!!true", true},
-        // {"!!false", false},
-        // {"!!5", true},
-        // {"!(if (false) { 5; })", true},
+        {"1 < 2", true},
+        {"1 > 2", false},
+        {"1 < 1", false},
+        {"1 > 1", false},
+        {"1 == 1", true},
+        {"1 != 1", false},
+        {"1 == 2", false},
+        {"1 != 2", true},
+        {"true == true", true},
+        {"false == false", true},
+        {"true == false", false},
+        {"true != false", true},
+        {"false != true", true},
+        {"(1 < 2) == true", true},
+        {"(1 < 2) == false", false},
+        {"(1 > 2) == true", false},
+        {"(1 > 2) == false", true},
+        {"!true", false},
+        {"!false", true},
+        {"!5", false},
+        {"!!true", true},
+        {"!!false", false},
+        {"!!5", true},
+        {"!(if (false) { 5; })", true},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_BOOL, (union object_value) { .boolean = tests[t].expected });
      }
 }
@@ -143,7 +138,7 @@ void test_conditionals() {
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -159,8 +154,8 @@ void test_nulls() {
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
-        assertf(obj->type == OBJ_NULL, "expected NULL, got %s", object_type_to_str(obj->type));
+        struct object obj = run_vm_test(tests[t].input);
+        assertf(obj.type == OBJ_NULL, "expected NULL, got %s", object_type_to_str(obj.type));
      }
 }
 
@@ -176,7 +171,7 @@ void test_global_let_statements() {
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -189,13 +184,13 @@ void test_function_calls() {
     } tests[] = {
         {"let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();", 15},
         {"let one = fn() { 1; }; let two = fn() { 2; } one() + two();", 3},
-        // {"let a = fn() { 1 }; let b = fn() { a() + 1 }; let c = fn() { b() + 1 }; c();", 3},
-        // {"let earlyExit = fn() { return 99; 100; }; earlyExit();", 99},
-        // {"let earlyExit = fn() { return 99; return 100; }; earlyExit();", 99},
+        {"let a = fn() { 1 }; let b = fn() { a() + 1 }; let c = fn() { b() + 1 }; c();", 3},
+        {"let earlyExit = fn() { return 99; 100; }; earlyExit();", 99},
+        {"let earlyExit = fn() { return 99; return 100; }; earlyExit();", 99},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -209,7 +204,7 @@ void test_functions_without_return_value() {
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t]);
+        struct object obj = run_vm_test(tests[t]);
         test_object(obj, OBJ_NULL, (union object_value) {});
      }
 }
@@ -224,7 +219,7 @@ void test_first_class_functions() {
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -241,10 +236,9 @@ void test_function_calls_with_bindings() {
         {"let firstFoobar = fn() { let foobar = 50; foobar; }; let secondFoobar = fn() { let foobar = 100; foobar; }; firstFoobar() + secondFoobar();", 150},
         {"let globalSeed = 50; let minusOne = fn() { let num = 1; globalSeed - num; } let minusTwo = fn() { let num = 2; globalSeed - num; } minusOne() + minusTwo();", 97},
     };
-    
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -274,7 +268,7 @@ void test_function_calls_with_args_and_bindings() {
     };
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -289,9 +283,9 @@ void test_fib() {
             }                    \
             return fibonacci(x-1) + fibonacci(x-2); \
         };                      \
-        fibonacci(20)";
-    int expected = 6765;
-    struct object* obj = run_vm_test(input);
+        fibonacci(6)";
+    int expected = 8;
+    struct object obj = run_vm_test(input);
     test_object(obj, OBJ_INT, (union object_value) { .integer = expected });    
 }
 
@@ -306,7 +300,7 @@ void test_recursive_functions() {
     };
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
      }
 }
@@ -326,7 +320,7 @@ void test_string_expressions() {
     };
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object* obj = run_vm_test(tests[t].input);
+        struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_STRING, (union object_value) { .string = tests[t].expected });
      }
 

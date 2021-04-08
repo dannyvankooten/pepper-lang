@@ -71,8 +71,8 @@ struct identifier {
 
 struct identifier_list {
     struct identifier *values;
-    size_t size;
-    size_t cap;
+    uint32_t size;
+    uint32_t cap;
 };
 
 struct statement {
@@ -85,8 +85,8 @@ struct statement {
 struct block_statement {
     struct token token;
     struct statement *statements;
-    size_t size;
-    size_t cap;
+    uint32_t size;
+    uint32_t cap;
 };
 
 struct if_expression {
@@ -102,8 +102,8 @@ struct function_literal {
 };
 
 struct expression_list {
-    size_t size;
-    size_t cap;
+    uint32_t size;
+    uint32_t cap;
     struct expression **values;
 };
 
@@ -144,8 +144,8 @@ extern struct expression expression;
 
 struct program {
     struct statement *statements;
-    size_t cap;
-    size_t size;
+    uint32_t cap;
+    uint32_t size;
 };
 
 struct parser {
@@ -153,13 +153,13 @@ struct parser {
     struct token current_token;
     struct token next_token;
 
-    uint32_t nerrors;
-    char** error_messages;
+    uint32_t errors;
+    char error_messages[4][64];
 };
 
 struct parser new_parser(struct lexer *l);
 struct program *parse_program(struct parser *parser);
-struct program *parse_program_str(char *str);
+struct program *parse_program_str(const char *str);
 void block_statement_to_str(char *str, struct block_statement *b);
 void identifier_list_to_str(char *str, struct identifier_list *identifiers);
 char *program_to_str(struct program *p);

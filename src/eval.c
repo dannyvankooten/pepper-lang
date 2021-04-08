@@ -202,7 +202,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
     struct object_list *result = make_object_list(list->size);
     
-    for (size_t i = 0; i < list->size; i++) {
+    for (uint32_t i = 0; i < list->size; i++) {
         struct object *obj = eval_expression(list->values[i], env);
         result->values[result->size++] = obj;
 
@@ -212,7 +212,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
                 result->values[0] = result->values[i-1];
 
                 // free other objects in list
-                for (size_t j=1; j < i; j++) {
+                for (uint32_t j=1; j < i; j++) {
                     free_object(result->values[j]);
                     result->values[j] = NULL;
                 }
@@ -240,7 +240,7 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
             }
             
             struct environment *env = make_closed_environment(obj->value.function.env); 
-            for (size_t i=0; i < obj->value.function.parameters->size; i++) {
+            for (uint32_t i=0; i < obj->value.function.parameters->size; i++) {
                 environment_set(env, obj->value.function.parameters->values[i].value, args->values[i]);
             }
             struct object *result = eval_block_statement(obj->value.function.body, env);
@@ -437,8 +437,8 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
 struct object *eval_block_statement(struct block_statement *block, struct environment *env)
 {
     struct object *obj = NULL;
-    size_t size = block->size;
-    for (size_t i = 0; i < size; i++)
+    uint32_t size = block->size;
+    for (uint32_t i = 0; i < size; i++)
     {
         if (obj) {
             free_object(obj);
@@ -462,7 +462,7 @@ struct object *eval_program(struct program *prog, struct environment *env)
 {
     struct object *obj = NULL;
 
-    for (int i = 0; i < prog->size; i++)
+    for (uint32_t i = 0; i < prog->size; i++)
     {
         if (obj) {
             free_object(obj);

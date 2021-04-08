@@ -23,7 +23,7 @@ struct compiler *compiler_new() {
     scope.instructions->size = 0;
     c->constants = make_object_list(64);
     c->symbol_table = symbol_table_new();
-    for (int i=0; i < 64; i++) {
+    for (uint32_t i=0; i < 64; i++) {
         c->scopes[i].instructions = NULL;
     }
     c->scopes[0] = scope;
@@ -66,12 +66,12 @@ struct instruction *compiler_current_instructions(struct compiler *c) {
     return scope.instructions;
 }
 
-size_t 
+uint32_t 
 add_instruction(struct compiler *c, struct instruction *ins) {
     struct instruction *cins = compiler_current_instructions(c);
-    size_t pos = cins->size;
+    uint32_t pos = cins->size;
 
-    size_t new_size = cins->size + ins->size;
+    uint32_t new_size = cins->size + ins->size;
     if (new_size >= cins->cap) {
         cins->cap *= 2;
         cins->bytes = realloc(cins->bytes, cins->cap * sizeof(*cins->bytes));
@@ -79,7 +79,7 @@ add_instruction(struct compiler *c, struct instruction *ins) {
     }
 
     // TODO: Use memcpy here?
-    for (size_t i=0; i < ins->size; i++) {
+    for (uint32_t i=0; i < ins->size; i++) {
         cins->bytes[cins->size++] = ins->bytes[i];
     }
 
@@ -93,7 +93,7 @@ add_constant(struct compiler *c, struct object *obj) {
     return c->constants->size - 1;
 }
 
-void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, unsigned int pos) {
+void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, uint32_t pos) {
     struct emitted_instruction previous = compiler_current_scope(c).last_instruction;
     struct emitted_instruction last = {
         .position = pos,
@@ -109,8 +109,8 @@ void compiler_remove_last_instruction(struct compiler *c) {
     c->scopes[c->scope_index].last_instruction = c->scopes[c->scope_index].previous_instruction;
 }
 
-void compiler_replace_instruction(struct compiler *c, unsigned int pos, struct instruction *ins) {
-    for (size_t i=0; i < ins->size; i++) {
+void compiler_replace_instruction(struct compiler *c, uint32_t pos, struct instruction *ins) {
+    for (uint32_t i=0; i < ins->size; i++) {
         c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
 
@@ -118,7 +118,7 @@ void compiler_replace_instruction(struct compiler *c, unsigned int pos, struct i
 }
 
 void compiler_replace_last_instruction(struct compiler *c, struct instruction *ins) {
-    size_t pos = compiler_current_scope(c).last_instruction.position;
+    uint32_t pos = compiler_current_scope(c).last_instruction.position;
     enum opcode first = ins->bytes[0];
     compiler_replace_instruction(c, pos, ins);
     compiler_set_last_instruction(c, first, pos);
@@ -132,18 +132,18 @@ bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode) {
     return c->scopes[c->scope_index].last_instruction.opcode == opcode;
 }
 
-void compiler_change_operand(struct compiler *c, size_t pos, int operand) {
+void compiler_change_operand(struct compiler *c, uint32_t pos, int operand) {
     enum opcode opcode = c->scopes[c->scope_index].instructions->bytes[pos];
     struct instruction *new = make_instruction(opcode, operand);
     compiler_replace_instruction(c, pos, new);
 }
 
-size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
+uint32_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
     va_list args;
     va_start(args, opcode);
     struct instruction *ins = make_instruction_va(opcode, args);
     va_end(args);
-    size_t pos = add_instruction(c, ins);
+    uint32_t pos = add_instruction(c, ins);
     compiler_set_last_instruction(c, opcode, pos);
     return pos;
 }
@@ -151,7 +151,7 @@ size_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
 int
 compile_program(struct compiler *compiler, struct program *program) {
     int err;
-    for (size_t i=0; i < program->size; i++) {
+    for (uint32_t i=0; i < program->size; i++) {
         err = compile_statement(compiler, &program->statements[i]);
         if (err) return err;
     }
@@ -162,7 +162,7 @@ compile_program(struct compiler *compiler, struct program *program) {
 int
 compile_block_statement(struct compiler *compiler, struct block_statement *block) {
     int err;
-    for (size_t i=0; i < block->size; i++) {
+    for (uint32_t i=0; i < block->size; i++) {
         err = compile_statement(compiler, &block->statements[i]);
         if (err) return err;
     }
@@ -278,7 +278,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
             if (err) return err;
 
             /* we don't know where to jump yet, so we use 9999 as placeholder */
-            size_t jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
+            uint32_t jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
 
             err = compile_block_statement(c, expr->ifelse.consequence);
             if (err) { return err; }
@@ -287,8 +287,8 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_remove_last_instruction(c);
             }
 
-            size_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
-            size_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
+            uint32_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
+            uint32_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
 
             if (expr->ifelse.alternative) {
@@ -302,7 +302,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_emit(c, OPCODE_NULL);
             }
 
-            size_t after_alternative_pos = c->scopes[c->scope_index].instructions->size;
+            uint32_t after_alternative_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_pos, after_alternative_pos);
         }
         break;
@@ -341,7 +341,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
         case EXPR_FUNCTION: {
             compiler_enter_scope(c);
 
-            for (size_t i=0; i < expr->function.parameters.size; i++) {
+            for (uint32_t i=0; i < expr->function.parameters.size; i++) {
                 symbol_table_define(c->symbol_table, expr->function.parameters.values[i].value);
             }
 
@@ -354,7 +354,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_emit(c, OPCODE_RETURN);
             }
 
-            size_t num_locals = c->symbol_table->size;
+            uint32_t num_locals = c->symbol_table->size;
             struct instruction *ins = compiler_leave_scope(c);
             struct object *obj = make_compiled_function_object(ins, num_locals);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
@@ -365,7 +365,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
             err = compile_expression(c, expr->call.function);
             if (err) return err;
 
-            size_t i = 0;
+            uint32_t i = 0;
             for (; i < expr->call.arguments.size; i++) {
                 err = compile_expression(c, expr->call.arguments.values[i]);
                 if (err) return err;

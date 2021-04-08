@@ -36,7 +36,6 @@ static const char *token_names[] = {
 };
 
 void get_ident(struct token *t) {
-    // TODO: Proper implementation, using simple hashmap probably
     if (strcmp(t->literal, "let") == 0) {
        t->type = TOKEN_LET;
     } else if (strcmp(t->literal, "fn") == 0) {
@@ -54,6 +53,7 @@ void get_ident(struct token *t) {
     } else if (strcmp(t->literal, "while") == 0) {
         t->type = TOKEN_WHILE;
     } else {
+        // not a keyword, so assume identifier 
         t->type = TOKEN_IDENT;
     }
 }

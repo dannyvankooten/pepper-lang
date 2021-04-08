@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
@@ -15,7 +16,7 @@ struct hashmap *hashmap_new() {
     struct hashmap *hm = malloc(sizeof *hm);
     if (!hm) err(EXIT_FAILURE, "out of memory");
 
-    for (int i=0; i < 26; i++) {
+    for (int8_t i=0; i < 26; i++) {
         hm->table[i] = NULL;
     }
 
@@ -23,7 +24,7 @@ struct hashmap *hashmap_new() {
 }
 
 void hashmap_insert(struct hashmap *hm, char *key, void *item) {
-    int pos = hash(key);
+    int8_t pos = hash(key);
     struct hashmap_node *head = hm->table[pos];
     struct hashmap_node *node = head;
 
@@ -47,7 +48,7 @@ void hashmap_insert(struct hashmap *hm, char *key, void *item) {
 }
 
 void *hashmap_get(struct hashmap *hm, char *key) {
-    int pos = hash(key);
+    int8_t pos = hash(key);
     struct hashmap_node *node = hm->table[pos];
     while (node) {
          if (strcmp(node->key, key) == 0) {
@@ -62,7 +63,7 @@ void hashmap_free(struct hashmap *hm) {
     struct hashmap_node *node;
     struct hashmap_node *next;
 
-    for (int i=0; i < 26; i++) {
+    for (int8_t i=0; i < 26; i++) {
         node = hm->table[i];
         while (node) {
             next = node->next;
@@ -95,13 +96,12 @@ struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
     struct symbol *s = malloc(sizeof *s);
     if (!s) err(EXIT_FAILURE, "out of memory");
 
-    // TODO: Copy name? 
-    // Should only be required if we free the original program string before evaluating bytecode
+    // Note that we're not copying the contents of the name pointer here
+    // This means the AST can't be free'd as long as this symbol table in use
     s->name = name;
     s->scope = t->outer ? SCOPE_LOCAL : SCOPE_GLOBAL;
     s->index = t->size;
 
-    // insert into store
     hashmap_insert(t->store, name, s);
     t->size++;
     return s;
@@ -112,8 +112,8 @@ struct symbol *symbol_table_define_function(struct symbol_table *t, char *name) 
     struct symbol *s = malloc(sizeof *s);
     if (!s) err(EXIT_FAILURE, "out of memory");
 
-    // TODO: Copy name? 
-    // Should only be required if we free the original program string before evaluating bytecode
+    // Note that we're not copying the contents of the name pointer here
+    // This means the AST can't be free'd as long as this symbol table in use
     s->name = name;
     s->scope = SCOPE_FUNCTION;
     s->index = 0;

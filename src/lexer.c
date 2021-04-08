@@ -1,14 +1,18 @@
+#include <bits/stdint-intn.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "lexer.h"
 
-int is_letter(char ch) {
+bool is_letter(const char ch) {
     return (ch >= 'a' && ch <= 'z') 
         || (ch >= 'A' && ch <= 'Z')
         || (ch == '_');
 }
 
-int is_digit(char ch) {
+bool is_digit(const char ch) {
     return (ch >= '0' && ch <= '9');
 }
 
@@ -135,7 +139,7 @@ int gettoken(struct lexer *l, struct token *t) {
 
         case '"': {
             t->type = TOKEN_STRING;
-            int i = 0;
+            int32_t i = 0;
             char ch;
             for (i=0; (ch = l->input[l->pos + i]) && ch != '"' && ch != '\0'; i++) {
                 t->literal[i] = ch;
@@ -147,7 +151,7 @@ int gettoken(struct lexer *l, struct token *t) {
 
         default: {
             if (is_letter(ch)) {    
-                int i = 0; 
+                int32_t i = 0; 
                 while (is_letter(ch)) {
                     t->literal[i++] = ch;
                     ch = l->input[l->pos++];
@@ -158,7 +162,7 @@ int gettoken(struct lexer *l, struct token *t) {
                  // return last character to input 
                 l->pos--;
             } else if (is_digit(ch)) {
-                int i = 0;
+                int32_t i = 0;
                 while (is_digit(ch)) {
                     t->literal[i++] = ch;
                     ch = l->input[l->pos++];
@@ -186,7 +190,7 @@ int gettoken(struct lexer *l, struct token *t) {
 }
 
 
-struct lexer new_lexer(char *input) {
+struct lexer new_lexer(const char *input) {
     struct lexer lexer = {
         .input = input, 
         .pos = 0,

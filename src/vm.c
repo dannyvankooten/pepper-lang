@@ -31,18 +31,20 @@ struct vm *vm_new(struct bytecode *bc) {
     assert(vm != NULL);
     vm->stack_pointer = 0;
 
-    for (int i = 0; i < STACK_SIZE; i++) {
+    for (int32_t i = 0; i < STACK_SIZE; i++) {
         vm->stack[i] = obj_null;
         vm->globals[i] = obj_null;
         vm->constants[i] = obj_null;
     }
 
-    for (int i=0; i < bc->constants->size; i++) {
+    for (int32_t i=0; i < bc->constants->size; i++) {
        vm->constants[i] = *bc->constants->values[i];
     }    
 
-    // copy instructions here
+    // copy instruction as we are not adding this compiled function to a constant list
+    // the bytes are freed through the bytecode object
     struct instruction *ins = malloc(sizeof (struct instruction));
+    assert(ins != NULL);
     memcpy(ins, bc->instructions, sizeof(struct instruction));
     struct object *fn = make_compiled_function_object(ins, 0);
     vm->frames[0] = frame_new(*fn, 0);
@@ -54,7 +56,7 @@ struct vm *vm_new(struct bytecode *bc) {
 struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_SIZE]) {
     struct vm *vm = vm_new(bc);
 
-    for (int i=0; i < STACK_SIZE; i++) {
+    for (int32_t i=0; i < STACK_SIZE; i++) {
         vm->globals[i] = globals[i];
     }
     return vm;
@@ -65,7 +67,7 @@ void vm_free(struct vm *vm) {
     free(vm);
 }
 
-struct frame frame_new(struct object obj, size_t bp) {
+struct frame frame_new(struct object obj, uint32_t bp) {
     assert(obj.type == OBJ_COMPILED_FUNCTION);
     struct frame f = {
         .ip = 0,
@@ -249,8 +251,8 @@ int vm_do_minus_operation(struct vm *vm) {
 int vm_run(struct vm *vm) {
 
     /* values used in main loop */
-    size_t ip;
-    size_t ip_max;
+    uint32_t ip;
+    uint32_t ip_max;
     struct frame *active_frame;
     enum opcode opcode;
     uint8_t *bytes;

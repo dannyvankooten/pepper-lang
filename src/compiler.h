@@ -9,7 +9,7 @@
 
 struct emitted_instruction {
     enum opcode opcode;
-    size_t position;
+    uint32_t position;
 };
 
 struct compiler_scope {
@@ -21,7 +21,7 @@ struct compiler_scope {
 struct compiler {
     struct object_list *constants;
     struct symbol_table *symbol_table;
-    size_t scope_index;
+    uint32_t scope_index;
     struct compiler_scope scopes[64];
 };
 
@@ -32,7 +32,7 @@ int compile_program(struct compiler *compiler, struct program *program);
 struct bytecode *get_bytecode(struct compiler *c);
 void concat_instructions(struct instruction *ins1, struct instruction *ins2);
 const char *compiler_error_str(int err);
-size_t compiler_emit(struct compiler *c, enum opcode opcode, ...);
+uint32_t compiler_emit(struct compiler *c, enum opcode opcode, ...);
 void compiler_enter_scope(struct compiler *c);
 struct instruction *compiler_leave_scope(struct compiler *c);
 struct compiler_scope compiler_current_scope(struct compiler *c);

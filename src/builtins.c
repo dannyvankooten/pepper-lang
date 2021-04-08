@@ -42,7 +42,7 @@ struct object *builtin_len(struct object_list * args) {
 
 struct object *builtin_puts(struct object_list * args) {
     char str[BUFSIZ] = {'\0'};
-    for (size_t i=0; i < args->size; i++) {
+    for (uint32_t i=0; i < args->size; i++) {
         object_to_str(str, args->values[i]);
         printf("%s", str);
     }

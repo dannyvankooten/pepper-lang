@@ -1,9 +1,11 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "eval.h"
 #include "compiler.h"
+#include "object.h"
 #include "vm.h"
 
 #define VERSION_MAJOR 0
@@ -32,15 +34,10 @@ int repl() {
     struct lexer lexer;
     struct parser parser;
     struct program *program;
-
     struct symbol_table *symbol_table = symbol_table_new();
     struct object_list *constants = make_object_list(128);
-    
-    struct object globals[STACK_SIZE];
-    for (int i = 0; i < STACK_SIZE; i++) {
-        globals[i] = obj_null;
-    }
-
+    struct object globals[STACK_SIZE] = {obj_null};
+   
     while (1)
     {
         char *input = readline("monkey> ");
@@ -57,7 +54,6 @@ int repl() {
             }
 
             free(input);
-            free_program(program);
             continue;
         }
 
@@ -85,12 +81,17 @@ int repl() {
         // clear output buffer
         output[0] = '\0';
 
-        // copy globals out of VM so we can re-use it next iteration
-        for (int i=0; i < STACK_SIZE; i++) {
+        // copy globals out of VM so we can re-use them in next iteration
+        for (int32_t i=0; i < STACK_SIZE; i++) {
             globals[i] = machine->globals[i];
         }
-
-        free(input);
+        
+        
+        // free_program(program);
+        // compiler_free(compiler);
+        // vm_free(machine);
+        // free(code);
+        // free(input);
     }
 
     free(output);
@@ -104,7 +105,7 @@ int run_script(const char *filename) {
     struct program *program = parse_program(&parser);
 
     if (parser.errors > 0) {
-        for (int i = 0; i < parser.errors; i++) {
+        for (int8_t i = 0; i < parser.errors; i++) {
             puts(parser.error_messages[i]);
         }
 
@@ -134,6 +135,10 @@ int run_script(const char *filename) {
     }
 
     free_program(program);
+    compiler_free(compiler);
+    free(code);
+    vm_free(machine);
+    free(input);
     return EXIT_SUCCESS;
 }
 
@@ -154,7 +159,7 @@ char *read_file(const char *filename) {
     char *input = (char *) malloc(BUFSIZ);
     assert(input != NULL);
     input[0] = '\0';
-    size_t size = 0;
+    uint32_t size = 0;
 
     FILE *f = fopen(filename, "r");
     if (!f) {
@@ -162,7 +167,7 @@ char *read_file(const char *filename) {
         exit(1);
     }
 
-    size_t read = 0;
+    uint32_t read = 0;
     while ( (read = fread(input, sizeof(char), BUFSIZ, f)) > 0) {
         size += read;
 

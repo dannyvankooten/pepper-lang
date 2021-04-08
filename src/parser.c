@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <err.h>
 #include <string.h>
@@ -77,7 +78,7 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     struct identifier id = {
         .token = p->current_token,
     };
-    size_t i = 0;
+    uint32_t i = 0;
     for(; p->current_token.literal[i] != '\0'; i++){
         id.value[i] = p->current_token.literal[i];
     }
@@ -92,7 +93,7 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     next_token(p);
     s->value = parse_expression(p, LOWEST);
     if (s->value->type == EXPR_FUNCTION) {
-        size_t i = 0;
+        uint32_t i = 0;
         while (s->name.value[i] != '\0') {
             s->value->function.name[i] = s->name.value[i];
             i++;
@@ -139,7 +140,7 @@ struct expression *parse_string_literal(struct parser *p) {
         err(EXIT_FAILURE, "out of memory");
     }
 
-    size_t len = strlen(p->current_token.literal) + 1;
+    uint32_t len = strlen(p->current_token.literal) + 1;
     expr->string = malloc(len);
     if (!expr->string) {
         err(EXIT_FAILURE, "out of memory");
@@ -585,7 +586,7 @@ int parse_statement(struct parser *p, struct statement *s) {
    return -1;
 }
 
-struct program *parse_program_str(char *str) {
+struct program *parse_program_str(const char *str) {
     struct lexer lexer = new_lexer(str);
     struct parser parser = new_parser(&lexer);
     return parse_program(&parser);
@@ -653,13 +654,13 @@ void statement_to_str(char *str, struct statement *stmt) {
 }
 
 void block_statement_to_str(char *str, struct block_statement *b) {
-    for (int i=0; i < b->size; i++) {
+    for (int32_t i=0; i < b->size; i++) {
         statement_to_str(str, &b->statements[i]);
     }
 }
 
 void identifier_list_to_str(char *str, struct identifier_list *identifiers) {
-    for (int i=0; i < identifiers->size; i++) {
+    for (int32_t i=0; i < identifiers->size; i++) {
         strcat(str, identifiers->values[i].value);
         if (i < (identifiers->size - 1)) {
             strcat(str, ", ");
@@ -737,7 +738,7 @@ void expression_to_str(char *str, struct expression *expr) {
         case EXPR_CALL:
             expression_to_str(str, expr->call.function);
             strcat(str, "(");
-            for (int i=0; i < expr->call.arguments.size; i++){
+            for (int32_t i=0; i < expr->call.arguments.size; i++){
                 expression_to_str(str, expr->call.arguments.values[i]);
                 if (i < (expr->call.arguments.size - 1)) {
                     strcat(str, ", ");
@@ -748,7 +749,7 @@ void expression_to_str(char *str, struct expression *expr) {
 
         case EXPR_ARRAY: 
             strcat(str, "[");
-            for (int i=0; i < expr->array.size; i++) {
+            for (int32_t i=0; i < expr->array.size; i++) {
                 expression_to_str(str, expr->array.values[i]);
 
                 if (i < (expr->array.size - 1)) {
@@ -776,7 +777,7 @@ char *program_to_str(struct program *p) {
     }
     *str = '\0';
 
-    for (int i = 0; i < p->size; i++) {  
+    for (int32_t i = 0; i < p->size; i++) {  
         statement_to_str(str, &p->statements[i]);
     }    
 
@@ -818,8 +819,8 @@ char *operator_to_str(enum operator operator) {
     return "???";
 }
 
-void free_statements(struct statement *stmts, size_t size) {
-    for (size_t i=0; i < size; i++) {
+void free_statements(struct statement *stmts, uint32_t size) {
+    for (uint32_t i=0; i < size; i++) {
         free_expression(stmts[i].value);
     }
     
@@ -866,7 +867,7 @@ void free_expression(struct expression *expr) {
         break;
 
         case EXPR_CALL:
-            for (size_t i=0; i < expr->call.arguments.size; i++) {
+            for (uint32_t i=0; i < expr->call.arguments.size; i++) {
                 free_expression(expr->call.arguments.values[i]);
             }
             free(expr->call.arguments.values);
@@ -878,7 +879,7 @@ void free_expression(struct expression *expr) {
         break;
 
        case EXPR_ARRAY: 
-            for (size_t i=0; i < expr->array.size; i++) {
+            for (uint32_t i=0; i < expr->array.size; i++) {
                 free_expression(expr->array.values[i]);
             }
             free(expr->array.values);

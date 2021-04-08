@@ -1,6 +1,4 @@
-#ifndef TOKEN_H
-#define TOKEN_H
-
+#pragma once
 #define MAX_LITERAL_LENGTH 255 
 
 enum token_type {
@@ -46,5 +44,3 @@ struct token {
 void get_ident(struct token *t);
 
 const char *token_type_to_str(enum token_type type);
-
-#endif
