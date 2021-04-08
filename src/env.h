@@ -1,5 +1,4 @@
-#ifndef ENV_H 
-#define ENV_H 
+#pragma once 
 
 #include "object.h"
 
@@ -19,5 +18,3 @@ struct object *environment_get(struct environment *env, char *key);
 void environment_set(struct environment *env, char *key, struct object *value);
 void free_environment(struct environment *env);
 void free_env_pool();
-
-#endif

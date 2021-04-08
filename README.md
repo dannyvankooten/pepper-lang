@@ -23,11 +23,6 @@ Interpret a Monkey script:
 ./bin/monkey fibonacci.monkey
 ```
 
-Install the Monkey interpreter on your system:
-```
-make install
-```
-
 Build & run tests
 ```
 make check

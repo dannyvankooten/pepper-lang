@@ -201,11 +201,11 @@ void free_object_shallow(struct object *obj)
 
 void free_object(struct object *obj)
 {   
-    // TODO Do we need this?
+    // do nothing if this object is currently inside an environment
     if (obj->name) {
         return;
     }
-
+    
     switch (obj->type) {
         case OBJ_NULL: 
         case OBJ_BOOL: 

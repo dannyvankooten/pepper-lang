@@ -5,7 +5,7 @@
 #include "object.h"
 #include "env.h"
 
-#define hash(s) (s[0] - 'a')
+#define hash(s) (*s - 'a')
 #define ENV_TABLE_SIZE 26
 
 struct environment *env_pool_head;
@@ -40,7 +40,7 @@ struct environment *make_closed_environment(struct environment *parent) {
 }
 
 struct object *environment_get(struct environment *env, char *key) {
-    unsigned int pos = hash(key) % ENV_TABLE_SIZE;
+    unsigned int pos = hash(key);
     struct object *node = env->table[pos];
 
     while (node) {
@@ -60,7 +60,7 @@ struct object *environment_get(struct environment *env, char *key) {
 }
 
 void environment_set(struct environment *env, char *key, struct object *value) {
-    unsigned int pos = hash(key) % ENV_TABLE_SIZE;
+    unsigned int pos = hash(key);
     struct object *node = env->table[pos];
     struct object *prev = NULL;
 
