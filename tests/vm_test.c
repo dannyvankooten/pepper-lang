@@ -4,7 +4,7 @@
 #include "../src/compiler.h"
 
 void test_object(struct object obj, enum object_type type, union object_value value) {
-    assertf(obj.type == type, "invalid object type");
+    assertf(obj.type == type, "invalid object type: expected %s, got %s", object_type_to_str(type), object_type_to_str(obj.type));
     switch (type) {
         case OBJ_INT:
             assertf(obj.value.integer == value.integer, "invalid integer value: expected %d, got %d", value.integer, obj.value.integer);
@@ -323,23 +323,48 @@ void test_string_expressions() {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_STRING, (union object_value) { .string = tests[t].expected });
      }
-
 }
 
+void test_builtin_functions() {
+    TESTNAME(__FUNCTION__);
+    struct
+    {
+        char *input;
+        enum object_type type;
+        union object_value value;
+    } tests[] = {
+        {"len(\"\")", OBJ_INT, {.integer = 0}},
+        // {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
+        /* TODO: Fix below tests by returning object error in VM */
+        // {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
+        // {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
+    {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
+
+
 int main() {
-    test_integer_arithmetic();
-    test_boolean_expressions();
-    test_conditionals();
-    test_nulls();
-    test_global_let_statements();
-    test_function_calls();
-    test_functions_without_return_value();
-    test_first_class_functions();
-    test_function_calls_with_bindings();
-    test_function_calls_with_args_and_bindings();
-    test_recursive_functions();
-    test_fib();
-    test_string_expressions();
+    // test_integer_arithmetic();
+    // test_boolean_expressions();
+    // test_conditionals();
+    // test_nulls();
+    // test_global_let_statements();
+    // test_function_calls();
+    // test_functions_without_return_value();
+    // test_first_class_functions();
+    // test_function_calls_with_bindings();
+    // test_function_calls_with_args_and_bindings();
+    // test_recursive_functions();
+    // test_fib();
+    // test_string_expressions();
+    test_builtin_functions();
+
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 
     free_object_pool();

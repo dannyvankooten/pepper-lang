@@ -33,6 +33,7 @@ enum opcode {
     OPCODE_RETURN,
     OPCODE_GET_LOCAL,
     OPCODE_SET_LOCAL,
+    OPCODE_GET_BUILTIN,
 };
 
 struct definition {
@@ -52,8 +53,8 @@ struct bytecode {
     struct object_list *constants;
 };
 
-char *opcode_to_str(enum opcode opcode);
-struct definition lookup(enum opcode opcode);
+const char *opcode_to_str(enum opcode opcode);
+const struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, ...);
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands);
 void free_instruction(struct instruction *ins);

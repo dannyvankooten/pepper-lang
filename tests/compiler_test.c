@@ -748,6 +748,25 @@ void test_string_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+void test_builtin_functions() {
+    TESTNAME(__FUNCTION__);
+    struct compiler_test_case tests[] = {
+        {
+            .input = "len(\"monkey\")",
+            .constants = {
+                make_string_object("monkey", NULL),
+            }, 1,
+            .instructions = {
+                make_instruction(OPCODE_GET_BUILTIN, 1),
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_CALL, 1),
+                make_instruction(OPCODE_POP, 0),
+            }, 4,
+        },
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
 
 int main() {
     test_integer_arithmetic();
@@ -760,6 +779,7 @@ int main() {
     test_let_statement_scopes();
     test_string_expressions();
     test_recursive_functions();
+    test_builtin_functions();
 
     printf("\x1b[32mAll compiler tests passed!\033[0m\n");
 

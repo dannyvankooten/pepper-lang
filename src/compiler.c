@@ -6,6 +6,7 @@
 #include "compiler.h"
 #include "object.h"
 #include "opcode.h"
+#include "symbol_table.h"
 #include "vm.h"
 
 int compile_statement(struct compiler *compiler, struct statement *statement);
@@ -23,6 +24,12 @@ struct compiler *compiler_new() {
     scope.instructions->size = 0;
     c->constants = make_object_list(64);
     c->symbol_table = symbol_table_new();
+
+    // define builtin functions
+    symbol_table_define_builtin_function(c->symbol_table, 0, "puts");
+    symbol_table_define_builtin_function(c->symbol_table, 1, "len");
+
+    // initialize scopes
     for (uint32_t i=0; i < 64; i++) {
         c->scopes[i].instructions = NULL;
     }
@@ -53,6 +60,7 @@ const char *compiler_error_str(int err) {
         "Success",
         "Unknown operator",
         "Unknown expression type",
+        "Undefined variable"
     };
     return messages[err];
 }
@@ -330,11 +338,29 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
         case EXPR_IDENT: {
             struct symbol *s = symbol_table_resolve(c->symbol_table, expr->ident.value);
-            if (s != NULL) {
-                compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_GET_GLOBAL : OPCODE_GET_LOCAL, s->index);
-            } else {
-                compiler_emit(c, OPCODE_NULL);
+            if (s == NULL) {
+                return COMPILE_ERR_UNKNOWN_IDENT;
             }
+
+            switch (s->scope) {
+                case SCOPE_GLOBAL:
+                    compiler_emit(c, OPCODE_GET_GLOBAL, s->index);
+                break;
+
+                case SCOPE_LOCAL:
+                    compiler_emit(c, OPCODE_GET_LOCAL, s->index);
+                break;
+
+                case SCOPE_BUILTIN:
+                    compiler_emit(c, OPCODE_GET_BUILTIN, s->index);
+                break;
+
+                case SCOPE_FUNCTION:
+                    // TODO: Do something with this? What is it?
+                    return COMPILE_ERR_UNKNOWN_IDENT;
+                break;  
+            }
+           
         }
         break;
 

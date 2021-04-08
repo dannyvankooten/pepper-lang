@@ -8,7 +8,7 @@
 
 #include "opcode.h"
 
-static struct definition definitions[] = {
+static const struct definition definitions[] = {
     {
         "OpConstant", 1, {2}
     },
@@ -81,12 +81,17 @@ static struct definition definitions[] = {
     {
         "OpSetLocal", 1, {1}
     },
+    {
+        "OpGetBuiltin", 1, {1},
+    },
 };
 
+inline const 
 char *opcode_to_str(enum opcode opcode) {
     return definitions[opcode].name;
 }
 
+inline const
 struct definition lookup(enum opcode opcode) {
     return definitions[opcode];
 }

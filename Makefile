@@ -6,7 +6,7 @@ LEXER_SRC= lexer.c token.c
 PARSER_SRC= parser.c $(LEXER_SRC)
 EVAL_SRC= eval.c object.c env.c builtins.c opcode.c $(PARSER_SRC)
 COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c $(PARSER_SRC)
-VM_SRC= vm.c opcode.c object.c symbol_table.c $(PARSER_SRC)
+VM_SRC= vm.c opcode.c object.c symbol_table.c builtins.c $(PARSER_SRC)
 PREFIX= /usr/local
 TESTS= bin/lexer_test bin/parser_test bin/opcode_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test 
 

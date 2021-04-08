@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
+#include <sys/types.h>
 #include "symbol_table.h"
 
 #define hash(v) (v[0] - 'a')
@@ -107,6 +108,18 @@ struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
     return s;
 }
 
+struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint32_t index, char *name) {
+    struct symbol *s = malloc(sizeof *s);
+    if (!s) err(EXIT_FAILURE, "out of memory");
+
+    // Note that we're not copying the contents of the name pointer here
+    // This means the AST can't be free'd as long as this symbol table in use
+    s->name = name;
+    s->scope = SCOPE_BUILTIN;
+    s->index = index;
+    hashmap_insert(t->store, name, s);
+    return s;    
+}
 
 struct symbol *symbol_table_define_function(struct symbol_table *t, char *name) {
     struct symbol *s = malloc(sizeof *s);

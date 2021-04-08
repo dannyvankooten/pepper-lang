@@ -87,5 +87,6 @@ void object_to_str(char *str, struct object *obj);
 struct object_list *make_object_list(uint32_t cap);
 struct object_list *copy_object_list(struct object_list *original);
 void free_object_list(struct object_list *list);
+void free_object_list_shallow(struct object_list *list);
 void free_object_list_pool();
 void free_object_pool();

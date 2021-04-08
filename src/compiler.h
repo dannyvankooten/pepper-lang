@@ -6,6 +6,7 @@
 
 #define COMPILE_ERR_UNKNOWN_OPERATOR 1
 #define COMPILE_ERR_UNKNOWN_EXPR_TYPE 2
+#define COMPILE_ERR_UNKNOWN_IDENT 3;
 
 struct emitted_instruction {
     enum opcode opcode;

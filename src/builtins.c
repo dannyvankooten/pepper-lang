@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdint.h>
 #include <string.h> 
 #include <stdio.h>
 #include "object.h"
@@ -6,23 +7,28 @@
 
 struct object *builtin_len(struct object_list * args);
 struct object *builtin_puts(struct object_list * args);
-
-struct object *get_builtin(char *name) {
-    static struct object len = {
-        .type = OBJ_BUILTIN,
-        .value = { .builtin = &builtin_len }
-    };
-
-    static struct object puts = {
+struct object builtin_functions[] = {
+    {
         .type = OBJ_BUILTIN,
         .value = { .builtin = &builtin_puts }
-    };
+    },
+    {
+        .type = OBJ_BUILTIN,
+        .value = { .builtin = &builtin_len }
+    },
+};
 
-    if (strcmp(name, "len") == 0) {
-        return &len;
-    } else if (strcmp(name, "puts") == 0) {
-        return &puts;
-    }
+inline 
+struct object* get_builtin_by_index(uint8_t index) {
+    return &builtin_functions[index];
+}
+
+struct object *get_builtin(char *name) {
+    if (strcmp(name, "puts") == 0) {
+        return &builtin_functions[0];
+    } else if (strcmp(name, "len") == 0) {
+        return &builtin_functions[1];
+    } 
 
     return NULL;
 }

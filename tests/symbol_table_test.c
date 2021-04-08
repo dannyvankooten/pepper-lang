@@ -120,11 +120,23 @@ void test_shadowing_function_name() {
     free(f);
 }
 
+void test_define_and_resolve_builtins() {
+    TESTNAME(__FUNCTION__);
+    struct symbol_table *global = symbol_table_new();
+    struct symbol_table *local1 = symbol_table_new_enclosed(global);
+    struct symbol_table *local2 = symbol_table_new_enclosed(global);
+    
+    symbol_table_free(global);
+    symbol_table_free(local1);
+    symbol_table_free(local2);
+}
+
 int main() {
     test_define();
     test_resolve_global();
     test_resolve_local();
     test_define_and_resolve_function_name();
     test_shadowing_function_name();
+    test_define_and_resolve_builtins();
     printf("\x1b[32mAll symbol table tests passed!\033[0m\n");
 }

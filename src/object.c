@@ -193,13 +193,14 @@ struct object *copy_object(struct object *obj) {
     err(EXIT_FAILURE, "unhandled object type passed to copy_object()");
 }
 
+/* return object to object pool */
 void free_object_shallow(struct object *obj)
 {   
-    // add to start of free object list
     obj->next = object_pool_head;
     object_pool_head = obj;
 }
 
+/* return object related memory and return object itself to memory pool */
 void free_object(struct object *obj)
 {   
     // do nothing if this object is currently inside an environment
@@ -211,7 +212,8 @@ void free_object(struct object *obj)
         case OBJ_NULL: 
         case OBJ_BOOL: 
         case OBJ_BUILTIN:
-            // never free staticvalue. objects
+            // we re-use objects of this type since they contain no unique data
+            // so we should not free anything here
             return;
             break;
 
@@ -267,17 +269,21 @@ struct object_list *make_object_list(uint32_t cap) {
    return list;
 }
 
+/* returns object_list to pool, does not free values */
+void free_object_list_shallow(struct object_list *list) {
+    list->next = object_list_pool_head;
+    object_list_pool_head = list;
+}
+
+/* frees object list incl. all values contained in list */
 void free_object_list(struct object_list *list) {
-    // reset list values and size
     for (uint32_t i=0; i < list->size; i++) {
         free_object(list->values[i]);
         list->values[i] = NULL;
     }
     list->size = 0;
 
-    // return to pool
-    list->next = object_list_pool_head;
-    object_list_pool_head = list;
+    free_object_list_shallow(list);
 }
 
 

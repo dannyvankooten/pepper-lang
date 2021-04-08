@@ -33,5 +33,5 @@ struct object vm_stack_last_popped(struct vm *vm);
 struct object vm_stack_pop(struct vm *vm);
 void vm_free(struct vm *vm);
 
-struct frame frame_new(struct object obj, uint32_t bp);
+struct frame frame_new(struct compiled_function *fn, uint32_t bp);
 struct instruction *frame_instructions(struct frame *f);
