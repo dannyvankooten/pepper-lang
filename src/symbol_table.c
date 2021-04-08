@@ -4,6 +4,13 @@
 #include <err.h>
 #include "symbol_table.h"
 
+#define hash(v) (v[0] - 'a')
+
+struct hashmap *hashmap_new();
+void hashmap_insert(struct hashmap *hm, char *key, void *item);
+void *hashmap_get(struct hashmap *hm, char *key);
+void hashmap_free(struct hashmap *hm);
+
 struct hashmap *hashmap_new() {
     struct hashmap *hm = malloc(sizeof *hm);
     if (!hm) err(EXIT_FAILURE, "out of memory");

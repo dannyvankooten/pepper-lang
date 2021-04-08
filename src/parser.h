@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <sys/types.h>
 #include "lexer.h"
 
 #define MAX_IDENT_LENGTH 32
@@ -151,9 +153,8 @@ struct parser {
     struct token current_token;
     struct token next_token;
 
-    // TODO: allocate this dynamically
-    unsigned int errors;
-    char error_messages[8][128];
+    uint32_t nerrors;
+    char** error_messages;
 };
 
 struct parser new_parser(struct lexer *l);
