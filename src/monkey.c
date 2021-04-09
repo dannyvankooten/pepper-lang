@@ -30,9 +30,6 @@ int repl() {
         exit(1);
     }
     output[0] = '\0';
-
-    struct lexer lexer;
-    struct parser parser;
     struct program *program;
     struct symbol_table *symbol_table = symbol_table_new();
     struct object_list *constants = make_object_list(128);
@@ -43,8 +40,8 @@ int repl() {
         char *input = readline("monkey> ");
         add_history(input);
 
-        lexer = new_lexer(input);
-        parser = new_parser(&lexer);
+        struct lexer lexer = new_lexer(input);
+        struct parser parser = new_parser(&lexer);
         program = parse_program(&parser);
 
         if (parser.errors > 0) {
@@ -73,7 +70,7 @@ int repl() {
         }
 
         struct object obj = vm_stack_last_popped(machine);
-        if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION) {
+        if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION && obj.type != OBJ_COMPILED_FUNCTION && obj.type != OBJ_BUILTIN) {
             object_to_str(output, &obj);
             printf("%s\n", output);
         }
@@ -129,7 +126,7 @@ int run_script(const char *filename) {
 
     char output[BUFSIZ] = {0};
     struct object obj = vm_stack_last_popped(machine);
-    if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION) {
+    if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_FUNCTION && obj.type != OBJ_COMPILED_FUNCTION && obj.type != OBJ_BUILTIN) {
         object_to_str(output, &obj);
         printf("%s\n", output);
     }
@@ -156,9 +153,8 @@ int main(int argc, char *argv[]) {
 }
 
 char *read_file(const char *filename) {
-    char *input = (char *) malloc(BUFSIZ);
+    char *input = (char *) calloc(BUFSIZ, sizeof(char));
     assert(input != NULL);
-    input[0] = '\0';
     uint32_t size = 0;
 
     FILE *f = fopen(filename, "r");
