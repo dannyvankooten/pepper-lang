@@ -235,15 +235,15 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
         break;
 
         case OBJ_FUNCTION: {
-            if (args->size != obj->value.function.parameters->size) {
-                return make_error_object("invalid function call: expected %d arguments, got %d", obj->value.function.parameters->size, args->size);
+            if (args->size != obj->value.function->parameters->size) {
+                return make_error_object("invalid function call: expected %d arguments, got %d", obj->value.function->parameters->size, args->size);
             }
             
-            struct environment *env = make_closed_environment(obj->value.function.env); 
-            for (uint32_t i=0; i < obj->value.function.parameters->size; i++) {
-                environment_set(env, obj->value.function.parameters->values[i].value, args->values[i]);
+            struct environment *env = make_closed_environment(obj->value.function->env); 
+            for (uint32_t i=0; i < obj->value.function->parameters->size; i++) {
+                environment_set(env, obj->value.function->parameters->values[i].value, args->values[i]);
             }
-            struct object *result = eval_block_statement(obj->value.function.body, env);
+            struct object *result = eval_block_statement(obj->value.function->body, env);
             free_environment(env);
             result->return_value = false;
             return result;

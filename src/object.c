@@ -141,9 +141,11 @@ struct object *make_error_object(char *format, ...) {
 
 struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
     struct object *obj = make_object(OBJ_FUNCTION);
-    obj->value.function.parameters = parameters;
-    obj->value.function.body = body;
-    obj->value.function.env = env;
+    obj->value.function = malloc(sizeof(struct function));
+    assert(obj->value.function != NULL);
+    obj->value.function->parameters = parameters;
+    obj->value.function->body = body;
+    obj->value.function->env = env;
     return obj;
 }
 
@@ -171,7 +173,7 @@ struct object *copy_object(struct object *obj) {
             break;
 
         case OBJ_FUNCTION:
-            return make_function_object(obj->value.function.parameters, obj->value.function.body, obj->value.function.env);
+            return make_function_object(obj->value.function->parameters, obj->value.function->body, obj->value.function->env);
             break;
 
         case OBJ_ERROR: 
@@ -233,8 +235,8 @@ void free_object(struct object *obj)
             break;
 
         case OBJ_FUNCTION:
-            // free_environment(obj->function.env);
-            // obj->function.env = NULL;
+            free(obj->value.function);
+            obj->value.function = NULL;
             break;
 
         case OBJ_COMPILED_FUNCTION: 
@@ -324,9 +326,9 @@ void object_to_str(char *str, struct object *obj)
          
     case OBJ_FUNCTION: 
         strcat(str, "fn(");
-        identifier_list_to_str(str, obj->value.function.parameters);
+        identifier_list_to_str(str, obj->value.function->parameters);
         strcat(str, ") {\n");
-        block_statement_to_str(str, obj->value.function.body);
+        block_statement_to_str(str, obj->value.function->body);
         strcat(str, "\n}");
         break;
 

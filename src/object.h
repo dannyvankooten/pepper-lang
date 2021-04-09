@@ -50,7 +50,7 @@ union object_value {
     int64_t integer;
     char *error;
     char *string;
-    struct function function;
+    struct function* function;
     struct object *(*builtin)(struct object_list *);
     struct object_list *array;
     struct compiled_function* compiled_function;
