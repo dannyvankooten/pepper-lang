@@ -14,8 +14,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install libedit-dev
-      run: sudo apt-get install -y libedit-dev valgrind
+      run: sudo apt-get install -y libedit-dev valgrind time tail
     - name: Run tests
       run: make check
     - name: Run Valgrind (on tests)
       run: make memcheck
+    - name: Run fib35 benchmark
+      run: |
+        echo "Time: "
+        /usr/bin/time ./bin/monkey fibonacci.monkey | tail -n1
