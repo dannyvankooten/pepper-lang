@@ -67,7 +67,7 @@ void test_resolve_local() {
         { .name = "d", .scope = SCOPE_LOCAL, .index = 1 },
     };
 
-     for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct symbol *s = symbol_table_resolve(local, tests[t].name);
         assertf(s != NULL, "expected symbol, got NULL");
         assertf(strcmp(s->name, tests[t].name) == 0, "wrong name: expected %s, got %s", tests[t].name, s->name);
@@ -79,53 +79,33 @@ void test_resolve_local() {
     symbol_table_free(local);
 }
 
-void test_define_and_resolve_function_name() {
-    TESTNAME(__FUNCTION__);
-
-    struct symbol_table *g = symbol_table_new();
-    symbol_table_define_function(g, "a");
-    struct symbol expected = {
-        .name = "a",
-        .scope = SCOPE_FUNCTION,
-        .index = 0,
-    };
-
-    struct symbol *s = symbol_table_resolve(g, "a");
-    assertf(s != NULL, "expected symbol, got NULL");
-    assertf(strcmp(s->name, expected.name) == 0, "wrong name: expected %s, got %s", expected.name, s->name);
-    assertf(s->index == expected.index, "wrong index: expected %d, got %d", expected.index, s->index);
-    assertf(s->scope == expected.scope, "wrong scope: expected %d, got %d", expected.scope, s->scope);
-    symbol_table_free(g);
-}
-
-void test_shadowing_function_name() {
-    TESTNAME(__FUNCTION__);
-
-    struct symbol_table *g = symbol_table_new();
-    struct symbol *f = symbol_table_define_function(g, "a");
-    symbol_table_define(g, "a");
-    
-    struct symbol expected = {
-        .name = "a",
-        .scope = SCOPE_GLOBAL,
-        .index = 0,
-    };
-
-    struct symbol *s = symbol_table_resolve(g, "a");
-    assertf(s != NULL, "expected symbol, got NULL");
-    assertf(strcmp(s->name, expected.name) == 0, "wrong name: expected %s, got %s", expected.name, s->name);
-    assertf(s->index == expected.index, "wrong index: expected %d, got %d", expected.index, s->index);
-    assertf(s->scope == expected.scope, "wrong scope: expected %d, got %d", expected.scope, s->scope);
-    symbol_table_free(g);
-    free(f);
-}
-
 void test_define_and_resolve_builtins() {
     TESTNAME(__FUNCTION__);
     struct symbol_table *global = symbol_table_new();
     struct symbol_table *local1 = symbol_table_new_enclosed(global);
-    struct symbol_table *local2 = symbol_table_new_enclosed(global);
-    
+    struct symbol_table *local2 = symbol_table_new_enclosed(local1);
+    struct symbol tests[] = {
+        { .name = "a", .scope = SCOPE_BUILTIN, .index = 0 },
+        { .name = "b", .scope = SCOPE_BUILTIN, .index = 1 },
+        { .name = "c", .scope = SCOPE_BUILTIN, .index = 2 },
+        { .name = "d", .scope = SCOPE_BUILTIN, .index = 3 },
+    };
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        symbol_table_define_builtin_function(global, tests[t].index, tests[t].name);
+    }
+
+    // in all scopes, the declared symbols should resolve to our builtin
+    struct symbol_table *tables[] = {global, local1, local2};
+    for (int i=0; i < 2; i++) {
+        for (int t=0; t < ARRAY_SIZE(tests); t++) {
+            struct symbol *s = symbol_table_resolve(tables[i], tests[t].name);
+            assertf(s != NULL, "expected symbol, got NULL");
+            assertf(strcmp(s->name, tests[t].name) == 0, "wrong name: expected %s, got %s", tests[t].name, s->name);
+            assertf(s->index == tests[t].index, "wrong index: expected %d, got %d", tests[t].index, s->index);
+            assertf(s->scope == tests[t].scope, "wrong scope: expected %d, got %d", tests[t].scope, s->scope);
+        }
+    }
+
     symbol_table_free(global);
     symbol_table_free(local1);
     symbol_table_free(local2);
@@ -135,8 +115,6 @@ int main() {
     test_define();
     test_resolve_global();
     test_resolve_local();
-    test_define_and_resolve_function_name();
-    test_shadowing_function_name();
     test_define_and_resolve_builtins();
     printf("\x1b[32mAll symbol table tests passed!\033[0m\n");
 }

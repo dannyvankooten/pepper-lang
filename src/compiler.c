@@ -354,13 +354,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 case SCOPE_BUILTIN:
                     compiler_emit(c, OPCODE_GET_BUILTIN, s->index);
                 break;
-
-                case SCOPE_FUNCTION:
-                    // TODO: Do something with this? What is it?
-                    return COMPILE_ERR_UNKNOWN_IDENT;
-                break;  
             }
-           
         }
         break;
 

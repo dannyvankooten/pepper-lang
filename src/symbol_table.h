@@ -5,14 +5,12 @@
 enum symbol_scope {
     SCOPE_GLOBAL,
     SCOPE_LOCAL,
-    SCOPE_FUNCTION,
     SCOPE_BUILTIN,
 };
 
 // static const char *symbol_scope_names[] = {
 //     "GLOBAL",
 //     "LOCAL",
-//     "FUNCTION",
 //     "BUILTIN",
 // };
 
@@ -41,7 +39,6 @@ struct symbol_table {
 struct symbol_table *symbol_table_new();
 struct symbol_table *symbol_table_new_enclosed(struct symbol_table *outer);
 struct symbol *symbol_table_define(struct symbol_table *t, char *name);
-struct symbol *symbol_table_define_function(struct symbol_table *t, char *name);
 struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint32_t index, char *name);
 struct symbol *symbol_table_resolve(struct symbol_table *t, char *name);
 void symbol_table_free(struct symbol_table *t);

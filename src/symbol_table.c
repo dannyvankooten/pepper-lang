@@ -121,19 +121,6 @@ struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint
     return s;    
 }
 
-struct symbol *symbol_table_define_function(struct symbol_table *t, char *name) {
-    struct symbol *s = malloc(sizeof *s);
-    if (!s) err(EXIT_FAILURE, "out of memory");
-
-    // Note that we're not copying the contents of the name pointer here
-    // This means the AST can't be free'd as long as this symbol table in use
-    s->name = name;
-    s->scope = SCOPE_FUNCTION;
-    s->index = 0;
-    hashmap_insert(t->store, name, s);
-    return s;    
-}
-
 struct symbol *symbol_table_resolve(struct symbol_table *t, char *name) {
     void *r = hashmap_get(t->store, name);
     if (r == NULL) {
