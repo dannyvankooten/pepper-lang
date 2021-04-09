@@ -1,4 +1,3 @@
-#include <bits/stdint-intn.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -10,11 +9,13 @@
 #include "builtins.h"
 #include <stdio.h>
 
-
-#define VM_ERR_INVALID_OP_TYPE 1
-#define VM_ERR_INVALID_INT_OPERATOR 2
-#define VM_ERR_OUT_OF_BOUNDS 3
-#define VM_ERR_STACK_OVERFLOW 4
+enum {
+    VM_ERR_INVALID_OP_TYPE,
+    VM_ERR_INVALID_INT_OPERATOR,
+    VM_ERR_OUT_OF_BOUNDS,
+    VM_ERR_STACK_OVERFLOW,
+    VM_ERR_INVALID_FUNCTION_CALL,
+};
 
 const struct object obj_null = {
     .type = OBJ_NULL,
@@ -37,18 +38,6 @@ struct frame frame_new(struct compiled_function *fn, uint32_t bp) {
     };
 }
 
-static inline 
-struct frame vm_pop_frame(struct vm *vm) {
-    assert(vm->frame_index > 0);
-    return vm->frames[vm->frame_index--];
-}
-
-static inline
-void vm_push_frame(struct vm *vm, struct frame f) {
-    assert(vm->frame_index + 1 < STACK_SIZE);
-    vm->frames[++vm->frame_index] = f;
-}
-
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     assert(vm != NULL);
@@ -57,10 +46,7 @@ struct vm *vm_new(struct bytecode *bc) {
 
     for (int32_t i = 0; i < STACK_SIZE; i++) {
         vm->stack[i] = obj_null;
-        vm->globals[i] = obj_null;
-        vm->constants[i] = obj_null;
-    }
-
+    } 
     for (int32_t i=0; i < bc->constants->size; i++) {
        vm->constants[i] = *bc->constants->values[i];
     }    
@@ -100,7 +86,7 @@ void vm_free(struct vm *vm) {
 // #define vm_stack_pop(vm) (vm->stack[--vm->stack_pointer])
 // #define vm_stack_push(vm, obj) (vm->stack[vm->stack_pointer++] = obj)
 // #else 
-static inline 
+static  
 struct object vm_stack_pop(struct vm *vm) {
     if (vm->stack_pointer == 0) {
         return obj_null;
@@ -109,7 +95,7 @@ struct object vm_stack_pop(struct vm *vm) {
     return vm->stack[--vm->stack_pointer];
 }
 
-static inline
+static 
 void vm_stack_push(struct vm *vm, struct object obj) {
     if (vm->stack_pointer >= STACK_SIZE) {
         err(VM_ERR_STACK_OVERFLOW, "stack overflow");
@@ -120,6 +106,7 @@ void vm_stack_push(struct vm *vm, struct object obj) {
 }
 // #endif
 
+static
 int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) {
     int64_t result;
     
@@ -149,6 +136,7 @@ int vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t le
     return 0;
 }
 
+static
 int vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left, char *right) {
     struct object obj = {
         .type = OBJ_STRING,
@@ -165,6 +153,7 @@ int vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left,
     return 0;
 }
 
+static
 int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
@@ -177,6 +166,7 @@ int vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     }
 }
 
+static
 int vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) { 
     bool result;
     
@@ -206,7 +196,7 @@ int vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t left, in
     return 0;
 }
 
-
+static 
 int vm_do_comparision(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
@@ -236,9 +226,10 @@ int vm_do_comparision(struct vm *vm, enum opcode opcode) {
     return 0;
 }
 
-void vm_do_bang_operation(struct vm *vm) {
+int vm_do_bang_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
     vm_stack_push(vm, obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) ? obj_true : obj_false);
+    return 0;
 }
 
 int vm_do_minus_operation(struct vm *vm) {
@@ -249,12 +240,19 @@ int vm_do_minus_operation(struct vm *vm) {
     return 0;
 }
 
+static inline void 
+vm_pop_frame(struct vm* vm) {
+    vm->frame_index--;
+}
+
+static inline 
 struct frame*
 vm_current_frame(struct vm* vm) {
     return &vm->frames[vm->frame_index];
 }
 
 /* handle call to built-in function */
+static 
 int vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *),  uint8_t num_args) {
     // create object list with arguments
     struct object_list *args = make_object_list(num_args);
@@ -273,18 +271,20 @@ int vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_li
 }
 
 /* handle call to user-defined function */
+static 
 int vm_do_call_function(struct vm *vm, struct compiled_function *f, uint8_t num_args) {
     /* TODO: Validate number of arguments */
 
-     // grab next new frame from frame stack & re-use
+     // Push new frame (from pre-allocated list)
     vm->frame_index++;
     vm->frames[vm->frame_index].ip = 0;
     vm->frames[vm->frame_index].fn = f;
     vm->frames[vm->frame_index].base_pointer = vm->stack_pointer - num_args;
-    vm->stack_pointer = vm->frames[vm->frame_index].base_pointer + f->num_locals;  
-    return 0;
+    vm->stack_pointer = vm->frames[vm->frame_index].base_pointer + f->num_locals; 
+    return 0; 
 }
 
+static 
 int vm_do_call(struct vm *vm, uint8_t num_args) {
     struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
@@ -297,8 +297,7 @@ int vm_do_call(struct vm *vm, uint8_t num_args) {
         break;
 
         default:
-            /* TODO: Return better error here */
-            return VM_ERR_INVALID_OP_TYPE;
+            return VM_ERR_INVALID_FUNCTION_CALL;
         break;
     }
 }
@@ -306,7 +305,7 @@ int vm_do_call(struct vm *vm, uint8_t num_args) {
 int vm_run(struct vm *vm) {
     /* tmp values used in switch cases */
     /* TODO: Change to C11 int types */
-    int err, idx, pos, num_args;
+    int32_t err, idx, pos, num_args;
 
     /* 
     The following comment is taken from CPython's source: https://github.com/python/cpython/blob/master/Python/ceval.c#L775
@@ -414,8 +413,12 @@ int vm_run(struct vm *vm) {
             printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack[i].type), str);
         }
         #endif 
-        
-        
+
+        /* removes last frame and resets local variables */
+        #define reload_loop_variables() \
+            active_frame = vm_current_frame(vm);                \
+            bytes = active_frame->fn->instructions.bytes;       \
+            ip_max = active_frame->fn->instructions.size;       \
 
          /* Dispatch Macro which replaces the while loop */
         #define DISPATCH()                                      \
@@ -446,11 +449,7 @@ int vm_run(struct vm *vm) {
             num_args = read_uint8((bytes + ip + 1));
             active_frame->ip++;
             vm_do_call(vm, num_args);
-
-            // reload local frame related variables
-            active_frame = vm_current_frame(vm);      
-            bytes = active_frame->fn->instructions.bytes;       
-            ip_max = active_frame->fn->instructions.size;    
+            reload_loop_variables();
             DISPATCH();
         }
 
@@ -487,27 +486,19 @@ int vm_run(struct vm *vm) {
 
         GOTO_OPCODE_RETURN_VALUE: {
             struct object obj = vm_stack_pop(vm); 
-            struct frame f = vm_pop_frame(vm);
-            vm->stack_pointer = f.base_pointer - 1;
+            vm->stack_pointer = active_frame->base_pointer - 1;
+            vm_pop_frame(vm);
+            reload_loop_variables();
             vm_stack_push(vm, obj);
-
-            // reload local variables
-            active_frame = vm_current_frame(vm);      
-            active_frame->ip++;          
-            bytes = active_frame->fn->instructions.bytes;       
-            ip_max = active_frame->fn->instructions.size;       
+            active_frame->ip++;     
             DISPATCH();
         }
         
         GOTO_OPCODE_RETURN: {
-            struct frame f = vm_pop_frame(vm);
-            vm->stack_pointer = f.base_pointer - 1;
-            vm_stack_push(vm, obj_null);
-
-            // reload local variables
-            active_frame = vm_current_frame(vm);      
-            bytes = active_frame->fn->instructions.bytes;       
-            ip_max = active_frame->fn->instructions.size;       
+            vm->stack_pointer = active_frame->base_pointer - 1;
+            vm_pop_frame(vm);
+            reload_loop_variables();
+            vm_stack_push(vm, obj_null);     
             DISPATCH();
         }
 

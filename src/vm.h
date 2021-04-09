@@ -1,7 +1,9 @@
 #pragma once
 
-#define STACK_SIZE 2048
-#define MAX_GLOBALS 65536
+#define FRAMES_SIZE 64
+#define GLOBALS_SIZE 256
+#define CONSTANTS_SIZE 1024
+#define STACK_SIZE 1024
 
 #include "opcode.h"
 #include "object.h"
