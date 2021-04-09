@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 #define MAX_OP_SIZE 16
-#define read_uint8(bytes) (bytes)[0]
-#define read_uint16(bytes) ((bytes)[0] << 8) + (bytes)[1]
+#define read_uint8(bytes) ((bytes)[0])
+#define read_uint16(bytes) (((bytes)[0] << 8) + (bytes)[1])
 
 enum opcode {
     OPCODE_CONST = 0,

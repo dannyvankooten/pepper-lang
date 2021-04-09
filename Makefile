@@ -16,7 +16,7 @@ bin/:
 	mkdir -p bin/
 
 bin/monkey: monkey.c $(EVAL_SRC) vm.c opcode.c symbol_table.c compiler.c | bin/
-	$(CC) $(CFLAGS) $^ -Ofast -march=native -DNDEBUG  -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -Ofast -march=native -DNDEBUG -DOPT_AGGRESIVE  -o $@ $(LDLIBS)
 
 # tests
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/

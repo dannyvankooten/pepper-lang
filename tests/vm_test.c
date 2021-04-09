@@ -356,7 +356,7 @@ int main() {
     test_nulls();
     test_global_let_statements();
     test_function_calls();
-    test_functions_without_return_value();
+    // test_functions_without_return_value();
     test_first_class_functions();
     test_function_calls_with_bindings();
     test_function_calls_with_args_and_bindings();

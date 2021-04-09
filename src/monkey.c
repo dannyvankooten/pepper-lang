@@ -36,7 +36,7 @@ int repl() {
     struct program *program;
     struct symbol_table *symbol_table = symbol_table_new();
     struct object_list *constants = make_object_list(128);
-    struct object globals[STACK_SIZE] = {obj_null};
+    struct object globals[GLOBALS_SIZE] = {obj_null};
    
     while (1)
     {
@@ -82,7 +82,7 @@ int repl() {
         output[0] = '\0';
 
         // copy globals out of VM so we can re-use them in next iteration
-        for (int32_t i=0; i < STACK_SIZE; i++) {
+        for (int32_t i=0; i < GLOBALS_SIZE; i++) {
             globals[i] = machine->globals[i];
         }
         

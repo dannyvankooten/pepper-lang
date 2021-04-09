@@ -305,55 +305,59 @@ void object_to_str(char *str, struct object *obj)
 
     switch (obj->type)
     {
-    case OBJ_NULL:
-        strcat(str, "NULL");
-        break;
-        
-    case OBJ_INT:
-        sprintf(tmp, "%ld", obj->value.integer);
-        strcat(str, tmp);
-        break;
-        
-    case OBJ_BOOL:
-        // We could do pointer comparison here, but since we've already followed the pointer above
-        // It wouldn't really make a difference. So we check the actual value, as it's less error prone.
-        strcat(str, obj->value.boolean ? "true" : "false");
-        break;
-        
-    case OBJ_ERROR: 
-        strcat(str, obj->value.error);
-        break;  
-         
-    case OBJ_FUNCTION: 
-        strcat(str, "fn(");
-        identifier_list_to_str(str, obj->value.function->parameters);
-        strcat(str, ") {\n");
-        block_statement_to_str(str, obj->value.function->body);
-        strcat(str, "\n}");
-        break;
+        case OBJ_NULL:
+            strcat(str, "NULL");
+            break;
+            
+        case OBJ_INT:
+            sprintf(tmp, "%ld", obj->value.integer);
+            strcat(str, tmp);
+            break;
+            
+        case OBJ_BOOL:
+            // We could do pointer comparison here, but since we've already followed the pointer above
+            // It wouldn't really make a difference. So we check the actual value, as it's less error prone.
+            strcat(str, obj->value.boolean ? "true" : "false");
+            break;
+            
+        case OBJ_ERROR: 
+            strcat(str, obj->value.error);
+            break;  
+            
+        case OBJ_FUNCTION: 
+            strcat(str, "fn(");
+            identifier_list_to_str(str, obj->value.function->parameters);
+            strcat(str, ") {\n");
+            block_statement_to_str(str, obj->value.function->body);
+            strcat(str, "\n}");
+            break;
 
-    case OBJ_STRING: 
-        strcat(str, obj->value.string);
-        break;
+        case OBJ_STRING: 
+            strcat(str, obj->value.string);
+            break;
 
-    case OBJ_BUILTIN: 
-        strcat(str, "builtin function");
-        break;    
+        case OBJ_BUILTIN: 
+            strcat(str, "builtin function");
+            break;    
 
-    case OBJ_ARRAY: 
-        strcat(str, "[");
-        for (uint32_t i=0; i < obj->value.array->size; i++) {
-            object_to_str(str, obj->value.array->values[i]);
-            if (i < (obj->value.array->size - 1)) {
-                strcat(str, ", ");
+        case OBJ_ARRAY: {
+            strcat(str, "[");
+            for (uint32_t i=0; i < obj->value.array->size; i++) {
+                object_to_str(str, obj->value.array->values[i]);
+                if (i < (obj->value.array->size - 1)) {
+                    strcat(str, ", ");
+                }
             }
+            strcat(str, "]");
+            break;
         }
-        strcat(str, "]");
-        break;
 
-    case OBJ_COMPILED_FUNCTION: 
-        strcat(str, instruction_to_str(&obj->value.compiled_function->instructions));
-        break;
+        case OBJ_COMPILED_FUNCTION: {
+            char *instruction_str = instruction_to_str(&obj->value.compiled_function->instructions);
+            strcat(str, instruction_str);
+            free(instruction_str);
+            break;
+        }
     }
 }
 
