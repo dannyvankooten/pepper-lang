@@ -465,7 +465,7 @@ vm_run(struct vm *vm) {
 
     print_debug_info(vm);
     #endif 
-   
+
 
     // intitial dispatch
     DISPATCH();
@@ -484,7 +484,7 @@ vm_run(struct vm *vm) {
         active_frame->ip++;
         DISPATCH();
     }
-    
+
     // call a (user-defined or built-in) function
     GOTO_OPCODE_CALL: {
         uint8_t num_args = read_uint8(bytes + ip + 1);
@@ -534,7 +534,7 @@ vm_run(struct vm *vm) {
         active_frame->ip++;     
         DISPATCH();
     }
-    
+
     GOTO_OPCODE_RETURN: {
         vm->stack_pointer = active_frame->base_pointer - 1;
         vm_pop_frame(vm);
@@ -615,8 +615,8 @@ vm_run(struct vm *vm) {
         DISPATCH();
     }
 
-   
-    
+
+
     return VM_SUCCESS;
 }
 

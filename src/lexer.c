@@ -6,12 +6,14 @@
 
 #include "lexer.h"
 
+static
 bool is_letter(const char ch) {
     return (ch >= 'a' && ch <= 'z') 
         || (ch >= 'A' && ch <= 'Z')
         || (ch == '_');
 }
 
+static
 bool is_digit(const char ch) {
     return (ch >= '0' && ch <= '9');
 }

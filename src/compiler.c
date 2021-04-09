@@ -7,8 +7,8 @@
 #include "symbol_table.h"
 #include "vm.h"
 
-int compile_statement(struct compiler *compiler, struct statement *statement);
-int compile_expression(struct compiler *compiler, struct expression *expression);
+static int compile_statement(struct compiler *compiler, struct statement *statement);
+static int compile_expression(struct compiler *compiler, struct expression *expression);
 
 struct compiler *compiler_new() {
     struct compiler *c = malloc(sizeof *c);
@@ -72,12 +72,12 @@ struct instruction *compiler_current_instructions(struct compiler *c) {
     return scope.instructions;
 }
 
-uint32_t 
+static uint32_t 
 add_instruction(struct compiler *c, struct instruction *ins) {
     struct instruction *cins = compiler_current_instructions(c);
     uint32_t pos = cins->size;
-
     uint32_t new_size = cins->size + ins->size;
+
     if (new_size >= cins->cap) {
         cins->cap *= 2;
         cins->bytes = realloc(cins->bytes, cins->cap * sizeof(*cins->bytes));
@@ -93,13 +93,13 @@ add_instruction(struct compiler *c, struct instruction *ins) {
     return pos;
 }
 
-size_t
+static uint32_t
 add_constant(struct compiler *c, struct object *obj) {
     c->constants->values[c->constants->size++] = obj;
     return c->constants->size - 1;
 }
 
-void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, uint32_t pos) {
+static void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, uint32_t pos) {
     struct emitted_instruction previous = compiler_current_scope(c).last_instruction;
     struct emitted_instruction last = {
         .position = pos,
@@ -109,13 +109,13 @@ void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, uint3
     c->scopes[c->scope_index].last_instruction = last;
 }
 
-void compiler_remove_last_instruction(struct compiler *c) {
+static void compiler_remove_last_instruction(struct compiler *c) {
     /* set instruction pointer back to position of last emitted instruction */
     c->scopes[c->scope_index].instructions->size = c->scopes[c->scope_index].last_instruction.position;
     c->scopes[c->scope_index].last_instruction = c->scopes[c->scope_index].previous_instruction;
 }
 
-void compiler_replace_instruction(struct compiler *c, uint32_t pos, struct instruction *ins) {
+static void compiler_replace_instruction(struct compiler *c, uint32_t pos, struct instruction *ins) {
     for (uint32_t i=0; i < ins->size; i++) {
         c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
@@ -123,14 +123,14 @@ void compiler_replace_instruction(struct compiler *c, uint32_t pos, struct instr
     free_instruction(ins);
 }
 
-void compiler_replace_last_instruction(struct compiler *c, struct instruction *ins) {
+static void compiler_replace_last_instruction(struct compiler *c, struct instruction *ins) {
     uint32_t pos = compiler_current_scope(c).last_instruction.position;
     enum opcode first = ins->bytes[0];
     compiler_replace_instruction(c, pos, ins);
     compiler_set_last_instruction(c, first, pos);
 }
 
-bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode) {
+static bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode) {
     if (c->scopes[c->scope_index].instructions->size == 0) {
         return false;
     }
@@ -138,7 +138,7 @@ bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode) {
     return c->scopes[c->scope_index].last_instruction.opcode == opcode;
 }
 
-void compiler_change_operand(struct compiler *c, uint32_t pos, int operand) {
+static void compiler_change_operand(struct compiler *c, uint32_t pos, int operand) {
     enum opcode opcode = c->scopes[c->scope_index].instructions->bytes[pos];
     struct instruction *new = make_instruction(opcode, operand);
     compiler_replace_instruction(c, pos, new);
@@ -165,7 +165,7 @@ compile_program(struct compiler *compiler, struct program *program) {
     return 0;
 }
 
-int
+static int
 compile_block_statement(struct compiler *compiler, struct block_statement *block) {
     int err;
     for (uint32_t i=0; i < block->size; i++) {
@@ -176,7 +176,7 @@ compile_block_statement(struct compiler *compiler, struct block_statement *block
     return 0;
 }
 
-int
+static int
 compile_statement(struct compiler *c, struct statement *stmt) {
     int err;
     switch (stmt->type) {
@@ -208,7 +208,7 @@ compile_statement(struct compiler *c, struct statement *stmt) {
 }
 
 
-int 
+static int 
 compile_expression(struct compiler *c, struct expression *expr) {
     int err;
     switch (expr->type) {

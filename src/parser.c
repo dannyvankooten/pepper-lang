@@ -7,13 +7,15 @@
 #include <stddef.h>
 #include "parser.h"
 
-struct expression *parse_expression(struct parser *p, int precedence);
-int parse_statement(struct parser *p, struct statement *s);
-void expression_to_str(char *str, struct expression *expr);
-void free_expression(struct expression *expr);
-enum operator parse_operator(enum token_type t);
+static struct expression *parse_expression(struct parser *p, int precedence);
+static int parse_statement(struct parser *p, struct statement *s);
+static void expression_to_str(char *str, struct expression *expr);
+static void free_expression(struct expression *expr);
+static enum operator parse_operator(enum token_type t);
 
-enum precedence get_token_precedence(struct token t) {
+static 
+enum precedence 
+get_token_precedence(struct token t) {
     switch (t.type) {
         case TOKEN_EQ: return EQUALS;
         case TOKEN_NOT_EQ: return EQUALS;
@@ -48,14 +50,17 @@ struct parser new_parser(struct lexer *l) {
     return p;
 }
 
+static
 int current_token_is(struct parser *p, enum token_type t) {
     return t == p->current_token.type;
 }
 
+static
 int next_token_is(struct parser *p, enum token_type t) {
     return t == p->next_token.type;
 }
 
+static
 int expect_next_token(struct parser *p, enum token_type t) {
     if (next_token_is(p, t)) {
         next_token(p);
@@ -66,6 +71,7 @@ int expect_next_token(struct parser *p, enum token_type t) {
     return 0;
 }
 
+static
 int parse_let_statement(struct parser *p, struct statement *s) {
     s->type = STMT_LET;
     s->token = p->current_token;
@@ -107,6 +113,7 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     return 1;
 }
 
+static
 int parse_return_statement(struct parser *p, struct statement *s) {
     s->type = STMT_RETURN;
     s->token = p->current_token;
@@ -122,6 +129,7 @@ int parse_return_statement(struct parser *p, struct statement *s) {
     return 1;
 }
 
+static
 struct expression *parse_identifier_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -134,6 +142,7 @@ struct expression *parse_identifier_expression(struct parser *p) {
     return expr;
 }
 
+static
 struct expression *parse_string_literal(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -151,6 +160,7 @@ struct expression *parse_string_literal(struct parser *p) {
     return expr;
 }
 
+static
 struct expression *parse_int_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -163,6 +173,7 @@ struct expression *parse_int_expression(struct parser *p) {
     return expr;
 }
 
+static
 struct expression *parse_prefix_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -177,6 +188,7 @@ struct expression *parse_prefix_expression(struct parser *p) {
     return expr;
 }
 
+static
 struct expression_list parse_expression_list(struct parser *p, enum token_type end_token) {
     struct expression_list list = {
         .size = 0,
@@ -219,6 +231,7 @@ struct expression_list parse_expression_list(struct parser *p, enum token_type e
     return list;
 }
 
+static
 struct expression *parse_array_literal(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -230,7 +243,7 @@ struct expression *parse_array_literal(struct parser *p) {
     return expr;
 }
 
-
+static
 struct expression *parse_index_expression(struct parser *p, struct expression *left) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -249,6 +262,7 @@ struct expression *parse_index_expression(struct parser *p, struct expression *l
     return expr;
 }
 
+static
 struct expression *parse_call_expression(struct parser *p, struct expression *left) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -261,6 +275,7 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
     return expr;
 }
 
+static
 struct expression *parse_infix_expression(struct parser *p, struct expression *left) {
     struct expression * expr = malloc(sizeof *expr);
     if (!expr) {
@@ -277,6 +292,7 @@ struct expression *parse_infix_expression(struct parser *p, struct expression *l
     return expr;
 }
 
+static
 struct expression *parse_boolean_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -289,6 +305,7 @@ struct expression *parse_boolean_expression(struct parser *p) {
     return expr;
 }
 
+static
 struct expression *parse_grouped_expression(struct parser *p) {
     next_token(p);
     
@@ -302,6 +319,7 @@ struct expression *parse_grouped_expression(struct parser *p) {
     return expr;
 }
 
+static
 struct block_statement *parse_block_statement(struct parser *p) {
     struct block_statement *b = malloc(sizeof *b);
     if (!b) {
@@ -333,6 +351,7 @@ struct block_statement *parse_block_statement(struct parser *p) {
     return b;
 }
 
+static
 struct expression *make_expression(enum expression_type type, struct token tok) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -344,6 +363,7 @@ struct expression *make_expression(enum expression_type type, struct token tok) 
     return expr;
 }
 
+static
 struct expression *parse_while_expression(struct parser *p) {
     struct expression *expr = make_expression(EXPR_WHILE, p->current_token);
     if (!expect_next_token(p, TOKEN_LPAREN)) {
@@ -369,6 +389,7 @@ struct expression *parse_while_expression(struct parser *p) {
     return expr;
 }
 
+static
 struct expression *parse_if_expression(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -418,6 +439,7 @@ struct expression *parse_if_expression(struct parser *p) {
     return expr;
 }
 
+static
 struct identifier_list parse_function_parameters(struct parser *p) {
     struct identifier_list params = {
         .size = 0,
@@ -462,6 +484,7 @@ struct identifier_list parse_function_parameters(struct parser *p) {
     return params;
 }
 
+static
 struct expression *parse_function_literal(struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
@@ -486,6 +509,7 @@ struct expression *parse_function_literal(struct parser *p) {
     return expr;
 }
 
+static
 struct expression *parse_expression(struct parser *p, int precedence) {
     struct expression *left;
     switch (p->current_token.type) {
@@ -564,6 +588,7 @@ struct expression *parse_expression(struct parser *p, int precedence) {
     return left;
 }
 
+static
 int parse_expression_statement(struct parser *p, struct statement *s) {
     s->type = STMT_EXPR;
     s->token = p->current_token;
@@ -576,7 +601,8 @@ int parse_expression_statement(struct parser *p, struct statement *s) {
     return 1;
 }
 
-int parse_statement(struct parser *p, struct statement *s) {
+static int 
+parse_statement(struct parser *p, struct statement *s) {
     switch (p->current_token.type) {
         case TOKEN_LET: return parse_let_statement(p, s); break;
         case TOKEN_RETURN: return parse_return_statement(p, s); break;

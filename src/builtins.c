@@ -5,10 +5,10 @@
 #include "object.h"
 #include "builtins.h"
 
-struct object *builtin_len(struct object_list * args);
-struct object *builtin_puts(struct object_list * args);
+static struct object *builtin_len(struct object_list * args);
+static struct object *builtin_puts(struct object_list * args);
 
-struct object builtin_functions[] = {
+static struct object builtin_functions[] = {
     {
         .type = OBJ_BUILTIN,
         .value = { .builtin = &builtin_puts }
@@ -34,6 +34,7 @@ struct object *get_builtin(char *name) {
     return NULL;
 }
 
+static 
 struct object *builtin_len(struct object_list * args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
@@ -47,6 +48,7 @@ struct object *builtin_len(struct object_list * args) {
     return make_integer_object(strlen(arg->value.string));
 }
 
+static
 struct object *builtin_puts(struct object_list * args) {
     char str[BUFSIZ];
     for (uint32_t i=0; i < args->size; i++) {

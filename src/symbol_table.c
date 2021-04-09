@@ -7,12 +7,13 @@
 
 #define hash(v) (v[0] - 'a')
 
-struct hashmap *hashmap_new();
-void hashmap_insert(struct hashmap *hm, char *key, void *item);
-void *hashmap_get(struct hashmap *hm, char *key);
-void hashmap_free(struct hashmap *hm);
+static struct hashmap *hashmap_new();
+static void hashmap_insert(struct hashmap *hm, char *key, void *item);
+static void *hashmap_get(struct hashmap *hm, char *key);
+static void hashmap_free(struct hashmap *hm);
 
-struct hashmap *hashmap_new() {
+static struct hashmap *
+hashmap_new() {
     struct hashmap *hm = malloc(sizeof *hm);
     if (!hm) err(EXIT_FAILURE, "out of memory");
 
@@ -23,7 +24,8 @@ struct hashmap *hashmap_new() {
     return hm;
 }
 
-void hashmap_insert(struct hashmap *hm, char *key, void *item) {
+static void 
+hashmap_insert(struct hashmap *hm, char *key, void *item) {
     int8_t pos = hash(key);
     struct hashmap_node *head = hm->table[pos];
     struct hashmap_node *node = head;
@@ -47,7 +49,8 @@ void hashmap_insert(struct hashmap *hm, char *key, void *item) {
     hm->table[pos] = node;
 }
 
-void *hashmap_get(struct hashmap *hm, char *key) {
+static void *
+hashmap_get(struct hashmap *hm, char *key) {
     int8_t pos = hash(key);
     struct hashmap_node *node = hm->table[pos];
     while (node) {
@@ -59,6 +62,7 @@ void *hashmap_get(struct hashmap *hm, char *key) {
     return NULL;
 }
 
+static 
 void hashmap_free(struct hashmap *hm) {
     struct hashmap_node *node;
     struct hashmap_node *next;

@@ -10,10 +10,11 @@
 #include "eval.h"
 #include "object.h"
 
-struct object *eval_expression(struct expression *expr, struct environment *env);
-struct object *eval_block_statement(struct block_statement *block, struct environment *env);
+static struct object *eval_expression(struct expression *expr, struct environment *env);
+static struct object *eval_block_statement(struct block_statement *block, struct environment *env);
 
-struct object *eval_bang_operator_expression(struct object *obj)
+static struct object *
+eval_bang_operator_expression(struct object *obj)
 {
     if (!is_object_truthy(obj)) {
         return object_true;
@@ -22,7 +23,8 @@ struct object *eval_bang_operator_expression(struct object *obj)
     return object_false;
 }
 
-struct object *eval_minus_prefix_operator_expression(struct object *right)
+static struct object *
+eval_minus_prefix_operator_expression(struct object *right)
 {
     if (right->type != OBJ_INT)
     {
@@ -32,7 +34,8 @@ struct object *eval_minus_prefix_operator_expression(struct object *right)
     return make_integer_object(-right->value.integer);
 }
 
-struct object *eval_prefix_expression(enum operator operator, struct object *right)
+static struct object *
+eval_prefix_expression(enum operator operator, struct object *right)
 {
     switch (operator)
     {
@@ -52,7 +55,8 @@ struct object *eval_prefix_expression(enum operator operator, struct object *rig
 }
 
 
-struct object *eval_integer_infix_expression(enum operator operator, struct object *left, struct object *right)
+static struct object *
+eval_integer_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
     switch (operator)
     {
@@ -87,7 +91,8 @@ struct object *eval_integer_infix_expression(enum operator operator, struct obje
     return object_null;
 }
 
-struct object *eval_string_infix_expression(enum operator operator, struct object *left, struct object *right)
+static struct object *
+eval_string_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
     switch (operator) {
         case OP_ADD: 
@@ -101,7 +106,8 @@ struct object *eval_string_infix_expression(enum operator operator, struct objec
 }
 
 
-struct object *eval_infix_expression(enum operator operator, struct object *left, struct object *right)
+static struct object *
+eval_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
     if (left->type != right->type) 
     {
@@ -133,7 +139,8 @@ struct object *eval_infix_expression(enum operator operator, struct object *left
 }
 
 
-struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
+static struct object *
+eval_if_expression(struct if_expression *expr, struct environment *env)
 {
     struct object *obj = eval_expression(expr->condition, env);
     if (is_object_error(obj->type)) {
@@ -153,7 +160,8 @@ struct object *eval_if_expression(struct if_expression *expr, struct environment
 }
 
 
-struct object *eval_while_expression(struct while_expression *expr, struct environment *env)
+static struct object *
+eval_while_expression(struct while_expression *expr, struct environment *env)
 {
     struct object *obj = NULL;
     struct object *result = NULL;
@@ -184,7 +192,8 @@ struct object *eval_while_expression(struct while_expression *expr, struct envir
 }
 
 
-struct object *eval_identifier(struct identifier *ident, struct environment *env) {
+static struct object *
+eval_identifier(struct identifier *ident, struct environment *env) {
     struct object *obj = environment_get(env, ident->value);
     if (obj) {
         return obj;
@@ -195,11 +204,13 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
         return obj;
     }
 
+    /* object was not defined inside env and also not a built-in function */
     return make_error_object("identifier not found: %s", ident->value);
 }
 
 
-struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
+static struct object_list *
+eval_expression_list(struct expression_list *list, struct environment *env) {
     struct object_list *result = make_object_list(list->size);
     
     for (uint32_t i = 0; i < list->size; i++) {
@@ -226,7 +237,8 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
 }
 
 
-struct object *apply_function(struct object *obj, struct object_list *args) {
+static struct object *
+apply_function(struct object *obj, struct object_list *args) {
 
     switch (obj->type) {
         case OBJ_BUILTIN: {
@@ -258,7 +270,8 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
     return NULL;
 }
 
-struct object *eval_index_expression(struct object *left, struct object *index) {
+static struct object *
+eval_index_expression(struct object *left, struct object *index) {
     if (left->type != OBJ_ARRAY || index->type != OBJ_INT) {
         return make_error_object("index operator not supported: %s", object_type_to_str(left->type));
     }
@@ -270,7 +283,8 @@ struct object *eval_index_expression(struct object *left, struct object *index) 
     return copy_object(left->value.array->values[index->value.integer]);
 }
 
-struct object *eval_expression(struct expression *expr, struct environment *env)
+static struct object *
+eval_expression(struct expression *expr, struct environment *env)
 {
     switch (expr->type)
     {
@@ -375,8 +389,8 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
     return object_null;
 }
 
-
-struct object *make_return_object(struct object *obj)
+static struct object *
+make_return_object(struct object *obj)
 {
     switch (obj->type)
     {
@@ -409,7 +423,8 @@ struct object *make_return_object(struct object *obj)
 }
 
 
-struct object *eval_statement(struct statement *stmt, struct environment *env)
+static struct object *
+eval_statement(struct statement *stmt, struct environment *env)
 {
     switch (stmt->type)
     {
@@ -434,7 +449,8 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
 }
 
 
-struct object *eval_block_statement(struct block_statement *block, struct environment *env)
+static struct object *
+eval_block_statement(struct block_statement *block, struct environment *env)
 {
     struct object *obj = NULL;
     uint32_t size = block->size;

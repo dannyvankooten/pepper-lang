@@ -1,4 +1,4 @@
-CFLAGS+= -Werror -Wall -Isrc/ -g
+CFLAGS+= -Werror -Wall -Isrc/ -g -fno-gcse -fno-crossjumping
 LDLIBS=-l edit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH= src
