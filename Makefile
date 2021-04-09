@@ -1,4 +1,4 @@
-CFLAGS+= -Werror -Wall -Isrc/ -g -fno-gcse -fno-crossjumping
+CFLAGS+= -Werror -Wall -Isrc/ -g 
 LDLIBS=-l edit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH= src
@@ -9,6 +9,10 @@ COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c $(PARSER_SRC)
 VM_SRC= vm.c opcode.c object.c symbol_table.c builtins.c $(PARSER_SRC)
 PREFIX= /usr/local
 TESTS= bin/lexer_test bin/parser_test bin/opcode_test bin/eval_test bin/compiler_test bin/vm_test bin/symbol_table_test 
+
+ifeq "$(CC)" "gcc"
+    CFLAGS+=  -fno-gcse -fno-crossjumping
+endif
 
 all: bin/monkey 
 

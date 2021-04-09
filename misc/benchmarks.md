@@ -48,3 +48,8 @@ sys	0m0.040s
 **2020-03-06 13:44** (fib 40, VM)
 13.39user 0.00system 0:13.40elapsed 99%CPU (0avgtext+0avgdata 2232maxresident)k
 0inputs+0outputs (0major+181minor)pagefaults 0swaps
+
+**2021-04-09 15:50** (fib 35, VM)
+35th fibonacci number is: 9227465
+1.08user 0.00system 0:01.09elapsed 99%CPU (0avgtext+0avgdata 2068maxresident)k
+0inputs+0outputs (0major+108minor)pagefaults 0swaps
