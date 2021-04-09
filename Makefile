@@ -40,13 +40,6 @@ check: $(TESTS)
 memcheck: $(TESTS)
 	for test in $^; do valgrind $$test || exit 1; done
 
-.PHONY: bench
-bench: CFLAGS += -DUNSAFE -DOPT_AGGRESSIVE
-bench: bin/monkey
-	echo "**$(shell date '+%Y-%m-%d %H:%M')** (fib 35)" >> benchmarks.md
-	time --append -o benchmarks.md ./bin/monkey fibonacci.monkey
-	echo "" >> benchmarks.md
-
 .PHONY: clean
 clean:
 	rm -r bin

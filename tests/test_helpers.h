@@ -19,6 +19,8 @@ void _assertf(int assertion, const char filename[64], const int line, const char
         return;
     }
 
+    fflush(stdout);
+
     va_list args;
     va_start(args, format);
     if (strlen(current_test) > 0) {
@@ -29,6 +31,8 @@ void _assertf(int assertion, const char filename[64], const int line, const char
     vprintf(format, args);
     va_end(args);
     printf("\n");
+
+    
     exit(1);
 }
 

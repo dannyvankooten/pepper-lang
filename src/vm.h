@@ -30,8 +30,4 @@ struct vm *vm_new(struct bytecode *bc);
 struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_SIZE]);
 int vm_run(struct vm *vm);
 struct object vm_stack_last_popped(struct vm *vm);
-struct object vm_stack_pop(struct vm *vm);
 void vm_free(struct vm *vm);
-
-struct frame frame_new(struct compiled_function *fn, uint32_t bp);
-struct instruction *frame_instructions(struct frame *f);

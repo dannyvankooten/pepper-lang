@@ -7,6 +7,7 @@
 
 struct object *builtin_len(struct object_list * args);
 struct object *builtin_puts(struct object_list * args);
+
 struct object builtin_functions[] = {
     {
         .type = OBJ_BUILTIN,
