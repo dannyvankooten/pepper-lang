@@ -7,6 +7,19 @@
 #include "symbol_table.h"
 #include "vm.h"
 
+enum {
+    COMPILE_SUCCESS = 0,
+    COMPILE_ERR_UNKNOWN_OPERATOR,
+    COMPILE_ERR_UNKNOWN_EXPR_TYPE,
+    COMPILE_ERR_UNKNOWN_IDENT,
+};
+static const char *error_messages[] = {
+        "Success",
+        "Unknown operator",
+        "Unknown expression type",
+        "Undefined variable"
+    };
+
 static int compile_statement(struct compiler *compiler, struct statement *statement);
 static int compile_expression(struct compiler *compiler, struct expression *expression);
 
@@ -54,13 +67,7 @@ void compiler_free(struct compiler *c) {
 
 /* TODO: We probably want dynamic error messages that includes parts of the program string */
 const char *compiler_error_str(int err) {
-    static const char *messages[] = {
-        "Success",
-        "Unknown operator",
-        "Unknown expression type",
-        "Undefined variable"
-    };
-    return messages[err];
+    return error_messages[err];
 }
 
 struct compiler_scope compiler_current_scope(struct compiler *c) {
@@ -83,12 +90,11 @@ add_instruction(struct compiler *c, struct instruction *ins) {
         cins->bytes = realloc(cins->bytes, cins->cap * sizeof(*cins->bytes));
         assert(cins->bytes != NULL);
     }
+    
 
-    // TODO: Use memcpy here?
-    for (uint32_t i=0; i < ins->size; i++) {
-        cins->bytes[cins->size++] = ins->bytes[i];
-    }
-
+    // append instruction code to current compiler code
+    memcpy(cins->bytes + cins->size, ins->bytes, ins->size * sizeof(*ins->bytes));
+    cins->size += ins->size;
     free_instruction(ins);
     return pos;
 }
