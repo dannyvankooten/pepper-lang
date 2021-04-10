@@ -298,8 +298,10 @@ compile_expression(struct compiler *c, struct expression *expr) {
             if (compiler_last_instruction_is(c, OPCODE_POP)) {
                 compiler_remove_last_instruction(c);
             }
-
+            
             uint32_t jump_pos = compiler_emit(c, OPCODE_JUMP, 9999);
+
+            /* now we know actual position to jump to, so change operand */
             uint32_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
 
@@ -314,6 +316,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
                 compiler_emit(c, OPCODE_NULL);
             }
 
+            /* same story here, replace placeholder position with actual jump to position */
             uint32_t after_alternative_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_pos, after_alternative_pos);
         }

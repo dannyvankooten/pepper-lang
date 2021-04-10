@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include "opcode.h"
 #include "object.h"
@@ -19,7 +20,8 @@ enum result {
 
 struct frame {
     struct compiled_function* fn;
-    uint32_t ip;
+    uint8_t *ip;
+    uint8_t *ip_max;
     uint32_t base_pointer;
 };
 

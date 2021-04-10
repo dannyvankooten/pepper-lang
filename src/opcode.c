@@ -203,10 +203,10 @@ uint32_t read_operands(uint32_t dest[], struct definition def, struct instructio
     for (uint8_t i=0; i < def.operands; i++) {
         switch (def.operand_widths[i]) {
             case 1: 
-                dest[i] = read_uint8(ins->bytes + offset);
+                dest[i] = read_uint8((ins->bytes + offset));
             break;
             case 2: 
-                dest[i] = read_uint16(ins->bytes + offset);
+                dest[i] = read_uint16((ins->bytes + offset));
             break;
         }
         bytes_read += def.operand_widths[i];

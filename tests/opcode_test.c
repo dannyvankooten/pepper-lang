@@ -81,10 +81,19 @@ void test_read_operands() {
     }
 }
 
+void test_read_bytes() {
+    uint8_t bytes[] = {100, 20, 255};
+    uint8_t v1 = read_bytes(bytes, 1);
+    assertf(v1 == 100, "read_bytes(uint8_t) failed: expected %d, got %d", 100, v1);
+    uint16_t v2 = read_bytes(bytes, 2);
+    assertf(v2 == 25620, "read_bytes(uint16_5) failed: expected %d, got %d", 25620, v2);
+}
+
 int main() {
     test_make_instruction();
     test_read_operands();
     test_instruction_string();
+    test_read_bytes();
     
     printf("\x1b[32mAll opcode tests passed!\033[0m\n");
 }
