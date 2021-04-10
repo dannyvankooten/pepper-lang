@@ -168,6 +168,10 @@ compile_program(struct compiler *compiler, struct program *program) {
         if (err) return err;
     }
 
+    // end every program with OPCODE_HALT so we can include it in the lookup table
+    // vs. having ip on every iteration
+    compiler_emit(compiler, OPCODE_HALT);
+
     return 0;
 }
 

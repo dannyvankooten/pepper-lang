@@ -34,12 +34,13 @@ enum opcode {
     OPCODE_GET_LOCAL,
     OPCODE_SET_LOCAL,
     OPCODE_GET_BUILTIN,
+    OPCODE_HALT,
 };
 
 struct definition {
-    const char name[64];
+    const char name[32];
     uint8_t operands;
-    uint8_t operand_widths[MAX_OP_SIZE];
+    uint8_t operand_widths[8];
 };
 
 struct instruction {

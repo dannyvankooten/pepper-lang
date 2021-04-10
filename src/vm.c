@@ -357,12 +357,10 @@ print_debug_info(struct vm *vm) {
 
 #ifdef DEBUG
     #define DISPATCH()  \
-        if (frame->ip >= frame->ip_max) { return 0; }       \
         print_debug_info(vm);                               \
         goto *dispatch_table[*frame->ip];                    
 #else 
     #define DISPATCH() \
-        if (frame->ip  >= frame->ip_max) { return 0; }       \
         goto *dispatch_table[*frame->ip];         
 #endif
 
@@ -434,6 +432,7 @@ vm_run(struct vm *vm) {
         &&GOTO_OPCODE_GET_LOCAL,
         &&GOTO_OPCODE_SET_LOCAL,
         &&GOTO_OPCODE_GET_BUILTIN,
+        &&GOTO_OPCODE_HALT,
     };
 
     struct frame *frame = vm_current_frame(vm);
@@ -602,6 +601,8 @@ vm_run(struct vm *vm) {
         vm_stack_push(vm, *get_builtin_by_index(idx));
         DISPATCH();
     }
+
+    GOTO_OPCODE_HALT: ;
 
     return VM_SUCCESS;
 }

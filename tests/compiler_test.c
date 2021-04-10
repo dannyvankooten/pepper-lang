@@ -94,8 +94,9 @@ void test_integer_arithmetic() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_ADD),
                 make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
             },
-            .instructions_size = 4,
+            .instructions_size = 5,
         },
         {
             .input = "1 - 2",
@@ -109,8 +110,9 @@ void test_integer_arithmetic() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_SUBTRACT),
                 make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
             },
-            .instructions_size = 4,
+            .instructions_size = 5,
         },
         {
             .input = "1 * 2",
@@ -124,8 +126,9 @@ void test_integer_arithmetic() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_MULTIPLY),
                 make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
             },
-            .instructions_size = 4,
+            .instructions_size = 5,
         },
         {
             .input = "2 / 1",
@@ -139,8 +142,9 @@ void test_integer_arithmetic() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_DIVIDE),
                 make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
             },
-            .instructions_size = 4,
+            .instructions_size = 5,
         },
         {
             .input = "2 / 1",
@@ -154,8 +158,9 @@ void test_integer_arithmetic() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_DIVIDE),
                 make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
             },
-            .instructions_size = 4,
+            .instructions_size = 5,
         },
         {
             .input = "-1",
@@ -166,7 +171,8 @@ void test_integer_arithmetic() {
                 make_instruction(OPCODE_CONST, 0),
                 make_instruction(OPCODE_MINUS),
                 make_instruction(OPCODE_POP),
-            }, 3,
+                make_instruction(OPCODE_HALT),
+            }, 4,
         },
     };
 
@@ -184,8 +190,9 @@ void test_boolean_expressions() {
             .instructions = {
                 make_instruction(OPCODE_TRUE),
                 make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
             },
-            .instructions_size = 2,
+            .instructions_size = 3,
         },
         {
             "false",
@@ -193,8 +200,9 @@ void test_boolean_expressions() {
             {
                 make_instruction(OPCODE_FALSE),
                 make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
             },
-            2,
+            3,
         },
         {
             "1 > 2", 
@@ -207,7 +215,8 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_GREATER_THAN),
                 make_instruction(OPCODE_POP),
-            }, 4
+                make_instruction(OPCODE_HALT),
+            }, 5
         },
         {
             "1 < 2", 
@@ -220,7 +229,8 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_LESS_THAN),
                 make_instruction(OPCODE_POP),
-            }, 4
+                make_instruction(OPCODE_HALT),
+            }, 5
         },
         {
             "1 == 2", 
@@ -233,7 +243,8 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_EQUAL),
                 make_instruction(OPCODE_POP),
-            }, 4
+                make_instruction(OPCODE_HALT),
+            }, 5
         },
         {
             "1 != 2", 
@@ -246,7 +257,8 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_NOT_EQUAL),
                 make_instruction(OPCODE_POP),
-            }, 4
+                make_instruction(OPCODE_HALT),
+            }, 5
         },
         {
             "true == false", 
@@ -256,7 +268,8 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_FALSE),
                 make_instruction(OPCODE_EQUAL),
                 make_instruction(OPCODE_POP),
-            }, 4
+                make_instruction(OPCODE_HALT),
+            }, 5
         },
         {
             "true != false", 
@@ -266,7 +279,8 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_FALSE),
                 make_instruction(OPCODE_NOT_EQUAL),
                 make_instruction(OPCODE_POP),
-            }, 4
+                make_instruction(OPCODE_HALT),
+            }, 5
         },
          {
             "!true", 
@@ -275,7 +289,8 @@ void test_boolean_expressions() {
                 make_instruction(OPCODE_TRUE),
                 make_instruction(OPCODE_BANG),
                 make_instruction(OPCODE_POP),
-            }, 3
+                make_instruction(OPCODE_HALT),
+            }, 4
         },
     };
 
@@ -301,7 +316,8 @@ void test_conditionals() {
                 make_instruction(OPCODE_POP),               // 0011
                 make_instruction(OPCODE_CONST, 1),          // 0012
                 make_instruction(OPCODE_POP),               // 0015
-            }, 8
+                make_instruction(OPCODE_HALT),
+            }, 9
         },
         {
             .input = "if (true) { 10; } else { 20; }; 3333;",
@@ -319,7 +335,8 @@ void test_conditionals() {
                 make_instruction(OPCODE_POP),               // 0013
                 make_instruction(OPCODE_CONST, 2),          // 0014
                 make_instruction(OPCODE_POP),               // 0017
-            }, 8
+                make_instruction(OPCODE_HALT),
+            }, 9
         },
     };
     run_compiler_tests(tests, ARRAY_SIZE(tests));
@@ -340,7 +357,8 @@ void test_global_let_statements() {
                 make_instruction(OPCODE_SET_GLOBAL, 0),
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_SET_GLOBAL, 1),
-            }, 4,
+                make_instruction(OPCODE_HALT),
+            }, 5,
         },
         {
             .input = "let one = 1; one;",
@@ -352,7 +370,8 @@ void test_global_let_statements() {
                 make_instruction(OPCODE_SET_GLOBAL, 0),
                 make_instruction(OPCODE_GET_GLOBAL, 0),
                 make_instruction(OPCODE_POP),
-            }, 4,
+                make_instruction(OPCODE_HALT),
+            }, 5,
         },
         {
             .input = "let one = 1; let two = one; two;",
@@ -366,7 +385,8 @@ void test_global_let_statements() {
                 make_instruction(OPCODE_SET_GLOBAL, 1),
                 make_instruction(OPCODE_GET_GLOBAL, 1),
                 make_instruction(OPCODE_POP),
-            }, 6,
+                make_instruction(OPCODE_HALT),
+            }, 7,
         }
     };
 
@@ -392,7 +412,8 @@ void test_functions() {
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
                 make_instruction(OPCODE_POP),
-            }, 2,
+                make_instruction(OPCODE_HALT),
+            }, 3,
         };
         run_compiler_test(t);
    }
@@ -413,7 +434,8 @@ void test_functions() {
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
                 make_instruction(OPCODE_POP),
-            }, 2,
+                make_instruction(OPCODE_HALT),
+            }, 3,
         };
         run_compiler_test(t);
     }
@@ -434,7 +456,8 @@ void test_functions() {
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
                 make_instruction(OPCODE_POP),
-            }, 2,
+                make_instruction(OPCODE_HALT),
+            }, 3,
         };
         run_compiler_test(t);
     }
@@ -451,7 +474,8 @@ void test_functions() {
             .instructions = {
                 make_instruction(OPCODE_CONST, 0),
                 make_instruction(OPCODE_POP),
-            }, 2,
+                make_instruction(OPCODE_HALT),
+            }, 3,
         };
         run_compiler_test(t);
     }
@@ -503,7 +527,8 @@ void test_function_calls() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_CALL, 0),
                 make_instruction(OPCODE_POP),
-            }, 3,
+                make_instruction(OPCODE_HALT),
+            }, 4,
         };
         run_compiler_test(t);
    }
@@ -524,7 +549,8 @@ void test_function_calls() {
                 make_instruction(OPCODE_GET_GLOBAL, 0),
                 make_instruction(OPCODE_CALL, 0),
                 make_instruction(OPCODE_POP),
-            }, 5,
+                make_instruction(OPCODE_HALT),
+            }, 6,
         };
         run_compiler_test(t);
    }
@@ -546,7 +572,8 @@ void test_function_calls() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_CALL, 1),
                 make_instruction(OPCODE_POP),
-            }, 6,
+                make_instruction(OPCODE_HALT),
+            }, 7,
         };
         run_compiler_test(t);
    }
@@ -576,7 +603,8 @@ void test_function_calls() {
                 make_instruction(OPCODE_CONST, 3),
                 make_instruction(OPCODE_CALL, 3),
                 make_instruction(OPCODE_POP),
-            }, 8,
+                make_instruction(OPCODE_HALT),
+            }, 9,
         };
         run_compiler_test(t);
    }
@@ -609,7 +637,8 @@ void test_function_calls() {
                 make_instruction(OPCODE_CALL, 0),
                 make_instruction(OPCODE_ADD),                
                 make_instruction(OPCODE_POP),
-            }, 10,
+                make_instruction(OPCODE_HALT),
+            }, 11,
         };
         run_compiler_test(t);
    }
@@ -635,7 +664,8 @@ void test_let_statement_scopes() {
                 make_instruction(OPCODE_SET_GLOBAL, 0),
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_POP),
-            }, 4,
+                make_instruction(OPCODE_HALT),
+            }, 5,
         };
         run_compiler_test(t);
    }
@@ -655,7 +685,8 @@ void test_let_statement_scopes() {
             .instructions = {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_POP),
-            }, 2,
+                make_instruction(OPCODE_HALT),
+            }, 3,
         };
         run_compiler_test(t);
    }
@@ -680,7 +711,8 @@ void test_let_statement_scopes() {
             .instructions = {
                 make_instruction(OPCODE_CONST, 2),
                 make_instruction(OPCODE_POP),
-            }, 2,
+                make_instruction(OPCODE_HALT),
+            }, 3,
         };
         run_compiler_test(t);
    }
@@ -711,7 +743,8 @@ void test_recursive_functions() {
             make_instruction(OPCODE_CONST, 2),
             make_instruction(OPCODE_CALL, 1),
             make_instruction(OPCODE_POP),
-        }, 6,
+            make_instruction(OPCODE_HALT),
+        }, 7,
     };
     run_compiler_test(t);
 }
@@ -728,7 +761,8 @@ void test_string_expressions() {
             .instructions = {
                 make_instruction(OPCODE_CONST, 0),
                 make_instruction(OPCODE_POP),
-            }, 2,
+                make_instruction(OPCODE_HALT),
+            }, 3,
         },
         {
             .input = "\"mon\" + \"key\"",
@@ -741,7 +775,8 @@ void test_string_expressions() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_ADD),
                 make_instruction(OPCODE_POP),
-            }, 4,
+                make_instruction(OPCODE_HALT),
+            }, 5,
         },
     };
 
@@ -761,7 +796,8 @@ void test_builtin_functions() {
                 make_instruction(OPCODE_CONST, 0),
                 make_instruction(OPCODE_CALL, 1),
                 make_instruction(OPCODE_POP, 0),
-            }, 4,
+                make_instruction(OPCODE_HALT),
+            }, 5,
         },
     };
 
