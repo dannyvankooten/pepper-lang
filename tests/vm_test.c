@@ -4,7 +4,7 @@
 #include "../src/compiler.h"
 
 void test_object(struct object obj, enum object_type type, union object_value value) {
-    assertf(obj.type == type, "invalid object type: expected %s, got %s", object_type_to_str(type), object_type_to_str(obj.type));
+    assertf(obj.type == type, "invalid object type: expected \"%s\", got \"%s\"", object_type_to_str(type), object_type_to_str(obj.type));
     switch (type) {
         case OBJ_INT:
             assertf(obj.value.integer == value.integer, "invalid integer value: expected %d, got %d", value.integer, obj.value.integer);
@@ -16,8 +16,12 @@ void test_object(struct object obj, enum object_type type, union object_value va
             // nothing to do as null objects have no further contents
         break;
         case OBJ_STRING: 
-            assertf(strcmp(value.string, obj.value.string) == 0, "invalid string value: expected %s, got %s", value.string, obj.value.string);
+            assertf(strcmp(value.string, obj.value.string) == 0, "invalid string value: expected \"%s\", got \"%s\"", value.string, obj.value.string);
             free(obj.value.string);
+        break;
+        case OBJ_ERROR:
+            assertf(strcmp(obj.value.error, value.error) == 0, "invalid error value: expected \"%s\", got \"%s\"", value.error, obj.value.error);
+            free(obj.value.error);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj.type));
@@ -334,10 +338,9 @@ void test_builtin_functions() {
         union object_value value;
     } tests[] = {
         {"len(\"\")", OBJ_INT, {.integer = 0}},
-        // {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
-        /* TODO: Fix below tests by returning object error in VM */
-        // {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
-        // {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
+        {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
+        {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
+        {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)

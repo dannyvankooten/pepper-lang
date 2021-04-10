@@ -3,7 +3,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <sys/types.h>
 #include "lexer.h"
 
 #define MAX_IDENT_LENGTH 32

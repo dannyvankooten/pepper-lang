@@ -275,6 +275,7 @@ struct object_list *make_object_list(uint32_t cap) {
 void free_object_list_shallow(struct object_list *list) {
     list->next = object_list_pool_head;
     object_list_pool_head = list;
+    list->size = 0;
 }
 
 /* frees object list incl. all values contained in list */

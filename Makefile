@@ -1,4 +1,4 @@
-CFLAGS+= -Werror -Wall -Isrc/ -g 
+CFLAGS+= -Werror -Wall -Isrc/ -g
 LDLIBS=-l edit
 DATE=$(shell date '+%Y-%m-%d')
 VPATH= src

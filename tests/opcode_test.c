@@ -83,9 +83,9 @@ void test_read_operands() {
 
 void test_read_bytes() {
     uint8_t bytes[] = {100, 20, 255};
-    uint8_t v1 = read_bytes(bytes, 1);
+    uint8_t v1 = read_uint8(bytes);
     assertf(v1 == 100, "read_bytes(uint8_t) failed: expected %d, got %d", 100, v1);
-    uint16_t v2 = read_bytes(bytes, 2);
+    uint16_t v2 = read_uint16(bytes);
     assertf(v2 == 25620, "read_bytes(uint16_5) failed: expected %d, got %d", 25620, v2);
 }
 

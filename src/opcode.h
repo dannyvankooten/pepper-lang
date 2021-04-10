@@ -37,7 +37,7 @@ enum opcode {
 };
 
 struct definition {
-    char name[64];
+    const char name[64];
     uint8_t operands;
     uint8_t operand_widths[MAX_OP_SIZE];
 };
@@ -60,5 +60,4 @@ struct instruction *make_instruction_va(enum opcode opcode, va_list operands);
 void free_instruction(struct instruction *ins);
 struct instruction *flatten_instructions_array(struct instruction *arr[], uint32_t size);
 char *instruction_to_str(struct instruction *ins);
-uint32_t read_operands(uint32_t dest[MAX_OP_SIZE], struct definition def, struct instruction *ins, uint32_t offset);
-int read_bytes(uint8_t *bytes, uint8_t len);
+uint32_t read_operands(uint32_t dest[], struct definition def, struct instruction *ins, uint32_t offset);

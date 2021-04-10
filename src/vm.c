@@ -2,14 +2,13 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-
+#include <stdio.h>
 #include <err.h>
+
 #include "object.h"
 #include "opcode.h"
 #include "vm.h"
 #include "builtins.h"
-#include <stdio.h>
-#include <sys/types.h>
 
 const struct object obj_null = {
     .type = OBJ_NULL,
@@ -238,6 +237,7 @@ vm_do_comparision(struct vm *vm, enum opcode opcode) {
     }   
 }
 
+static 
 enum result 
 vm_do_bang_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
@@ -245,6 +245,7 @@ vm_do_bang_operation(struct vm *vm) {
     return VM_SUCCESS;
 }
 
+static 
 enum result 
 vm_do_minus_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
@@ -271,9 +272,9 @@ enum result
 vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *),  uint8_t num_args) {
     // create object list with arguments
     struct object_list *args = make_object_list(num_args);
-    for (int32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
+    for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
         args->values[args->size++] = &vm->stack[i];
-    }
+    }       
 
     struct object *result = builtin(args);
     vm->stack_pointer = vm->stack_pointer - num_args - 1;

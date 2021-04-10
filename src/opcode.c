@@ -134,17 +134,18 @@ void free_instruction(struct instruction *ins) {
 struct instruction *flatten_instructions_array(struct instruction *arr[], uint32_t size) {
     struct instruction *ins = arr[0];
 
+    // reallocate to fit all bytecode 
+    int32_t totalsize = 0;
+    for (int32_t i=0; i < size; i++) {
+        totalsize += arr[i]->size;
+    }
+    ins->bytes = realloc(ins->bytes, totalsize);
+    assert(ins->bytes != NULL);
+
     // add all instructions to first instruction in the list
-    for (uint32_t i = 1; i < size; i++) {
-        // TODO: Allocate all at once
-        ins->bytes = realloc(ins->bytes, (ins->size + arr[i]->size ) * sizeof(*ins->bytes));
-        assert(ins->bytes != NULL);
-
-        // TODO: Use memcpy here?
-        for (uint32_t j=0; j < arr[i]->size; j++) {
-            ins->bytes[ins->size++] = arr[i]->bytes[j];
-        }
-
+    for (uint32_t i = 1; i < size; i++) {        
+        memcpy(ins->bytes + ins->size, arr[i]->bytes, arr[i]->size);
+        ins->size += arr[i]->size;
         free_instruction(arr[i]);
     }
 
@@ -182,15 +183,6 @@ char *instruction_to_str(struct instruction *ins) {
     }
 
     return buffer;
-}
-
-int read_bytes(uint8_t *bytes, uint8_t len) {
-    switch (len) {
-        case 1: return read_uint8(bytes);
-        case 2: return read_uint16(bytes);
-    }
-
-    err(EXIT_FAILURE, "Unsupported byte length");
 }
 
 uint32_t read_operands(uint32_t dest[], struct definition def, struct instruction *ins, uint32_t offset) {

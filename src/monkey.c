@@ -15,12 +15,15 @@
 // TODO: perhaps mock this in case it's not installed, since it's not super necessary
 #include <editline/readline.h>
 
+static 
 char *read_file(const char *filename);
 
+static
 void print_version() {
     printf("Monkey-C %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
 
+static 
 int repl() {
     print_version();
     printf("press CTRL+c to exit\n\n");
@@ -95,6 +98,7 @@ int repl() {
     return 0;
 }
 
+static 
 int run_script(const char *filename) {
     char *input = read_file(filename);
     struct lexer lexer = new_lexer(input);
