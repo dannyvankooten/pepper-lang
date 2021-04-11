@@ -7,6 +7,7 @@
 
 static struct object *builtin_len(struct object_list * args);
 static struct object *builtin_puts(struct object_list * args);
+static struct object *builtin_type(struct object_list * args);
 
 static struct object builtin_functions[] = {
     {
@@ -17,6 +18,10 @@ static struct object builtin_functions[] = {
         .type = OBJ_BUILTIN,
         .value = { .builtin = &builtin_len }
     },
+    {
+        .type = OBJ_BUILTIN,
+        .value = { .builtin = &builtin_type }
+    }
 };
 
 inline 
@@ -29,7 +34,9 @@ struct object *get_builtin(char *name) {
         return &builtin_functions[0];
     } else if (strcmp(name, "len") == 0) {
         return &builtin_functions[1];
-    } 
+    } else if (strcmp(name, "type") == 0) {
+        return &builtin_functions[2];
+    }
 
     return NULL;
 }
@@ -59,4 +66,12 @@ struct object *builtin_puts(struct object_list * args) {
     printf("\n");
 
     return object_null;
+}
+
+static struct object *builtin_type(struct object_list *args) {
+    if (args->size != 1) {
+        return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
+    }
+    
+    return make_string_object((char *) object_type_to_str(args->values[0]->type), NULL);
 }

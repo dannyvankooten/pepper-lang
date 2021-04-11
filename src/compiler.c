@@ -37,8 +37,10 @@ struct compiler *compiler_new() {
     c->symbol_table = symbol_table_new();
 
     // define builtin functions
+    // TODO: Do this programmatically
     symbol_table_define_builtin_function(c->symbol_table, 0, "puts");
     symbol_table_define_builtin_function(c->symbol_table, 1, "len");
+    symbol_table_define_builtin_function(c->symbol_table, 2, "type");
 
     // initialize scopes
     for (uint32_t i=0; i < 64; i++) {

@@ -41,6 +41,8 @@ run_vm_test(char *program_str) {
     assertf(err == 0, "vm error: %d", err);
     struct object obj = vm_stack_last_popped(vm);
 
+    // TODO: We should only duplicate string if comes from a constant, since these are freed elsewhere
+    // Even better would be to take ownership of every string entering the VM
     if (obj.type == OBJ_STRING) {
         obj.value.string = strdup(obj.value.string);
     }
@@ -341,6 +343,9 @@ void test_builtin_functions() {
         {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
         {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
         {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
+        // {"type(\"one\")", OBJ_STRING, {.string = "STRING"}},
+        {"type(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
+        //  {"puts(\"one\", \"two\")", OBJ_NULL, {}},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
