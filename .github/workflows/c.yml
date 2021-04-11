@@ -23,4 +23,4 @@ jobs:
       run: |
         echo "Time: "
         make
-        /usr/bin/time bin/monkey fibonacci.monkey | tail -n1
+        /usr/bin/time bin/monkey examples/fib35.monkey | tail -n1
