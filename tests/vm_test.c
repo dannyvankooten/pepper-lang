@@ -355,24 +355,21 @@ void test_builtin_functions() {
     }
 }
 
-
-
-int main() {
-    test_integer_arithmetic();
-    test_boolean_expressions();
-    test_conditionals();
-    test_nulls();
-    test_global_let_statements();
-    test_function_calls();
-    test_functions_without_return_value();
-    test_first_class_functions();
-    test_function_calls_with_bindings();
-    test_function_calls_with_args_and_bindings();
-    test_recursive_functions();
-    test_fib();
-    test_string_expressions();
-    test_builtin_functions();
-
+int main(int argc, char *argv[]) {
+    TEST(test_integer_arithmetic);
+    TEST(test_boolean_expressions);
+    TEST(test_conditionals);
+    TEST(test_nulls);
+    TEST(test_global_let_statements);
+    TEST(test_function_calls);
+    TEST(test_functions_without_return_value);
+    TEST(test_first_class_functions);
+    TEST(test_function_calls_with_bindings);
+    TEST(test_function_calls_with_args_and_bindings);
+    TEST(test_recursive_functions);
+    TEST(test_fib);
+    TEST(test_string_expressions);
+    TEST(test_builtin_functions);
     printf("\x1b[32mAll vm tests passed!\033[0m\n");
 
     free_object_pool();
