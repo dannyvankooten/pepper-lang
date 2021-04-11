@@ -30,7 +30,7 @@ void test_object(struct object obj, enum object_type type, union object_value va
 }
 
 struct object 
-run_vm_test(char *program_str) {
+run_vm_test(const char *program_str) {
     struct program *p = parse_program_str(program_str);
     struct compiler *c = compiler_new();
     int err = compile_program(c, p);
@@ -55,10 +55,10 @@ run_vm_test(char *program_str) {
 }
 
 void test_integer_arithmetic() {
-    TESTNAME(__FUNCTION__);
+
 
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"1", 1},
@@ -86,10 +86,10 @@ void test_integer_arithmetic() {
 }
 
 void test_boolean_expressions() {
-    TESTNAME(__FUNCTION__);
+
 
     struct {
-        char *input;
+        const char *input;
         bool expected;
     } tests[] = {
         {"true", true},
@@ -127,10 +127,10 @@ void test_boolean_expressions() {
 }
 
 void test_conditionals() {
-    TESTNAME(__FUNCTION__);
+
 
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"if (true) { 10 }", 10},
@@ -150,9 +150,9 @@ void test_conditionals() {
 }
 
 void test_nulls() {
-    TESTNAME(__FUNCTION__);
+
     struct {
-        char *input;
+        const char *input;
         struct object obj;
     } tests[] = {
         {"if (1 > 2) { 10 }", obj_null},
@@ -166,9 +166,9 @@ void test_nulls() {
 }
 
 void test_global_let_statements() {
-    TESTNAME(__FUNCTION__);
+
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"let one = 1; one", 1},
@@ -183,9 +183,9 @@ void test_global_let_statements() {
 }
 
 void test_function_calls() {
-    TESTNAME(__FUNCTION__);
+
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();", 15},
@@ -202,9 +202,9 @@ void test_function_calls() {
 }
 
 void test_functions_without_return_value() {
-    TESTNAME(__FUNCTION__);
 
-   char *tests[] = {
+
+   const char *tests[] = {
         "let noReturn = fn() { }; noReturn();",
         "let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();"
     };
@@ -216,9 +216,9 @@ void test_functions_without_return_value() {
 }
 
 void test_first_class_functions() {
-    TESTNAME(__FUNCTION__);
+
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"let returnsOne = fn() { 1; }; let returnsOneReturner = fn() { returnsOne; }; returnsOneReturner()();", 1},
@@ -231,9 +231,9 @@ void test_first_class_functions() {
 }
 
 void test_function_calls_with_bindings() {
-    TESTNAME(__FUNCTION__);
+
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"let one = fn() { let one = 1; one }; one();", 1},
@@ -251,9 +251,8 @@ void test_function_calls_with_bindings() {
 
 
 void test_function_calls_with_args_and_bindings() {
-    TESTNAME(__FUNCTION__);
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"let identity = fn(a) { a; }; identity(4);", 4},
@@ -281,8 +280,7 @@ void test_function_calls_with_args_and_bindings() {
 
 
 void test_fib() {
-    TESTNAME(__FUNCTION__);
-    char *input = "              \
+    const char *input = "              \
         let fibonacci = fn(x) {  \
             if (x < 2) {         \
                 return x;        \
@@ -296,9 +294,9 @@ void test_fib() {
 }
 
 void test_recursive_functions() {
-    TESTNAME(__FUNCTION__);
+
     struct {
-        char *input;
+        const char *input;
         int expected;
     } tests[] = {
         {"let countdown = fn(x) { if (x == 0) { return 0; } else { countdown(x-1); } }; countdown(3);", 0},
@@ -312,10 +310,9 @@ void test_recursive_functions() {
 }
 
 void test_string_expressions() {
-    TESTNAME(__FUNCTION__);
 
     struct {
-        char *input;
+        const char *input;
         char *expected;
     } tests[] = {
         {"\"monkey\"", "monkey"},
@@ -332,10 +329,10 @@ void test_string_expressions() {
 }
 
 void test_builtin_functions() {
-    TESTNAME(__FUNCTION__);
+
     struct
     {
-        char *input;
+        const char *input;
         enum object_type type;
         union object_value value;
     } tests[] = {
@@ -355,7 +352,7 @@ void test_builtin_functions() {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *argv[]) {
     TEST(test_integer_arithmetic);
     TEST(test_boolean_expressions);
     TEST(test_conditionals);

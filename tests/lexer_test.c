@@ -24,7 +24,9 @@ int main() {
         "\"foobar\"\n"
         "\"foo bar\""
         "[1, 2];"
-        "[\"one\", \"two\"];";
+        "[\"one\", \"two\"];\n"
+        "varname; // comment\n"
+        "// varname";
 
     struct lexer l = {input, 0};
     struct token tokens[] = {
@@ -114,6 +116,8 @@ int main() {
         {TOKEN_COMMA, ","},
         {TOKEN_STRING, "two"},
         {TOKEN_RBRACKET, "]"},
+        {TOKEN_SEMICOLON, ";"},
+        {TOKEN_IDENT, "varname"},
         {TOKEN_SEMICOLON, ";"},
         {TOKEN_EOF, ""},
     };
