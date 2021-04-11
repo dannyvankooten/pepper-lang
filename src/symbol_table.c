@@ -8,8 +8,8 @@
 #define hash(v) (v[0] - 'a')
 
 static struct hashmap *hashmap_new();
-static void hashmap_insert(struct hashmap *hm, char *key, void *item);
-static void *hashmap_get(struct hashmap *hm, char *key);
+static void hashmap_insert(struct hashmap *hm, const char *key, void *item);
+static void *hashmap_get(struct hashmap *hm, const char *key);
 static void hashmap_free(struct hashmap *hm);
 
 static struct hashmap *
@@ -25,7 +25,7 @@ hashmap_new() {
 }
 
 static void 
-hashmap_insert(struct hashmap *hm, char *key, void *item) {
+hashmap_insert(struct hashmap *hm, const char *key, void *item) {
     int8_t pos = hash(key);
     struct hashmap_node *head = hm->table[pos];
     struct hashmap_node *node = head;
@@ -50,7 +50,7 @@ hashmap_insert(struct hashmap *hm, char *key, void *item) {
 }
 
 static void *
-hashmap_get(struct hashmap *hm, char *key) {
+hashmap_get(struct hashmap *hm, const char *key) {
     int8_t pos = hash(key);
     struct hashmap_node *node = hm->table[pos];
     while (node) {
@@ -96,7 +96,7 @@ struct symbol_table *symbol_table_new_enclosed(struct symbol_table *outer) {
     return t;
 }
 
-struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
+struct symbol *symbol_table_define(struct symbol_table *t, const char *name) {
     struct symbol *s = malloc(sizeof *s);
     if (!s) err(EXIT_FAILURE, "out of memory");
 
@@ -111,7 +111,7 @@ struct symbol *symbol_table_define(struct symbol_table *t, char *name) {
     return s;
 }
 
-struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint32_t index, char *name) {
+struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint32_t index, const char *name) {
     struct symbol *s = malloc(sizeof *s);
     if (!s) err(EXIT_FAILURE, "out of memory");
 
@@ -124,7 +124,7 @@ struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint
     return s;    
 }
 
-struct symbol *symbol_table_resolve(struct symbol_table *t, char *name) {
+struct symbol *symbol_table_resolve(struct symbol_table *t, const char *name) {
     void *r = hashmap_get(t->store, name);
     if (r == NULL) {
         if (t->outer) {

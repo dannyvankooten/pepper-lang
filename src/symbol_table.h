@@ -1,6 +1,6 @@
 #pragma once
 
-#include <inttypes.h>
+#include <stdint.h>
 
 enum symbol_scope {
     SCOPE_GLOBAL,
@@ -19,13 +19,13 @@ struct hashmap {
 };
 
 struct hashmap_node {
-    char *key;
+    const char *key;
     void *value;
     struct hashmap_node *next;
 };
 
 struct symbol {
-    char *name;
+    const char *name;
     enum symbol_scope scope;
     uint32_t index;
 };
@@ -38,7 +38,7 @@ struct symbol_table {
 
 struct symbol_table *symbol_table_new();
 struct symbol_table *symbol_table_new_enclosed(struct symbol_table *outer);
-struct symbol *symbol_table_define(struct symbol_table *t, char *name);
-struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint32_t index, char *name);
-struct symbol *symbol_table_resolve(struct symbol_table *t, char *name);
+struct symbol *symbol_table_define(struct symbol_table *t, const char *name);
+struct symbol *symbol_table_define_builtin_function(struct symbol_table *t, uint32_t index, const char *name);
+struct symbol *symbol_table_resolve(struct symbol_table *t, const char *name);
 void symbol_table_free(struct symbol_table *t);

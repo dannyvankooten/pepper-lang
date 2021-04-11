@@ -53,7 +53,6 @@ static const char *object_names[] = {
     "BOOLEAN",
     "INTEGER",
     "ERROR",
-    "FUNCTION",
     "STRING",
     "BUILTIN",
     "ARRAY",
@@ -80,7 +79,6 @@ struct object *make_object(enum object_type type) {
 
    obj->type = type;
    obj->next = NULL;
-   obj->name = NULL;
    obj->return_value = false;
    return obj;
 }
@@ -139,15 +137,6 @@ struct object *make_error_object(char *format, ...) {
 }
 
 
-struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
-    struct object *obj = make_object(OBJ_FUNCTION);
-    obj->value.function = malloc(sizeof(struct function));
-    assert(obj->value.function != NULL);
-    obj->value.function->parameters = parameters;
-    obj->value.function->body = body;
-    obj->value.function->env = env;
-    return obj;
-}
 
 struct object *make_compiled_function_object(struct instruction *ins, uint32_t num_locals) {
     struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
@@ -170,10 +159,6 @@ struct object *copy_object(struct object *obj) {
 
         case OBJ_INT:
             return make_integer_object(obj->value.integer);
-            break;
-
-        case OBJ_FUNCTION:
-            return make_function_object(obj->value.function->parameters, obj->value.function->body, obj->value.function->env);
             break;
 
         case OBJ_ERROR: 
@@ -205,11 +190,6 @@ void free_object_shallow(struct object *obj)
 /* return object related memory and return object itself to memory pool */
 void free_object(struct object *obj)
 {   
-    // do nothing if this object is currently inside an environment
-    if (obj->name) {
-        return;
-    }
-    
     switch (obj->type) {
         case OBJ_NULL: 
         case OBJ_BOOL: 
@@ -232,11 +212,6 @@ void free_object(struct object *obj)
         case OBJ_STRING: 
             free(obj->value.string);
             obj->value.string = NULL;
-            break;
-
-        case OBJ_FUNCTION:
-            free(obj->value.function);
-            obj->value.function = NULL;
             break;
 
         case OBJ_COMPILED_FUNCTION: 
@@ -324,14 +299,6 @@ void object_to_str(char *str, struct object *obj)
         case OBJ_ERROR: 
             strcat(str, obj->value.error);
             break;  
-            
-        case OBJ_FUNCTION: 
-            strcat(str, "fn(");
-            identifier_list_to_str(str, obj->value.function->parameters);
-            strcat(str, ") {\n");
-            block_statement_to_str(str, obj->value.function->body);
-            strcat(str, "\n}");
-            break;
 
         case OBJ_STRING: 
             strcat(str, obj->value.string);

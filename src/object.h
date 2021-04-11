@@ -2,7 +2,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "env.h"
 #include "parser.h"
 #include "opcode.h"
 
@@ -19,7 +18,6 @@ enum object_type
     OBJ_BOOL,
     OBJ_INT,
     OBJ_ERROR,
-    OBJ_FUNCTION,
     OBJ_STRING,
     OBJ_BUILTIN,
     OBJ_ARRAY,
@@ -59,7 +57,6 @@ union object_value {
 struct object
 {
     enum object_type type;
-    const char *name;
     union object_value value;
     bool return_value;
     struct object *next;
@@ -77,7 +74,6 @@ struct object *make_integer_object(long value);
 struct object *make_string_object(char *str1, char *str2);
 struct object *make_error_object(char *format, ...);
 struct object *make_array_object(struct object_list *elements);
-struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env);
 struct object *make_compiled_function_object(struct instruction *ins, uint32_t num_locals);
 struct object *copy_object(struct object *obj);
 void free_object(struct object *obj);
