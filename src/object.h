@@ -48,7 +48,6 @@ union object_value {
     int64_t integer;
     char *error;
     char *string;
-    struct function* function;
     struct object *(*builtin)(struct object_list *);
     struct object_list *array;
     struct compiled_function* compiled_function;
@@ -58,7 +57,8 @@ struct object
 {
     enum object_type type;
     union object_value value;
-    bool return_value;
+
+    /* for linking in object pool */
     struct object *next;
 };
 

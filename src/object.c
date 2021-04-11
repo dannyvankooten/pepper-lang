@@ -13,38 +13,23 @@
 
 static struct object _object_null = {
     .type = OBJ_NULL,
-    .return_value = false,
 };
 static struct object _object_null_return = {
     .type = OBJ_NULL,
-    .return_value = true,
 };
 static struct object _object_true = {
     .type = OBJ_BOOL,
     .value = { .boolean = true },
-    .return_value = false,
 };
 static struct object _object_false = {
     .type = OBJ_BOOL,
     .value = { .boolean = false },
-    .return_value = false,
 };
-static struct object _object_true_return = {
-    .type = OBJ_BOOL,
-    .value = { .boolean = true },
-    .return_value = true,
-};
-static struct object _object_false_return = {
-    .type = OBJ_BOOL,
-    .value = { .boolean = false },
-    .return_value = true,
-};
+
 struct object *object_null = &_object_null;
 struct object *object_null_return = &_object_null_return;
 struct object *object_true = &_object_true;
 struct object *object_false = &_object_false;
-struct object *object_true_return = &_object_true_return;
-struct object *object_false_return = &_object_false_return;
 struct object *object_pool_head = NULL;
 struct object_list *object_list_pool_head = NULL;
 
@@ -79,7 +64,6 @@ struct object *make_object(enum object_type type) {
 
    obj->type = type;
    obj->next = NULL;
-   obj->return_value = false;
    return obj;
 }
 
@@ -129,7 +113,6 @@ struct object *make_error_object(char *format, ...) {
     }
 
     // always return error objects
-    obj->return_value = true;
     va_start(args, format);  
     vsnprintf(obj->value.error, l + 64, format, args);
     va_end(args);
