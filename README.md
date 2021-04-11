@@ -57,11 +57,14 @@ For fun, I ran the same algorithm expressed in some other interpreted languages 
 | Language 	            | Time (s)	|
 |--------------------	|------	|
 | Node 15            	| 0.21 	|
+| Pypy					| 0.31  |
 | PHP 8.0            	| 0.79 	|
-| Monkey-C-Monkey-Do 	| 0.99	|
+| PHP 7.4				| 0.96  |
+| **Monkey-C-Monkey-Do** 	| **0.99**	|
 | Lua 5.4            	| 1.19 	|
 | Ruby 2.7           	| 1.29 	|
 | Python 3.9         	| 3.08 	|
+| PHP 5.6				| 4.44  |
 
 
 ### License
