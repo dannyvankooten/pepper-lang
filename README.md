@@ -2,9 +2,27 @@
 
 <img src="https://monkeylang.org/images/logo.png" width="120" height="120"/>
 
-Interpreter for the [Monkey programming language](https://monkeylang.org), written in C.
+Bytecode compiler and virtual machine for the [Monkey programming language](https://monkeylang.org), written in C.
 
-This is my first C project, so expect very few best practices.
+This is the result of going through the wonderful books [Writing An Interpreter In Go](https://interpreterbook.com/) and [Writing A Compiler In Go](https://compilerbook.com/), but using a different language instead to squeeze more learning opportunities out of it and force myself to really understand what's going on.
+
+Since I like uselessly optimizing for performance, it runs [quite fast](#Benchmarks) for something that doesn't do JIT compilation.
+
+### Syntax example 
+
+```
+let fibonacci = fn(x) {
+    if (x < 2) {
+        return x;
+    }
+
+    return fibonacci(x - 1) + fibonacci(x - 2);
+}
+
+puts("35th fibonacci number is: ", fibonacci(35));
+```
+
+More examples can be found in the [examples](https://github.com/dannyvankooten/monkey-c-monkey-do/tree/master/examples) directory.
 
 ### Usage
 
