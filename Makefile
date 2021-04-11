@@ -1,7 +1,7 @@
 CFLAGS+= -Werror -Wall -Isrc/ -g
 LDLIBS=-l edit
 VPATH= src
-LEXER_SRC= lexer.c token.c
+LEXER_SRC= lexer.c
 PARSER_SRC= parser.c $(LEXER_SRC)
 COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c $(PARSER_SRC)
 VM_SRC= vm.c opcode.c object.c symbol_table.c builtins.c $(COMPILER_SRC)

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "parser.h"
+#include "lexer.h"
 
 static struct expression *parse_expression(struct parser *p, int precedence);
 static int parse_statement(struct parser *p, struct statement *s);
