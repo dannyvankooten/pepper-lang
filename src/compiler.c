@@ -13,12 +13,13 @@ enum {
     COMPILE_ERR_UNKNOWN_EXPR_TYPE,
     COMPILE_ERR_UNKNOWN_IDENT,
 };
+
 static const char *error_messages[] = {
-        "Success",
-        "Unknown operator",
-        "Unknown expression type",
-        "Undefined variable"
-    };
+    "Success",
+    "Unknown operator",
+    "Unknown expression type",
+    "Undefined variable"
+};
 
 static int compile_statement(struct compiler *compiler, struct statement *statement);
 static int compile_expression(struct compiler *compiler, struct expression *expression);
@@ -29,7 +30,7 @@ struct compiler *compiler_new() {
     struct compiler_scope scope;
     scope.instructions = malloc(sizeof *scope.instructions);
     assert(scope.instructions != NULL);
-    scope.instructions->cap = 2048; // initial capacity of 1024 bytes
+    scope.instructions->cap = 2048; 
     scope.instructions->bytes = calloc(scope.instructions->cap, sizeof *scope.instructions->bytes);
     assert(scope.instructions->bytes != NULL);
     scope.instructions->size = 0;
@@ -93,7 +94,6 @@ add_instruction(struct compiler *c, struct instruction *ins) {
         assert(cins->bytes != NULL);
     }
     
-
     // append instruction code to current compiler code
     memcpy(cins->bytes + cins->size, ins->bytes, ins->size * sizeof(*ins->bytes));
     cins->size += ins->size;
@@ -171,7 +171,7 @@ compile_program(struct compiler *compiler, struct program *program) {
     }
 
     // end every program with OPCODE_HALT so we can include it in the lookup table
-    // vs. having ip on every iteration
+    // vs. checking ip on every iteration
     compiler_emit(compiler, OPCODE_HALT);
 
     return 0;

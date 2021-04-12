@@ -47,6 +47,7 @@ struct token {
 struct lexer {
     const char *input;
     uint32_t pos;
+    uint32_t cur_lineno;    
 };
 
 int gettoken(struct lexer *l, struct token *t);

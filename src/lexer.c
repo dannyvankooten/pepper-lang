@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <sys/types.h>
 
 #include "lexer.h"
 
@@ -84,6 +83,10 @@ int gettoken(struct lexer *l, struct token *t) {
 
     // skip whitespace
     while (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+        if (ch == '\n') {
+            l->cur_lineno++;
+        }
+
         ch = l->input[l->pos++];
     }
 
@@ -273,6 +276,7 @@ struct lexer new_lexer(const char *input) {
     struct lexer lexer = {
         .input = input, 
         .pos = 0,
+        .cur_lineno = 1,
     };
     return lexer;
 }

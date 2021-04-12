@@ -1,12 +1,11 @@
 #include <assert.h>
-#include <err.h> 
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h> 
-
+#include "util.h"
 #include "opcode.h"
 #include "object.h"
 #include "parser.h"
@@ -158,9 +157,13 @@ struct object *copy_object(struct object *obj) {
 
         case OBJ_COMPILED_FUNCTION:
             break;
+
+        default:
+            err(EXIT_FAILURE, "unhandled object type passed to copy_object()");
+        break;
     }
 
-    err(EXIT_FAILURE, "unhandled object type passed to copy_object()");
+    return NULL;
 }
 
 /* return object to object pool */

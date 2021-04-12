@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
-#include <err.h>
+#include <util.h>
 
 #include "object.h"
 #include "opcode.h"
