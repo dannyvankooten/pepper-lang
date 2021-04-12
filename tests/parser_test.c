@@ -545,7 +545,6 @@ void test_array_literal_parsing() {
 }
 
 void test_index_expression_parsing() {
-    TESTNAME(__FUNCTION__);
     char *input = "myArray[1+2];";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -568,7 +567,6 @@ void test_index_expression_parsing() {
 
 
 void test_while_expression_parsing() {
-    TESTNAME(__FUNCTION__);
     char *input = "while (x < y) { x }";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
@@ -593,7 +591,6 @@ void test_while_expression_parsing() {
 }
 
 void test_function_literal_with_name() {
-    TESTNAME(__FUNCTION__);
 
     char *input = "let myFunction = fn() {};";
     struct lexer lexer = {input};
@@ -609,24 +606,23 @@ void test_function_literal_with_name() {
     free_program(program);
 }
 
-int main() {
-    test_let_statements();
-    test_return_statements();
-    test_program_string();
-    test_identifier_expression_parsing();
-    test_integer_expression_parsing();
-    test_boolean_expression_parsing();
-    test_prefix_expression_parsing();
-    test_infix_expression_parsing();
-    test_operator_precedence_parsing();
-    test_if_expression_parsing();
-    test_if_else_expression_parsing();
-    test_function_literal_parsing();
-    test_call_expression_parsing();
-    test_string_expression_parsing();
-    test_array_literal_parsing();
-    test_index_expression_parsing();
-    test_while_expression_parsing();
-    test_function_literal_with_name();
-    printf("\x1b[32mAll parsing tests passed!\033[0m\n");
+int main(int argc, char *argv[]) {
+    TEST(test_let_statements);
+    TEST(test_return_statements);
+    TEST(test_program_string);
+    TEST(test_identifier_expression_parsing);
+    TEST(test_integer_expression_parsing);
+    TEST(test_boolean_expression_parsing);
+    TEST(test_prefix_expression_parsing);
+    TEST(test_infix_expression_parsing);
+    TEST(test_operator_precedence_parsing);
+    TEST(test_if_expression_parsing);
+    TEST(test_if_else_expression_parsing);
+    TEST(test_function_literal_parsing);
+    TEST(test_call_expression_parsing);
+    TEST(test_string_expression_parsing);
+    TEST(test_array_literal_parsing);
+    TEST(test_index_expression_parsing);
+    TEST(test_while_expression_parsing);
+    TEST(test_function_literal_with_name);
 }

@@ -78,8 +78,7 @@ void run_compiler_tests(struct compiler_test_case tests[], uint32_t n) {
     }
 }
 
-void test_integer_arithmetic() {
-    TESTNAME(__FUNCTION__);
+void integer_arithmetic() {
 
     struct compiler_test_case tests[] = {
         {
@@ -179,8 +178,7 @@ void test_integer_arithmetic() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void test_boolean_expressions() {
-    TESTNAME(__FUNCTION__);
+void boolean_expressions() {
 
     struct compiler_test_case tests[] = {
         {
@@ -297,8 +295,7 @@ void test_boolean_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void test_conditionals() {
-    TESTNAME(__FUNCTION__);
+void if_statements() {
 
     struct compiler_test_case tests[] = {
         {
@@ -342,8 +339,7 @@ void test_conditionals() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void test_global_let_statements() {
-    TESTNAME(__FUNCTION__);
+void global_let_statements() {
 
     struct compiler_test_case tests[] = {
         {
@@ -393,8 +389,7 @@ void test_global_let_statements() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void test_functions() {
-    TESTNAME(__FUNCTION__);
+void functions() {
     {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
@@ -481,8 +476,7 @@ void test_functions() {
     }
 }
 
-void test_compiler_scopes() {
-    TESTNAME(__FUNCTION__);
+void compiler_scopes() {
     struct compiler_scope scope;
     struct compiler *compiler = compiler_new();
     assertf(compiler->scope_index == 0, "wrong scope index: expected %d, got %d", 0, compiler->scope_index);
@@ -510,8 +504,7 @@ void test_compiler_scopes() {
     compiler_free(compiler);
 }
 
-void test_function_calls() {
-    TESTNAME(__FUNCTION__);
+void function_calls() {
     {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
@@ -645,8 +638,7 @@ void test_function_calls() {
 }
 
 
-void test_let_statement_scopes() {
-    TESTNAME(__FUNCTION__);
+void let_statement_scopes() {
 
     {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -720,7 +712,7 @@ void test_let_statement_scopes() {
 
 }
 
-void test_recursive_functions() {
+void recursive_functions() {
     struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
         make_instruction(OPCODE_GET_GLOBAL, 0),
         make_instruction(OPCODE_GET_LOCAL, 0),
@@ -749,8 +741,7 @@ void test_recursive_functions() {
     run_compiler_test(t);
 }
 
-void test_string_expressions() {
-    TESTNAME(__FUNCTION__);
+void string_expressions() {
 
     struct compiler_test_case tests[] = {
         {
@@ -783,8 +774,7 @@ void test_string_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void test_builtin_functions() {
-    TESTNAME(__FUNCTION__);
+void builtin_functions() {
     struct compiler_test_case tests[] = {
         {
             .input = "len(\"monkey\")",
@@ -804,20 +794,20 @@ void test_builtin_functions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-int main() {
-    test_integer_arithmetic();
-    test_boolean_expressions();
-    test_conditionals();
-    test_global_let_statements();
-    test_compiler_scopes();
-    test_functions();
-    test_function_calls();
-    test_let_statement_scopes();
-    test_string_expressions();
-    test_recursive_functions();
-    test_builtin_functions();
 
-    printf("\x1b[32mAll compiler tests passed!\033[0m\n");
+
+int main(int argc, char *argv[]) {    
+    TEST(integer_arithmetic);
+    TEST(boolean_expressions);
+    TEST(if_statements);
+    TEST(global_let_statements);
+    TEST(compiler_scopes);
+    TEST(functions);
+    TEST(function_calls);
+    TEST(let_statement_scopes);
+    TEST(string_expressions);
+    TEST(recursive_functions);
+    TEST(builtin_functions);
 
     free_object_pool();
     free_object_list_pool();

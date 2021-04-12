@@ -2,7 +2,6 @@
 #include "../src/symbol_table.h"
 
 void test_define() {
-    TESTNAME(__FUNCTION__);
 
     struct {
         char *name;
@@ -26,7 +25,6 @@ void test_define() {
 }
 
 void test_resolve_global() {
-    TESTNAME(__FUNCTION__);
 
     struct symbol_table *global = symbol_table_new();
     symbol_table_define(global, "a");
@@ -50,7 +48,6 @@ void test_resolve_global() {
 
 
 void test_resolve_local() {
-    TESTNAME(__FUNCTION__);
 
     struct symbol_table *global = symbol_table_new();
     symbol_table_define(global, "a");
@@ -80,7 +77,6 @@ void test_resolve_local() {
 }
 
 void test_define_and_resolve_builtins() {
-    TESTNAME(__FUNCTION__);
     struct symbol_table *global = symbol_table_new();
     struct symbol_table *local1 = symbol_table_new_enclosed(global);
     struct symbol_table *local2 = symbol_table_new_enclosed(local1);
@@ -100,7 +96,7 @@ void test_define_and_resolve_builtins() {
         for (int t=0; t < ARRAY_SIZE(tests); t++) {
             struct symbol *s = symbol_table_resolve(tables[i], tests[t].name);
             assertf(s != NULL, "expected symbol, got NULL");
-            assertf(strcmp(s->name, tests[t].name) == 0, "wrong name: expected %s, got %s", tests[t].name, s->name);
+            assertf(strcmp(s->name, tests[t].name) == 1, "wrong name: expected %s, got %s", tests[t].name, s->name);
             assertf(s->index == tests[t].index, "wrong index: expected %d, got %d", tests[t].index, s->index);
             assertf(s->scope == tests[t].scope, "wrong scope: expected %d, got %d", tests[t].scope, s->scope);
         }
@@ -111,10 +107,9 @@ void test_define_and_resolve_builtins() {
     symbol_table_free(local2);
 }
 
-int main() {
-    test_define();
-    test_resolve_global();
-    test_resolve_local();
-    test_define_and_resolve_builtins();
-    printf("\x1b[32mAll symbol table tests passed!\033[0m\n");
+int main(int argc, char *argv[]) {
+    TEST(test_define);
+    TEST(test_resolve_global);
+    TEST(test_resolve_local);
+    TEST(test_define_and_resolve_builtins);
 }

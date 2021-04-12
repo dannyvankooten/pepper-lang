@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main() {
-    char *input = "let five = 5;\n"
+void test_lexer() {
+    const char *input = "let five = 5;\n"
         "let ten = 10;\n"
         "let add = fn(x, y) {\n"
         "\tx + y;\n"
@@ -128,6 +128,8 @@ int main() {
         assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), token_type_to_str(t.type));
         assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
     }
+}
 
-    printf("\x1b[32mAll lexing tests passed!\033[0m\n");
+int main(int argc, char *argv[]) {
+    TEST(test_lexer);
 }

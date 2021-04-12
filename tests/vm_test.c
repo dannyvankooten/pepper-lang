@@ -367,7 +367,6 @@ int main(int argc, const char *argv[]) {
     TEST(test_fib);
     TEST(test_string_expressions);
     TEST(test_builtin_functions);
-    printf("\x1b[32mAll vm tests passed!\033[0m\n");
 
     free_object_pool();
     free_object_list_pool();

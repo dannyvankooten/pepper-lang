@@ -89,11 +89,9 @@ void test_read_bytes() {
     assertf(v2 == 25620, "read_bytes(uint16_5) failed: expected %d, got %d", 25620, v2);
 }
 
-int main() {
-    test_make_instruction();
-    test_read_operands();
-    test_instruction_string();
-    test_read_bytes();
-    
-    printf("\x1b[32mAll opcode tests passed!\033[0m\n");
+int main(int argc, char *argv[]) {
+    TEST(test_make_instruction);
+    TEST(test_read_operands);
+    TEST(test_instruction_string);
+    TEST(test_read_bytes);
 }
