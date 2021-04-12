@@ -83,7 +83,7 @@ For fun, I ran the same algorithm expressed in some other interpreted languages 
 | PHP 8.0            	    | 0.48 	|
 | Lua 5.4            	    | 0.72 	|
 | Ruby 2.7           	    | 0.80 	|
-| **Monkey-C-Monkey-Do**    | **0.98**	|
+| **Monkey-C-Monkey-Do**    | **0.86**	|
 | Python 3.9         	    | 1.91 	|
 | PHP 5.6				    | 2.72  |
 

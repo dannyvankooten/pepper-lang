@@ -1,4 +1,4 @@
-CFLAGS+= -Werror -Wall -Isrc/ -g
+CFLAGS+= -Werror -Wall -Isrc/ -g 
 LDLIBS=-l edit
 VPATH= src
 LEXER_SRC= lexer.c
@@ -10,7 +10,7 @@ TESTS= bin/lexer_test bin/parser_test bin/opcode_test bin/compiler_test bin/vm_t
 
 # disable crossjumping when using gcc so it doesn't optimize away our (optimized) dispatch table
 ifeq "$(CC)" "gcc"
-    CFLAGS+=  -fno-gcse -fno-crossjumping
+    CFLAGS+=  -fno-gcse
 endif
 
 all: bin/monkey 
@@ -19,7 +19,7 @@ bin/:
 	mkdir -p bin/
 
 bin/monkey: monkey.c $(VM_SRC) monkey.c | bin/
-	$(CC) $(CFLAGS) $^ -Ofast -march=native -DNDEBUG -DOPT_AGGRESIVE  -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -Ofast -march=native -DNDEBUG -DOPT_AGGRESSIVE  -o $@ $(LDLIBS)
 
 # tests
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/

@@ -81,7 +81,7 @@ void vm_free(struct vm *vm) {
 #define vm_stack_pop(vm) (vm->stack[--vm->stack_pointer])
 #define vm_stack_push(vm, obj) (vm->stack[vm->stack_pointer++] = obj)
 #else 
-static inline 
+static 
 struct object vm_stack_pop(struct vm *vm) {
     if (vm->stack_pointer == 0) {
         return obj_null;
@@ -90,7 +90,7 @@ struct object vm_stack_pop(struct vm *vm) {
     return vm->stack[--vm->stack_pointer];
 }
 
-static inline 
+static 
 void vm_stack_push(struct vm *vm, struct object obj) {
     if (vm->stack_pointer >= STACK_SIZE) {
         err(VM_ERR_STACK_OVERFLOW, "stack overflow");
@@ -101,8 +101,7 @@ void vm_stack_push(struct vm *vm, struct object obj) {
 }
 #endif
 
-static
-enum result
+static void 
 vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) {
     int64_t result;
     
@@ -120,7 +119,7 @@ vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t left, 
             result = left / right;
         break;
         default:
-            return VM_ERR_INVALID_INT_OPERATOR;
+            err(VM_ERR_INVALID_INT_OPERATOR, "Invalid operator for integer operation.");
         break;
     }
 
@@ -129,11 +128,10 @@ vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t left, 
         .value = { .integer = result }
     };
     vm_stack_push(vm, obj);
-    return VM_SUCCESS;
 }
 
-static
-enum result vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left, char *right) {
+static void 
+vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left, char *right) {
     struct object obj = {
         .type = OBJ_STRING,
     };
@@ -146,24 +144,29 @@ enum result vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, cha
     strcpy(obj.value.string, left);
     strcat(obj.value.string, right);
     vm_stack_push(vm, obj);
-    return VM_SUCCESS;
 }
 
-static
-enum result vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
+static void 
+vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
     assert(left.type == right.type);
 
     switch (left.type) {
-        case OBJ_INT: return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer);
-        case OBJ_STRING: return vm_do_binary_string_operation(vm, opcode, left.value.string, right.value.string);
-        default: return VM_ERR_INVALID_OP_TYPE;
+        case OBJ_INT: 
+            return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer); 
+        break;
+        case OBJ_STRING: 
+            return vm_do_binary_string_operation(vm, opcode, left.value.string, right.value.string); 
+        break;
+        default: 
+            err(VM_ERR_INVALID_OP_TYPE, "Invalid type for binary operation.");
+        break;
     }
 }
 
-static
-enum result vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) { 
+static void 
+vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) { 
     bool result;
     
     switch (opcode) {
@@ -184,16 +187,17 @@ enum result vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t 
             break;
 
         default: 
-            return VM_ERR_INVALID_OP_TYPE;
+            err(VM_ERR_INVALID_OP_TYPE, "Invalid operator for integer comparison");
         break;
     }
-
-    vm_stack_push(vm, result ? obj_true : obj_false);
-    return VM_SUCCESS;
+    
+    struct object obj;
+    obj.type = OBJ_BOOL;
+    obj.value.boolean = result;
+    vm_stack_push(vm, obj);
 }
 
-static 
-enum result 
+static void
 vm_do_bool_comparison(struct vm *vm, enum opcode opcode, bool left, bool right) {
     bool result;
     switch (opcode) {
@@ -206,16 +210,17 @@ vm_do_bool_comparison(struct vm *vm, enum opcode opcode, bool left, bool right) 
         break;
 
         default: 
-            return VM_ERR_INVALID_OP_TYPE;
+            err(VM_ERR_INVALID_OP_TYPE, "Invalid operator for boolean comparison.");
         break;
     }    
 
-    vm_stack_push(vm, result ? obj_true : obj_false);
-    return VM_SUCCESS;
+    struct object obj;
+    obj.type = OBJ_BOOL;
+    obj.value.boolean = result;
+    vm_stack_push(vm, obj);
 }
 
-static 
-enum result
+static void 
 vm_do_comparision(struct vm *vm, enum opcode opcode) {
     struct object right = vm_stack_pop(vm);
     struct object left = vm_stack_pop(vm);
@@ -232,43 +237,32 @@ vm_do_comparision(struct vm *vm, enum opcode opcode) {
         break;
 
         default:
-            return VM_ERR_INVALID_OP_TYPE;
+            err(VM_ERR_INVALID_OP_TYPE, "Invalid type for comparison.");
         break;
     }   
 }
 
-static 
-enum result 
+static void
 vm_do_bang_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
-    vm_stack_push(vm, obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) ? obj_true : obj_false);
-    return VM_SUCCESS;
+    obj.value.boolean = obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) || (obj.type == OBJ_INT && obj.value.integer <= 0);
+    obj.type = OBJ_BOOL;
+    vm_stack_push(vm, obj);
 }
 
-static 
-enum result 
+static void  
 vm_do_minus_operation(struct vm *vm) {
     struct object obj = vm_stack_pop(vm);
     assert(obj.type == OBJ_INT);
     obj.value.integer = -obj.value.integer;
     vm_stack_push(vm, obj);
-    return VM_SUCCESS;
 }
 
-static inline void 
-vm_pop_frame(struct vm* vm) {
-    vm->frame_index--;
-}
-
-static inline 
-struct frame*
-vm_current_frame(struct vm* vm) {
-    return &vm->frames[vm->frame_index];
-}
+#define vm_pop_frame(vm) vm->frame_index--;
+#define vm_current_frame(vm) &vm->frames[vm->frame_index];
 
 /* handle call to built-in function */
-static 
-enum result 
+static void 
 vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *),  uint8_t num_args) {
     // create object list with arguments
     struct object_list *args = make_object_list(num_args);
@@ -279,16 +273,14 @@ vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *
     struct object *result = builtin(args);
     vm->stack_pointer = vm->stack_pointer - num_args - 1;
     vm_stack_push(vm, *result);
-    vm_current_frame(vm)->ip++;
+    vm->frames[vm->frame_index].ip++;
 
     free_object_shallow(result);
     free_object_list_shallow(args);
-    return VM_SUCCESS;
 }
 
 /* handle call to user-defined function */
-static 
-enum result 
+static void 
 vm_do_call_function(struct vm *vm, struct compiled_function *f, uint8_t num_args) {
     /* TODO: Validate number of arguments */
 
@@ -299,11 +291,9 @@ vm_do_call_function(struct vm *vm, struct compiled_function *f, uint8_t num_args
     vm->frames[vm->frame_index].fn = f;
     vm->frames[vm->frame_index].base_pointer = vm->stack_pointer - num_args;
     vm->stack_pointer = vm->frames[vm->frame_index].base_pointer + f->num_locals; 
-    return VM_SUCCESS; 
 }
 
-static 
-enum result 
+static void
 vm_do_call(struct vm *vm, uint8_t num_args) {
     struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
@@ -316,7 +306,7 @@ vm_do_call(struct vm *vm, uint8_t num_args) {
         break;
 
         default:
-            return VM_ERR_INVALID_FUNCTION_CALL;
+            err(VM_ERR_INVALID_FUNCTION_CALL, "Invalid function call.");
         break;
     }
 }
@@ -456,7 +446,7 @@ vm_run(struct vm *vm) {
     // intitial dispatch
     DISPATCH();
 
-    // loads a constant on the stack
+    // pushes a constant on the stack
     GOTO_OPCODE_CONST: {
         uint16_t idx = read_uint16((frame->ip + 1));
         frame->ip += 3;
@@ -473,8 +463,8 @@ vm_run(struct vm *vm) {
 
     // call a (user-defined or built-in) function
     GOTO_OPCODE_CALL: {
-        uint8_t num_args = read_uint8((frame->ip + 1));
         frame->ip++;
+        uint8_t num_args = read_uint8((frame->ip));
         vm_do_call(vm, num_args);
         reload_loop_variables();
         DISPATCH();
@@ -548,8 +538,7 @@ vm_run(struct vm *vm) {
     GOTO_OPCODE_SUBTRACT:
     GOTO_OPCODE_MULTIPLY:
     GOTO_OPCODE_DIVIDE: {
-        enum result err = vm_do_binary_operation(vm, *frame->ip);
-        if (err) return err;
+        vm_do_binary_operation(vm, *frame->ip);
         frame->ip++;
         DISPATCH();
     }
@@ -561,8 +550,7 @@ vm_run(struct vm *vm) {
     }
 
     GOTO_OPCODE_MINUS: {
-        enum result err = vm_do_minus_operation(vm);
-        if (err) return err;
+        vm_do_minus_operation(vm);
         frame->ip++;
         DISPATCH();
     }
@@ -571,8 +559,7 @@ vm_run(struct vm *vm) {
     GOTO_OPCODE_NOT_EQUAL: 
     GOTO_OPCODE_GREATER_THAN: 
     GOTO_OPCODE_LESS_THAN: {
-        enum result err = vm_do_comparision(vm, *frame->ip);
-        if (err) return err;
+        vm_do_comparision(vm, *frame->ip);
         frame->ip++;
         DISPATCH();
     }
