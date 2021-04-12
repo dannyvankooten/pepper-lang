@@ -126,9 +126,7 @@ void test_boolean_expressions() {
      }
 }
 
-void test_conditionals() {
-
-
+void test_if_statements() {
     struct {
         const char *input;
         int expected;
@@ -141,6 +139,24 @@ void test_conditionals() {
         {"if (1 < 2) { 10 } else { 20 }", 10},
         {"if (1 > 2) { 10 } else { 20 }", 20},
         {"if ((if (false) { 10 })) { 10 } else { 20 }", 20}
+    };
+
+    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+        struct object obj = run_vm_test(tests[t].input);
+        test_object(obj, OBJ_INT, (union object_value) { .integer = tests[t].expected });
+     }
+}
+
+
+void test_while_statements() {
+    struct {
+        const char *input;
+        int expected;
+    } tests[] = {
+        {"while (false) { 10 }; 5", 5},
+        {"let a = 2; while (1 > 3) { let a = a + 1; }; a;", 2},
+        {"let a = 0; while (a < 3) { let a = a + 1; }; a;", 3},
+        {"let a = 1; while (a < 3) { let a = a + 1; a; };", 3},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -174,6 +190,7 @@ void test_global_let_statements() {
         {"let one = 1; one", 1},
         {"let one = 1; let two = 2; one + two", 3},
         {"let one = 1; let two = one + one; one + two", 3},
+        {"let one = 1; let one = one + 1;", 2},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -355,9 +372,10 @@ void test_builtin_functions() {
 int main(int argc, const char *argv[]) {
     TEST(test_integer_arithmetic);
     TEST(test_boolean_expressions);
-    TEST(test_conditionals);
+    TEST(test_if_statements);
     TEST(test_nulls);
     TEST(test_global_let_statements);
+    TEST(test_while_statements);
     TEST(test_function_calls);
     TEST(test_functions_without_return_value);
     TEST(test_first_class_functions);

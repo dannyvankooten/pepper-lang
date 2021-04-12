@@ -408,6 +408,39 @@ compile_expression(struct compiler *c, struct expression *expr) {
         }
         break;
 
+        case EXPR_WHILE: {
+            compiler_emit(c, OPCODE_NULL);
+
+            uint32_t before_pos = c->scopes[c->scope_index].instructions->size;
+
+            err = compile_expression(c, expr->whilst.condition);
+            if (err) return err;
+
+            /* we don't know where to jump yet, so we use 9999 as placeholder */
+            uint32_t jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
+
+            // pop null or last value from previous iteration
+            compiler_emit(c, OPCODE_POP);
+
+            err = compile_block_statement(c, expr->whilst.body);
+            if (err) { return err; }
+
+            // leave last item on the stack
+            if (compiler_last_instruction_is(c, OPCODE_POP)) {
+                compiler_remove_last_instruction(c);
+            } else {
+                 compiler_emit(c, OPCODE_NULL);
+            }
+
+            /* jump back to beginning to re-evaluate condition */
+            compiler_emit(c, OPCODE_JUMP, before_pos);
+
+            /* now we know actual position to jump to, so change operand */
+            uint32_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
+            compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+        }
+        break;
+
         default:
             return COMPILE_ERR_UNKNOWN_EXPR_TYPE;
         break;

@@ -97,14 +97,21 @@ struct symbol_table *symbol_table_new_enclosed(struct symbol_table *outer) {
 }
 
 struct symbol *symbol_table_define(struct symbol_table *t, const char *name) {
-    struct symbol *s = malloc(sizeof *s);
-    if (!s) err(EXIT_FAILURE, "out of memory");
+    struct symbol *s;
+
+    // check for conflicting names here
+    s = symbol_table_resolve(t, name);
+    if (s != NULL) {
+        return s;
+    }
 
     // Note that we're not copying the contents of the name pointer here
     // This means the AST can't be free'd as long as this symbol table in use
+    s = malloc(sizeof *s);
+    if (!s) err(EXIT_FAILURE, "out of memory");
     s->name = name;
-    s->scope = t->outer ? SCOPE_LOCAL : SCOPE_GLOBAL;
     s->index = t->size;
+    s->scope = t->outer ? SCOPE_LOCAL : SCOPE_GLOBAL;
 
     hashmap_insert(t->store, name, s);
     t->size++;

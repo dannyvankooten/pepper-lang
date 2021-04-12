@@ -2,13 +2,15 @@
 #include "../src/symbol_table.h"
 
 void test_define() {
-
     struct {
         char *name;
         struct symbol expected;
     } tests[] = {
         { .name = "a", .expected = { .name = "a", .scope = SCOPE_GLOBAL, .index = 0 } },
         { .name = "b", .expected = { .name = "b", .scope = SCOPE_GLOBAL, .index = 1 } },
+
+        // redefine a, index should be 0
+        { .name = "a", .expected = { .name = "a", .scope = SCOPE_GLOBAL, .index = 0 } },
     };
 
     struct symbol_table *global = symbol_table_new();
@@ -96,7 +98,7 @@ void test_define_and_resolve_builtins() {
         for (int t=0; t < ARRAY_SIZE(tests); t++) {
             struct symbol *s = symbol_table_resolve(tables[i], tests[t].name);
             assertf(s != NULL, "expected symbol, got NULL");
-            assertf(strcmp(s->name, tests[t].name) == 1, "wrong name: expected %s, got %s", tests[t].name, s->name);
+            assertf(strcmp(s->name, tests[t].name) == 0, "wrong name: expected %s, got %s", tests[t].name, s->name);
             assertf(s->index == tests[t].index, "wrong index: expected %d, got %d", tests[t].index, s->index);
             assertf(s->scope == tests[t].scope, "wrong scope: expected %d, got %d", tests[t].scope, s->scope);
         }

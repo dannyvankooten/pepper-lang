@@ -26,7 +26,7 @@ void test_object(struct object *expected, struct object *actual) {
             char *actual_str = instruction_to_str(&actual->value.compiled_function->instructions);
             assertf(expected->value.compiled_function->instructions.size == actual->value.compiled_function->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
             for (int i=0; i < expected->value.compiled_function->instructions.size; i++) {
-                assertf(expected->value.compiled_function->instructions.bytes[i] == actual->value.compiled_function->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, expected->value.compiled_function->instructions.bytes[i], actual->value.compiled_function->instructions.bytes[i], expected_str, actual_str);
+                assertf(expected->value.compiled_function->instructions.bytes[i] == actual->value.compiled_function->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, expected->value.compiled_function->instructions.bytes[i], actual->value.compiled_function->instructions.bytes[i], expected_str, actual_str);
             }
             free(expected_str);
             free(actual_str);
@@ -34,7 +34,7 @@ void test_object(struct object *expected, struct object *actual) {
         }
         break;
         case OBJ_STRING: 
-            assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected %s, got %s", expected->value.string, actual->value.string);
+            assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected->value.string, actual->value.string);
             free_object(expected);
         break;
         default: 
@@ -56,7 +56,7 @@ void run_compiler_test(struct compiler_test_case t) {
     assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", concatted_str, bytecode_str);
     
     for (int i=0; i < concatted->size; i++) {
-        assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\nexpected: %s\ngot: %s\n", i, concatted->bytes[i], bytecode->instructions->bytes[i], concatted_str, bytecode_str);
+        assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, concatted->bytes[i], bytecode->instructions->bytes[i], concatted_str, bytecode_str);
     }
 
     assertf(bytecode->constants->size == t.constants_size, "wrong constants size: expected %d, got %d", t.constants_size, bytecode->constants->size);
@@ -383,6 +383,42 @@ void global_let_statements() {
                 make_instruction(OPCODE_POP),
                 make_instruction(OPCODE_HALT),
             }, 7,
+        },
+        {
+            .input = "let one = 1; let two = one + 1; two",
+            .constants = {
+                make_integer_object(1),
+                make_integer_object(1),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_ADD),
+                make_instruction(OPCODE_SET_GLOBAL, 1),
+                make_instruction(OPCODE_GET_GLOBAL, 1),
+                make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
+            }, 9,
+        },
+        {
+            .input = "let one = 1; let one = one + 1; one",
+            .constants = {
+                make_integer_object(1),
+                make_integer_object(1),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_ADD),
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_HALT),
+            }, 9,
         }
     };
 
@@ -794,12 +830,53 @@ void builtin_functions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+void while_statements() {
+    struct compiler_test_case tests[] = {
+        {
+            .input = "while (true) { 10; } 3333;",
+            .constants = {
+                make_integer_object(10),
+                make_integer_object(3333),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_TRUE),              
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 12),  
+                make_instruction(OPCODE_POP),        
+                make_instruction(OPCODE_CONST, 0),          
+                make_instruction(OPCODE_JUMP, 1),  
+                make_instruction(OPCODE_POP),  
+                make_instruction(OPCODE_CONST, 1),          
+                make_instruction(OPCODE_POP),               
+                make_instruction(OPCODE_HALT),
+            }, 10
+        },
+        {
+            .input = "while (true) { 10; };",
+            .constants = {
+                make_integer_object(10),
+            }, 1,
+            .instructions = {
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_TRUE),              
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 12),  
+                make_instruction(OPCODE_POP),        
+                make_instruction(OPCODE_CONST, 0),          
+                make_instruction(OPCODE_JUMP, 1),  
+                make_instruction(OPCODE_POP),  
+                make_instruction(OPCODE_HALT),
+            }, 8
+        },
+    };
 
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
 
 int main(int argc, char *argv[]) {    
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
     TEST(if_statements);
+    TEST(while_statements);
     TEST(global_let_statements);
     TEST(compiler_scopes);
     TEST(functions);
