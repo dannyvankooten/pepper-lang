@@ -26,7 +26,8 @@ void test_lexer() {
         "[1, 2];"
         "[\"one\", \"two\"];\n"
         "varname; // comment\n"
-        "// varname";
+        "// varname\n"
+        "\"string\\\" with escaped quote\"";
 
     struct lexer l = {input, 0};
     struct token tokens[] = {
@@ -119,6 +120,7 @@ void test_lexer() {
         {TOKEN_SEMICOLON, ";"},
         {TOKEN_IDENT, "varname"},
         {TOKEN_SEMICOLON, ";"},
+        {TOKEN_STRING, "string\" with escaped quote"},
         {TOKEN_EOF, ""},
     };
 
@@ -126,7 +128,7 @@ void test_lexer() {
     for (int j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
         gettoken(&l, &t);
         assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), token_type_to_str(t.type));
-        assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
+        assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong %s literal: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), tokens[j].literal, t.literal);
     }
 }
 

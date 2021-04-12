@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #include "lexer.h"
 
@@ -212,13 +213,18 @@ int gettoken(struct lexer *l, struct token *t) {
 
         case '"': {
             t->type = TOKEN_STRING;
-            int32_t i = 0;
-            char ch;
-            for (i=0; (ch = l->input[l->pos + i]) && ch != '"' && ch != '\0' && i < MAX_LITERAL_LENGTH - 1; i++) {
-                t->literal[i] = ch;
+            uint16_t len = 0;
+            char ch = l->input[l->pos++];
+            while (ch != '"' && ch != '\0' && len < (MAX_LITERAL_LENGTH - 1)) {
+                t->literal[len++] = ch;
+                ch = l->input[l->pos++];
+
+                if (ch == '"' && l->input[l->pos - 2] == '\\') {
+                    t->literal[len-1] = ch;
+                   ch = l->input[l->pos++];
+                }
             }
-            t->literal[i++] = '\0';
-            l->pos += i;
+            t->literal[len] = '\0';
         }
         break;
 
