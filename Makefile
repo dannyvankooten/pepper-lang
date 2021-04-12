@@ -19,7 +19,7 @@ bin/:
 	mkdir -p bin/
 
 bin/monkey: monkey.c $(VM_SRC) monkey.c | bin/
-	$(CC) $(CFLAGS) $^ -Ofast -march=native -DNDEBUG -DOPT_AGGRESSIVE  -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -Ofast -march=native -DNDEBUG -o $@ $(LDLIBS)
 
 # tests
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/

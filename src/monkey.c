@@ -36,7 +36,7 @@ int repl() {
     struct program *program;
     struct symbol_table *symbol_table = symbol_table_new();
     struct object_list *constants = make_object_list(128);
-    struct object globals[GLOBALS_SIZE] = {obj_null};
+    struct object globals[GLOBALS_SIZE];
    
     while (1)
     {

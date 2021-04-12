@@ -10,18 +10,6 @@
 #include "vm.h"
 #include "builtins.h"
 
-const struct object obj_null = {
-    .type = OBJ_NULL,
-};
-const struct object obj_true = {
-    .type = OBJ_BOOL,
-    .value = { .boolean = true },
-};
-const struct object obj_false = {
-    .type = OBJ_BOOL,
-    .value = { .boolean = false },
-};
-
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     assert(vm != NULL);
@@ -29,10 +17,10 @@ struct vm *vm_new(struct bytecode *bc) {
     vm->frame_index = 0;
 
     for (int32_t i = 0; i < STACK_SIZE; i++) {
-        vm->stack[i] = obj_null;
+        vm->stack[i].type = OBJ_NULL;
     } 
     for (int32_t i=0; i < GLOBALS_SIZE; i++) {
-        vm->globals[i] = obj_null;
+        vm->globals[i].type = OBJ_NULL;
     }
 
     // copy over constants from compiled bytecode
@@ -75,30 +63,9 @@ void vm_free(struct vm *vm) {
 }
 
 #define vm_stack_pop_ignore(vm) (vm->stack_pointer--)
-
-#ifdef OPT_AGGRESSIVE
 #define vm_stack_pop(vm) (vm->stack[--vm->stack_pointer])
+#define vm_stack_cur(vm) (vm->stack[vm->stack_pointer - 1])
 #define vm_stack_push(vm, obj) (vm->stack[vm->stack_pointer++] = obj)
-#else 
-static 
-struct object vm_stack_pop(struct vm *vm) {
-    if (vm->stack_pointer == 0) {
-        return obj_null;
-    }
-
-    return vm->stack[--vm->stack_pointer];
-}
-
-static 
-void vm_stack_push(struct vm *vm, struct object obj) {
-    if (vm->stack_pointer >= STACK_SIZE) {
-        err(VM_ERR_STACK_OVERFLOW, "stack overflow");
-        return;
-    }
-
-    vm->stack[vm->stack_pointer++] = obj;
-}
-#endif
 
 static void 
 vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) {
@@ -122,11 +89,9 @@ vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t left, 
         break;
     }
 
-    struct object obj = {
-        .type = OBJ_INT,
-        .value = { .integer = result }
-    };
-    vm_stack_push(vm, obj);
+    vm->stack[vm->stack_pointer].type = OBJ_INT;
+    vm->stack[vm->stack_pointer].value.integer = result;
+    vm->stack_pointer++;
 }
 
 static void 
@@ -189,11 +154,10 @@ vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t left, int64_
             err(VM_ERR_INVALID_OP_TYPE, "Invalid operator for integer comparison");
         break;
     }
-    
-    struct object obj;
-    obj.type = OBJ_BOOL;
-    obj.value.boolean = result;
-    vm_stack_push(vm, obj);
+
+    vm->stack[vm->stack_pointer].type = OBJ_BOOL;
+    vm->stack[vm->stack_pointer].value.boolean = result;
+    vm->stack_pointer++;
 }
 
 static void
@@ -243,18 +207,16 @@ vm_do_comparision(struct vm *vm, enum opcode opcode) {
 
 static void
 vm_do_bang_operation(struct vm *vm) {
-    struct object obj = vm_stack_pop(vm);
-    obj.value.boolean = obj.type == OBJ_NULL || (obj.type == OBJ_BOOL && obj.value.boolean == false) || (obj.type == OBJ_INT && obj.value.integer <= 0);
-    obj.type = OBJ_BOOL;
-    vm_stack_push(vm, obj);
+    // modify item in place by leaving it on the stack
+    struct object* obj = &vm_stack_cur(vm);
+    obj->value.boolean = obj->type == OBJ_NULL || (obj->type == OBJ_BOOL && obj->value.boolean == false) || (obj->type == OBJ_INT && obj->value.integer <= 0);
+    obj->type = OBJ_BOOL;
 }
 
 static void  
 vm_do_minus_operation(struct vm *vm) {
-    struct object obj = vm_stack_pop(vm);
-    assert(obj.type == OBJ_INT);
-    obj.value.integer = -obj.value.integer;
-    vm_stack_push(vm, obj);
+    // modify item in place by leaving it on the stack
+    vm_stack_cur(vm).value.integer *= -1;
 }
 
 #define vm_pop_frame(vm) vm->frame_index--;
@@ -284,11 +246,11 @@ vm_do_call_function(struct vm *vm, struct compiled_function *f, uint8_t num_args
     /* TODO: Validate number of arguments */
 
      // Push new frame (from pre-allocated list)
-    vm->frame_index++;
-    vm->frames[vm->frame_index].ip = f->instructions.bytes;
-    vm->frames[vm->frame_index].fn = f;
-    vm->frames[vm->frame_index].base_pointer = vm->stack_pointer - num_args;
-    vm->stack_pointer = vm->frames[vm->frame_index].base_pointer + f->num_locals; 
+    struct frame* frame = &vm->frames[++vm->frame_index];
+    frame->ip = f->instructions.bytes;
+    frame->fn = f;
+    frame->base_pointer = vm->stack_pointer - num_args;
+    vm->stack_pointer = frame->base_pointer + f->num_locals; 
 }
 
 static void
@@ -338,10 +300,6 @@ print_debug_info(struct vm *vm) {
     }
 }
 #endif 
-
-/* removes last frame and resets local variables */
-#define reload_loop_variables()                         \
-    frame = vm_current_frame(vm);                       \
 
 #ifdef DEBUG
     #define DISPATCH()  \
@@ -461,10 +419,9 @@ vm_run(struct vm *vm) {
 
     // call a (user-defined or built-in) function
     GOTO_OPCODE_CALL: {
-        frame->ip++;
-        uint8_t num_args = read_uint8((frame->ip));
+        uint8_t num_args = read_uint8((++frame->ip));
         vm_do_call(vm, num_args);
-        reload_loop_variables();
+        frame = &vm->frames[vm->frame_index];
         DISPATCH();
     }
 
@@ -475,8 +432,9 @@ vm_run(struct vm *vm) {
     }
 
     GOTO_OPCODE_JUMP_NOT_TRUE: {
-        struct object condition = vm_stack_pop(vm);
-        if (condition.type == OBJ_NULL || (condition.type == OBJ_BOOL && condition.value.boolean == false)) {
+        // struct object condition = vm_stack_pop(vm);
+        struct object *condition = &vm_stack_pop(vm);
+        if (condition->type == OBJ_NULL || (condition->type == OBJ_BOOL && condition->value.boolean == false)) {
             uint16_t pos = read_uint16((frame->ip + 1));
             frame->ip = frame->fn->instructions.bytes + pos;
         } else {
@@ -502,8 +460,7 @@ vm_run(struct vm *vm) {
     GOTO_OPCODE_RETURN_VALUE: {
         struct object obj = vm_stack_pop(vm); 
         vm->stack_pointer = frame->base_pointer - 1;
-        vm_pop_frame(vm);
-        reload_loop_variables();
+        frame = &vm->frames[--vm->frame_index];
         vm_stack_push(vm, obj);
         frame->ip++;
         DISPATCH();
@@ -511,9 +468,8 @@ vm_run(struct vm *vm) {
 
     GOTO_OPCODE_RETURN: {
         vm->stack_pointer = frame->base_pointer - 1;
-        vm_pop_frame(vm);
-        reload_loop_variables();
-        vm_stack_push(vm, obj_null);    
+        frame = &vm->frames[--vm->frame_index];
+        vm->stack[vm->stack_pointer++].type = OBJ_NULL;
         frame->ip++; 
         DISPATCH();
     }
@@ -536,8 +492,7 @@ vm_run(struct vm *vm) {
     GOTO_OPCODE_SUBTRACT:
     GOTO_OPCODE_MULTIPLY:
     GOTO_OPCODE_DIVIDE: {
-        vm_do_binary_operation(vm, *frame->ip);
-        frame->ip++;
+        vm_do_binary_operation(vm, *frame->ip++);
         DISPATCH();
     }
 
@@ -557,25 +512,28 @@ vm_run(struct vm *vm) {
     GOTO_OPCODE_NOT_EQUAL: 
     GOTO_OPCODE_GREATER_THAN: 
     GOTO_OPCODE_LESS_THAN: {
-        vm_do_comparision(vm, *frame->ip);
-        frame->ip++;
+        vm_do_comparision(vm, *frame->ip++);
         DISPATCH();
     }
 
     GOTO_OPCODE_TRUE: {
-        vm_stack_push(vm, obj_true);
+        vm->stack[vm->stack_pointer].type = OBJ_BOOL;
+        vm->stack[vm->stack_pointer].value.boolean = true;
+        vm->stack_pointer++;
         frame->ip++;
         DISPATCH();
     }
 
     GOTO_OPCODE_FALSE: {
-        vm_stack_push(vm, obj_false);
+        vm->stack[vm->stack_pointer].type = OBJ_BOOL;
+        vm->stack[vm->stack_pointer].value.boolean = false;
+        vm->stack_pointer++;
         frame->ip++;
         DISPATCH();
     }
 
     GOTO_OPCODE_NULL: {
-        vm_stack_push(vm, obj_null);
+        vm->stack[vm->stack_pointer++].type = OBJ_NULL;
         frame->ip++;
         DISPATCH();
     }

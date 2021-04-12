@@ -166,13 +166,11 @@ void test_while_statements() {
 }
 
 void test_nulls() {
-
     struct {
         const char *input;
-        struct object obj;
     } tests[] = {
-        {"if (1 > 2) { 10 }", obj_null},
-        {"if (false) { 10 }", obj_null},
+        {"if (1 > 2) { 10 }"},
+        {"if (false) { 10 }"},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {

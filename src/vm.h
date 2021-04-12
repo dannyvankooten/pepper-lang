@@ -7,7 +7,7 @@
 
 #define FRAMES_SIZE 64
 #define GLOBALS_SIZE 32
-#define STACK_SIZE 128
+#define STACK_SIZE 256
 
 enum result {
     VM_SUCCESS = 0,
@@ -19,25 +19,20 @@ enum result {
 };
 
 struct frame {
-    struct compiled_function* fn;
     uint8_t *ip;
-    uint8_t *ip_max;
-    uint32_t base_pointer;
+    struct compiled_function* fn;
+    uint32_t base_pointer;    
 };
 
 struct vm {
     uint32_t stack_pointer;
     uint32_t frame_index;
     uint32_t nconstants;
-    struct object* constants;
     struct object stack[STACK_SIZE];
+    struct object* constants;
     struct frame frames[FRAMES_SIZE];
     struct object globals[GLOBALS_SIZE];
 };
-
-extern const struct object obj_null;
-extern const struct object obj_true;
-extern const struct object obj_false;
 
 struct vm *vm_new(struct bytecode *bc);
 struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_SIZE]);
