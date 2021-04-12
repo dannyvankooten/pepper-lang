@@ -76,17 +76,16 @@ A benchmark to calculate the [35th fibonacci number](https://github.com/dannyvan
 
 For fun, I ran the same algorithm expressed in some other interpreted languages on the same hardware (my laptop). This is how Monkey-C compares:
 
-| Language 	            | Time (s)	|
-|--------------------	|------	|
-| Node 15            	| 0.21 	|
-| Pypy					| 0.31  |
-| PHP 8.0            	| 0.79 	|
-| PHP 7.4				| 0.96  |
-| **Monkey-C-Monkey-Do** 	| **0.99**	|
-| Lua 5.4            	| 1.19 	|
-| Ruby 2.7           	| 1.29 	|
-| Python 3.9         	| 3.08 	|
-| PHP 5.6				| 4.44  |
+| Language 	                | Time (s)	|
+|--------------------	    |------	|
+| Node 15            	    | 0.21 	|
+| Pypy					    | 0.24  |
+| PHP 8.0            	    | 0.48 	|
+| Lua 5.4            	    | 0.72 	|
+| Ruby 2.7           	    | 0.80 	|
+| **Monkey-C-Monkey-Do**    | **0.98**	|
+| Python 3.9         	    | 1.91 	|
+| PHP 5.6				    | 2.72  |
 
 
 ### License
