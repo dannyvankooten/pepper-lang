@@ -50,7 +50,6 @@ struct vm *vm_new(struct bytecode *bc) {
     memcpy(ins, bc->instructions, sizeof(struct instruction));
     struct object *fn = make_compiled_function_object(ins, 0);
     vm->frames[0].ip = fn->value.compiled_function->instructions.bytes;
-    vm->frames[0].ip_max = fn->value.compiled_function->instructions.bytes + ( fn->value.compiled_function->instructions.size);
     vm->frames[0].fn = fn->value.compiled_function;
     vm->frames[0].base_pointer = 0;
     free_object_shallow(fn);
@@ -287,7 +286,6 @@ vm_do_call_function(struct vm *vm, struct compiled_function *f, uint8_t num_args
      // Push new frame (from pre-allocated list)
     vm->frame_index++;
     vm->frames[vm->frame_index].ip = f->instructions.bytes;
-    vm->frames[vm->frame_index].ip_max = f->instructions.bytes + f->instructions.size;
     vm->frames[vm->frame_index].fn = f;
     vm->frames[vm->frame_index].base_pointer = vm->stack_pointer - num_args;
     vm->stack_pointer = vm->frames[vm->frame_index].base_pointer + f->num_locals; 
