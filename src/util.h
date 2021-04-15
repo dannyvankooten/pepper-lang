@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+__attribute__((noreturn))
 static inline void err(int status, char *format, ...) {
     va_list args;
     va_start(args, format);

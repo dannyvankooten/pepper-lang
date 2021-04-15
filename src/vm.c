@@ -10,6 +10,48 @@
 #include "vm.h"
 #include "builtins.h"
 
+#define vm_current_frame(vm) (&vm->frames[vm->frame_index]);
+#define vm_stack_pop_ignore(vm) (vm->stack_pointer--)
+#define vm_stack_pop(vm) (vm->stack[--vm->stack_pointer])
+#define vm_stack_cur(vm) (vm->stack[vm->stack_pointer - 1])
+#define vm_stack_push(vm, obj) (vm->stack[vm->stack_pointer++] = obj)
+
+#ifndef DEBUG 
+    #define DISPATCH() goto *dispatch_table[*frame->ip];        
+#else 
+    #define DISPATCH()                      \
+        print_debug_info(vm);               \
+        goto *dispatch_table[*frame->ip];      
+
+static void 
+print_debug_info(struct vm *vm) {
+    char str[BUFSIZ] = {'\0'};
+    struct frame *frame = vm_current_frame(vm);
+    
+    printf("\nFrame: %2d | IP: %3d/%d | opcode: %16s | operand: ", vm->frame_index, frame->ip, frame->fn->instructions.size - 1, opcode_to_str(*frame->ip));
+    struct definition def = lookup(*frame->ip);
+    if (def.operands > 0) {
+        printf("%3d\n", read_bytes(frame->ip + 1, def.operand_widths[0]));
+    } else {
+        printf("-\n");
+    }
+
+    printf("Globals: \n");
+    for (int i = 0; i < 4; i++) {
+        str[0] = '\0';
+        object_to_str(str, &vm->globals[i]);
+        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->globals[i].type), str);
+    }
+
+    printf("Stack: \n");
+    for (int i=0; i < vm->stack_pointer; i++) {
+        str[0] = '\0';
+        object_to_str(str, &vm->stack[i]);
+        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack[i].type), str);
+    }
+}
+#endif 
+
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     assert(vm != NULL);
@@ -62,66 +104,51 @@ void vm_free(struct vm *vm) {
     free(vm);
 }
 
-#define vm_stack_pop_ignore(vm) (vm->stack_pointer--)
-#define vm_stack_pop(vm) (vm->stack[--vm->stack_pointer])
-#define vm_stack_cur(vm) (vm->stack[vm->stack_pointer - 1])
-#define vm_stack_push(vm, obj) (vm->stack[vm->stack_pointer++] = obj)
 
 static void 
-vm_do_binary_integer_operation(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) {
-    int64_t result;
-    
+vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {    
     switch (opcode) {
         case OPCODE_ADD: 
-            result = left + right;
+            left->value.integer += right->value.integer;
         break;
         case OPCODE_SUBTRACT: 
-            result = left - right;
+            left->value.integer -= right->value.integer;
         break;
         case OPCODE_MULTIPLY: 
-            result = left * right;
+            left->value.integer *= right->value.integer;
         break;
         case OPCODE_DIVIDE: 
-            result = left / right;
+            left->value.integer /= right->value.integer;
         break;
         default:
             err(VM_ERR_INVALID_INT_OPERATOR, "Invalid operator for integer operation.");
         break;
     }
-
-    vm->stack[vm->stack_pointer].type = OBJ_INT;
-    vm->stack[vm->stack_pointer].value.integer = result;
-    vm->stack_pointer++;
 }
 
 static void 
-vm_do_binary_string_operation(struct vm *vm, enum opcode opcode, char *left, char *right) {
-    struct object obj = {
-        .type = OBJ_STRING,
-    };
-
+vm_do_binary_string_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     // TODO: Fix this... This allocation is not freed yet
     // We should probably assume ownership of all objects entering the VM
     // So that this becomes a lot easier
-    obj.value.string = malloc(strlen(left) + strlen(right) + 1);
-    assert(obj.value.string != NULL);
-    strcpy(obj.value.string, left);
-    strcat(obj.value.string, right);
-    vm_stack_push(vm, obj);
+    char *ptr = realloc(left->value.string, strlen(left->value.string) + strlen(right->value.string) + 1);
+    assert(ptr != NULL);
+    strcat(ptr, right->value.string);
+    left->value.string = ptr;
 }
 
 static void 
-vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
-    struct object right = vm_stack_pop(vm);
-    struct object left = vm_stack_pop(vm);
-    assert(left.type == right.type);
+vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
+    const struct object* right = &vm_stack_pop(vm);
+    struct object* left = &vm_stack_cur(vm);
+    assert(left->type == right->type);
 
-    switch (left.type) {
+    switch (left->type) {
         case OBJ_INT: 
-            return vm_do_binary_integer_operation(vm, opcode, left.value.integer, right.value.integer); 
+            return vm_do_binary_integer_operation(vm, opcode, left, right); 
         break;
         case OBJ_STRING: 
-            return vm_do_binary_string_operation(vm, opcode, left.value.string, right.value.string); 
+            return vm_do_binary_string_operation(vm, opcode, left, right); 
         break;
         default: 
             err(VM_ERR_INVALID_OP_TYPE, "Invalid type for binary operation.");
@@ -130,24 +157,22 @@ vm_do_binary_operation(struct vm *vm, enum opcode opcode) {
 }
 
 static void 
-vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t left, int64_t right) { 
-    bool result;
-    
+vm_do_integer_comparison(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {   
     switch (opcode) {
          case OPCODE_EQUAL: 
-            result = left == right;
+            left->value.boolean = left->value.integer == right->value.integer;
             break;
 
         case OPCODE_NOT_EQUAL: 
-            result = left != right;
+            left->value.boolean = left->value.integer != right->value.integer;
             break;
 
         case OPCODE_GREATER_THAN: 
-            result = left > right;
+            left->value.boolean = left->value.integer > right->value.integer;
             break;
 
         case OPCODE_LESS_THAN:
-            result = left < right;
+            left->value.boolean = left->value.integer < right->value.integer;
             break;
 
         default: 
@@ -155,48 +180,39 @@ vm_do_integer_comparison(struct vm *vm, enum opcode opcode, int64_t left, int64_
         break;
     }
 
-    vm->stack[vm->stack_pointer].type = OBJ_BOOL;
-    vm->stack[vm->stack_pointer].value.boolean = result;
-    vm->stack_pointer++;
+    left->type = OBJ_BOOL;
 }
 
 static void
-vm_do_bool_comparison(struct vm *vm, enum opcode opcode, bool left, bool right) {
-    bool result;
+vm_do_bool_comparison(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     switch (opcode) {
         case OPCODE_EQUAL: 
-            result = left == right;
+            left->value.boolean = left->value.boolean == right->value.boolean;
         break;
 
         case OPCODE_NOT_EQUAL: 
-            result = left != right;
+            left->value.boolean = left->value.boolean != right->value.boolean;
         break;
 
         default: 
             err(VM_ERR_INVALID_OP_TYPE, "Invalid operator for boolean comparison.");
         break;
     }    
-
-    struct object obj;
-    obj.type = OBJ_BOOL;
-    obj.value.boolean = result;
-    vm_stack_push(vm, obj);
 }
 
 static void 
-vm_do_comparision(struct vm *vm, enum opcode opcode) {
-    struct object right = vm_stack_pop(vm);
-    struct object left = vm_stack_pop(vm);
+vm_do_comparision(struct vm* restrict vm, const enum opcode opcode) {
+    const struct object* right = &vm_stack_pop(vm);
+    struct object* left = &vm_stack_cur(vm);
+    assert(left->type == right->type);
 
-    assert(left.type == right.type);
-
-    switch (left.type) {
+    switch (left->type) {
         case OBJ_INT:
-            return vm_do_integer_comparison(vm, opcode, left.value.integer, right.value.integer);
+            return vm_do_integer_comparison(vm, opcode, left, right);
         break;
 
         case OBJ_BOOL:
-            return vm_do_bool_comparison(vm, opcode, left.value.boolean, right.value.boolean);
+            return vm_do_bool_comparison(vm, opcode, left, right);
         break;
 
         default:
@@ -206,7 +222,7 @@ vm_do_comparision(struct vm *vm, enum opcode opcode) {
 }
 
 static void
-vm_do_bang_operation(struct vm *vm) {
+vm_do_bang_operation(struct vm * restrict vm) {
     // modify item in place by leaving it on the stack
     struct object* obj = &vm_stack_cur(vm);
     obj->value.boolean = obj->type == OBJ_NULL || (obj->type == OBJ_BOOL && obj->value.boolean == false) || (obj->type == OBJ_INT && obj->value.integer <= 0);
@@ -214,22 +230,19 @@ vm_do_bang_operation(struct vm *vm) {
 }
 
 static void  
-vm_do_minus_operation(struct vm *vm) {
+vm_do_minus_operation(struct vm * restrict vm) {
     // modify item in place by leaving it on the stack
     vm_stack_cur(vm).value.integer *= -1;
 }
 
-#define vm_pop_frame(vm) vm->frame_index--;
-#define vm_current_frame(vm) &vm->frames[vm->frame_index];
-
 /* handle call to built-in function */
 static void 
-vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *),  uint8_t num_args) {
+vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *), const uint8_t num_args) {
     // create object list with arguments
     struct object_list *args = make_object_list(num_args);
     for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
         args->values[args->size++] = &vm->stack[i];
-    }       
+    }   
 
     struct object *result = builtin(args);
     vm->stack_pointer = vm->stack_pointer - num_args - 1;
@@ -242,7 +255,7 @@ vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *
 
 /* handle call to user-defined function */
 static void 
-vm_do_call_function(struct vm *vm, struct compiled_function *f, uint8_t num_args) {
+vm_do_call_function(struct vm *vm, struct compiled_function *f, const uint8_t num_args) {
     /* TODO: Validate number of arguments */
 
      // Push new frame (from pre-allocated list)
@@ -254,8 +267,8 @@ vm_do_call_function(struct vm *vm, struct compiled_function *f, uint8_t num_args
 }
 
 static void
-vm_do_call(struct vm *vm, uint8_t num_args) {
-    struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
+vm_do_call(struct vm* restrict vm, const uint8_t num_args) {
+    const struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
         case OBJ_COMPILED_FUNCTION:
             return vm_do_call_function(vm, callee.value.compiled_function, num_args);
@@ -271,47 +284,8 @@ vm_do_call(struct vm *vm, uint8_t num_args) {
     }
 }
 
-#ifdef DEBUG 
-static void 
-print_debug_info(struct vm *vm) {
-    char str[BUFSIZ] = {'\0'};
-    struct frame *frame = vm_current_frame(vm);
-    
-    printf("\nFrame: %2d | IP: %3d/%d | opcode: %16s | operand: ", vm->frame_index, frame->ip, frame->fn->instructions.size - 1, opcode_to_str(*frame->ip));
-    struct definition def = lookup(*frame->ip);
-    if (def.operands > 0) {
-        printf("%3d\n", read_bytes(frame->ip + 1, def.operand_widths[0]));
-    } else {
-        printf("-\n");
-    }
-
-    printf("Globals: \n");
-    for (int i = 0; i < 4; i++) {
-        str[0] = '\0';
-        object_to_str(str, &vm->globals[i]);
-        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->globals[i].type), str);
-    }
-
-    printf("Stack: \n");
-    for (int i=0; i < vm->stack_pointer; i++) {
-        str[0] = '\0';
-        object_to_str(str, &vm->stack[i]);
-        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack[i].type), str);
-    }
-}
-#endif 
-
-#ifdef DEBUG
-    #define DISPATCH()  \
-        print_debug_info(vm);                               \
-        goto *dispatch_table[*frame->ip];                    
-#else 
-    #define DISPATCH() \
-        goto *dispatch_table[*frame->ip];         
-#endif
-
 enum result 
-vm_run(struct vm *vm) {
+vm_run(struct vm* restrict vm) {
     /* 
     The following comment is taken from CPython's source: https://github.com/python/cpython/blob/master/Python/ceval.c#L775
 
@@ -352,7 +326,7 @@ vm_run(struct vm *vm) {
    can be disabled on gcc by using the -fno-gcse flag (or possibly
    -fno-crossjumping).
 */
-    static const void *dispatch_table[] = {
+    const void *dispatch_table[] = {
         &&GOTO_OPCODE_CONST,
         &&GOTO_OPCODE_POP,
         &&GOTO_OPCODE_ADD,
@@ -380,7 +354,6 @@ vm_run(struct vm *vm) {
         &&GOTO_OPCODE_GET_BUILTIN,
         &&GOTO_OPCODE_HALT,
     };
-
     struct frame *frame = vm_current_frame(vm);
 
     #ifdef DEBUG
