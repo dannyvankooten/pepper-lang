@@ -27,8 +27,9 @@ if (b == a) {
 
 // Strings
 let c = "Hello world";
-puts("Type of c = ", type(c));
-puts("Length of c = ", len(c));
+
+// Arrays
+let d = [5, true, "Monkey"];
 
 // Functions
 let fibonacci = fn(x) {
@@ -41,6 +42,8 @@ let fibonacci = fn(x) {
 
 // Built-in functions
 puts("35th fibonacci number is: ", fibonacci(35));
+puts("Type of c = ", type(c));
+puts("Length of c = ", len(c));
 
 ```
 

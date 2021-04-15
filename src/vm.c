@@ -271,6 +271,15 @@ vm_do_call(struct vm* restrict vm, const uint8_t num_args) {
     }
 }
 
+struct object 
+vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_t end_index) {
+    struct object_list *list = make_object_list(end_index - start_index);
+    for (int i = start_index; i < end_index; i++) {
+        list->values[list->size++] = vm->stack[i];
+    }
+    return make_array_object(list);
+}
+
 enum result 
 vm_run(struct vm* restrict vm) {
     /* 
@@ -515,7 +524,14 @@ vm_run(struct vm* restrict vm) {
         DISPATCH();
     }
 
-    GOTO_OPCODE_ARRAY: ;
+    GOTO_OPCODE_ARRAY: {
+        uint16_t num_elements = read_uint16((frame->ip + 1));
+        frame->ip += 3;
+        struct object array = vm_build_array(vm, vm->stack_pointer - num_elements, vm->stack_pointer);
+        vm->stack_pointer -= num_elements;
+        vm_stack_push(vm, array);
+        DISPATCH();
+    }
 
     GOTO_OPCODE_HALT: ;
 

@@ -37,7 +37,7 @@ struct object make_integer_object(const int64_t value) {
 struct object make_array_object(struct object_list *elements) {
     return (struct object) {
         .type = OBJ_ARRAY,
-        .value.array = copy_object_list(elements),
+        .value.array = elements,
     };
 }
 
@@ -148,9 +148,10 @@ void free_object(struct object* restrict obj)
     }
 }
 
-struct object_list *make_object_list(const uint32_t cap) {
+struct object_list *make_object_list(uint32_t cap) {
     struct object_list *list;
     list = malloc(sizeof (*list));
+    if (cap < 4) cap = 4;
     list->values = malloc(cap * sizeof(struct object));
     assert(list && list->values);
     list->size = 0;

@@ -356,6 +356,29 @@ void test_builtin_functions() {
     }
 }
 
+void array_literals() {
+    struct
+    {
+        const char *input;
+        int nexpected;
+        int expected[3];
+    } tests[] = {
+        {"[]", 0, {}},
+        {"[1, 2, 3]", 3, {1, 2, 3}},
+        {"[1 + 2, 3 * 4, 5 + 6]", 3, {3, 12, 11}},
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
+        assertf(tests[i].nexpected == obj.value.array->size, "invalid array size");
+        for (int j=0; i < tests[j].nexpected; j++) {
+            assertf(obj.value.array->values[j].value.integer == tests[i].expected[j], "invalid integer value");
+        }
+        free_object(&obj);
+    }
+}
+
 int main(int argc, const char *argv[]) {
     TEST(test_integer_arithmetic);
     TEST(test_boolean_expressions);
@@ -372,4 +395,5 @@ int main(int argc, const char *argv[]) {
     TEST(test_recursive_functions);
     TEST(test_fib);
     TEST(test_builtin_functions);
+    TEST(array_literals);
 }
