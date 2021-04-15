@@ -58,17 +58,7 @@ struct vm *vm_new(struct bytecode *bc) {
     vm->stack_pointer = 0;
     vm->frame_index = 0;
 
-    for (int32_t i = 0; i < STACK_SIZE; i++) {
-        vm->stack[i].type = OBJ_NULL;
-    } 
-    for (int32_t i=0; i < GLOBALS_SIZE; i++) {
-        vm->globals[i].type = OBJ_NULL;
-    }
-
     // copy over constants from compiled bytecode
-    vm->constants = malloc(sizeof(struct object) * bc->constants->size);
-    assert(vm->constants != NULL);
-    vm->nconstants = bc->constants->size;
     for (int32_t i=0; i < bc->constants->size; i++) {
        vm->constants[i] = bc->constants->values[i];
     }    
@@ -99,7 +89,6 @@ void vm_free(struct vm *vm) {
     free(vm->frames[0].fn);
 
     /* free vm itself */
-    free(vm->constants);
     free(vm);
 }
 
@@ -127,12 +116,12 @@ vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode o
 
 static void 
 vm_do_binary_string_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
-    // TODO: Fix this... This allocation is not freed yet
-    char *ptr = (char*) malloc(strlen(left->value.string) + strlen(right->value.string) + 1);
+    char *ptr = (char*) realloc(left->value.string, strlen(left->value.string) + strlen(right->value.string) + 1);
     assert(ptr != NULL);
-    strcpy(ptr, left->value.string);
     strcat(ptr, right->value.string);
     left->value.string = ptr;
+
+    free_object((struct object *) right);
 }
 
 static void 
@@ -235,19 +224,20 @@ vm_do_minus_operation(struct vm* restrict vm) {
 
 /* handle call to built-in function */
 static void 
-vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct object_list *), const uint8_t num_args) {
-    // create object list with arguments
-    struct object_list *args = make_object_list(num_args);
-    for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
+vm_do_call_builtin(struct vm* restrict vm, const struct object (*builtin)(struct object_list *), const uint8_t num_args) {
+    static struct object_list *args;
+    args = make_object_list(num_args);
+
+    for (uint32_t i = vm->stack_pointer - num_args; i <= num_args; i++) {
         args->values[args->size++] = vm->stack[i];
     }   
-
     struct object result = builtin(args);
     vm->stack_pointer = vm->stack_pointer - num_args - 1;
     vm_stack_push(vm, result);
     vm->frames[vm->frame_index].ip++;
 
-    free_object_list_shallow(args);
+    // reset args object_list for next-use
+    free_object_list(args);
 }
 
 /* handle call to user-defined function */
@@ -376,7 +366,16 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_CONST: {
         uint16_t idx = read_uint16((frame->ip + 1));
         frame->ip += 3;
-        vm_stack_push(vm, vm->constants[idx]);   
+
+        // if constant is of a non-primitive type, create a copy of it
+        // so that we can safely free it afterwards
+        struct object c = vm->constants[idx];
+        if (c.type > OBJ_INT) {
+            vm_stack_push(vm, copy_object(&c));  
+        } else {
+            vm_stack_push(vm, c);  
+        }
+         
         DISPATCH();
     }
 

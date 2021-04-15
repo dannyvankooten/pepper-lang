@@ -58,7 +58,7 @@ void run_compiler_test(struct compiler_test_case t) {
     assertf(bytecode->constants->size == t.constants_size, "wrong constants size: expected %d, got %d", t.constants_size, bytecode->constants->size);
     for (int i=0; i < t.constants_size; i++) {
         test_object(t.constants[i], bytecode->constants->values[i]);
-        free_object(t.constants[i]);
+        free_object(&t.constants[i]);
     }
 
     free(concatted_str);
@@ -882,6 +882,4 @@ int main(int argc, char *argv[]) {
     TEST(string_expressions);
     TEST(recursive_functions);
     TEST(builtin_functions);
-
-    free_object_list_pool();
 }

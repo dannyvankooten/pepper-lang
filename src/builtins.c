@@ -5,11 +5,10 @@
 #include "object.h"
 #include "builtins.h"
 
-static struct object builtin_len(struct object_list * args);
-static struct object builtin_puts(struct object_list * args);
-static struct object builtin_type(struct object_list * args);
-
-static struct object builtin_functions[] = {
+static const struct object builtin_len(struct object_list * args);
+static const struct object builtin_puts(struct object_list * args);
+static const struct object builtin_type(struct object_list * args);
+const struct object builtin_functions[] = {
     {
         .type = OBJ_BUILTIN,
         .value = { .builtin = &builtin_puts }
@@ -29,7 +28,7 @@ struct object get_builtin_by_index(const uint8_t index) {
     return builtin_functions[index];
 }
 
-struct object get_builtin(const char *name) {
+struct object get_builtin(const char* name) {
     if (strcmp(name, "puts") == 0) {
         return builtin_functions[0];
     } else if (strcmp(name, "len") == 0) {
@@ -44,8 +43,8 @@ struct object get_builtin(const char *name) {
     };
 }
 
-static struct object 
-builtin_len(struct object_list * args) {
+static const struct object 
+builtin_len(struct object_list* args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
@@ -58,7 +57,7 @@ builtin_len(struct object_list * args) {
     return make_integer_object(strlen(arg.value.string));
 }
 
-static struct object 
+static const struct object 
 builtin_puts(struct object_list* args) {
     char str[BUFSIZ];
     for (uint32_t i=0; i < args->size; i++) {
@@ -73,11 +72,10 @@ builtin_puts(struct object_list* args) {
     };
 }
 
-static struct object 
+static const struct object 
 builtin_type(struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
-    
-    return make_string_object((char *) object_type_to_str(args->values[0].type), NULL);
+    return make_string_object(object_type_to_str(args->values[0].type), NULL);
 }

@@ -29,7 +29,7 @@ struct vm {
     uint32_t frame_index;
     uint32_t nconstants;
     struct object stack[STACK_SIZE];
-    struct object* constants;
+    struct object constants[GLOBALS_SIZE];
     struct frame frames[FRAMES_SIZE];
     struct object globals[GLOBALS_SIZE];
 };

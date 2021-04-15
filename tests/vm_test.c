@@ -17,16 +17,16 @@ void test_object(struct object obj, enum object_type type, union object_value va
         break;
         case OBJ_STRING: 
             assertf(strcmp(value.string, obj.value.string) == 0, "invalid string value: expected \"%s\", got \"%s\"", value.string, obj.value.string);
-            free(obj.value.string);
         break;
         case OBJ_ERROR:
             assertf(strcmp(obj.value.error, value.error) == 0, "invalid error value: expected \"%s\", got \"%s\"", value.error, obj.value.error);
-            free(obj.value.error);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj.type));
         break;
     }
+
+    free_object(&obj);
 }
 
 struct object 
@@ -40,12 +40,7 @@ run_vm_test(const char *program_str) {
     err = vm_run(vm);
     assertf(err == 0, "vm error: %d", err);
     struct object obj = vm_stack_last_popped(vm);
-
-    // TODO: We should only duplicate string if comes from a constant, since these are freed elsewhere
-    // Even better would be to take ownership of every string entering the VM
-    if (obj.type == OBJ_STRING) {
-        obj.value.string = strdup(obj.value.string);
-    }
+    // obj = copy_object(obj);
     
     free(bc);
     free_program(p);
@@ -55,8 +50,6 @@ run_vm_test(const char *program_str) {
 }
 
 void test_integer_arithmetic() {
-
-
     struct {
         const char *input;
         int expected;
@@ -331,7 +324,7 @@ void test_string_expressions() {
     } tests[] = {
         {"\"monkey\"", "monkey"},
         {"\"mon\" + \"key\"", "monkey"},
-        // {"\"mon\" + \"key\" + \"banana\"", "monkeybanana"},
+        {"\"mon\" + \"key\" + \"banana\"", "monkeybanana"},
     };
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -351,9 +344,9 @@ void test_builtin_functions() {
         {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
         {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
         {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
-        // {"type(\"one\")", OBJ_STRING, {.string = "STRING"}},
+        {"type(\"one\")", OBJ_STRING, {.string = "STRING"}},
         {"type(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
-        //  {"puts(\"one\", \"two\")", OBJ_NULL, {}},
+        {"puts(\"one\", \"two\")", OBJ_NULL, {}},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
@@ -379,6 +372,4 @@ int main(int argc, const char *argv[]) {
     TEST(test_recursive_functions);
     TEST(test_fib);
     TEST(test_builtin_functions);
-
-    free_object_list_pool();
 }
