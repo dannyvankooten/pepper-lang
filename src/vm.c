@@ -70,7 +70,7 @@ struct vm *vm_new(struct bytecode *bc) {
     assert(vm->constants != NULL);
     vm->nconstants = bc->constants->size;
     for (int32_t i=0; i < bc->constants->size; i++) {
-       vm->constants[i] = *bc->constants->values[i];
+       vm->constants[i] = bc->constants->values[i];
     }    
 
     // copy instruction as we are not adding this compiled function to a constant list
@@ -78,11 +78,10 @@ struct vm *vm_new(struct bytecode *bc) {
     struct instruction *ins = malloc(sizeof (struct instruction));
     assert(ins != NULL);
     memcpy(ins, bc->instructions, sizeof(struct instruction));
-    struct object *fn = make_compiled_function_object(ins, 0);
-    vm->frames[0].ip = fn->value.compiled_function->instructions.bytes;
-    vm->frames[0].fn = fn->value.compiled_function;
+    struct object fn = make_compiled_function_object(ins, 0);
+    vm->frames[0].ip = fn.value.compiled_function->instructions.bytes;
+    vm->frames[0].fn = fn.value.compiled_function;
     vm->frames[0].base_pointer = 0;
-    free_object_shallow(fn);
     return vm;
 }
 
@@ -129,10 +128,9 @@ vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode o
 static void 
 vm_do_binary_string_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     // TODO: Fix this... This allocation is not freed yet
-    // We should probably assume ownership of all objects entering the VM
-    // So that this becomes a lot easier
-    char *ptr = realloc(left->value.string, strlen(left->value.string) + strlen(right->value.string) + 1);
+    char *ptr = (char*) malloc(strlen(left->value.string) + strlen(right->value.string) + 1);
     assert(ptr != NULL);
+    strcpy(ptr, left->value.string);
     strcat(ptr, right->value.string);
     left->value.string = ptr;
 }
@@ -230,32 +228,31 @@ vm_do_bang_operation(struct vm * restrict vm) {
 }
 
 static void  
-vm_do_minus_operation(struct vm * restrict vm) {
+vm_do_minus_operation(struct vm* restrict vm) {
     // modify item in place by leaving it on the stack
     vm_stack_cur(vm).value.integer *= -1;
 }
 
 /* handle call to built-in function */
 static void 
-vm_do_call_builtin(struct vm *vm, struct object *(*builtin)(struct object_list *), const uint8_t num_args) {
+vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct object_list *), const uint8_t num_args) {
     // create object list with arguments
     struct object_list *args = make_object_list(num_args);
     for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
-        args->values[args->size++] = &vm->stack[i];
+        args->values[args->size++] = vm->stack[i];
     }   
 
-    struct object *result = builtin(args);
+    struct object result = builtin(args);
     vm->stack_pointer = vm->stack_pointer - num_args - 1;
-    vm_stack_push(vm, *result);
+    vm_stack_push(vm, result);
     vm->frames[vm->frame_index].ip++;
 
-    free_object_shallow(result);
     free_object_list_shallow(args);
 }
 
 /* handle call to user-defined function */
 static void 
-vm_do_call_function(struct vm *vm, struct compiled_function *f, const uint8_t num_args) {
+vm_do_call_function(struct vm* restrict vm, struct compiled_function* restrict f, const uint8_t num_args) {
     /* TODO: Validate number of arguments */
 
      // Push new frame (from pre-allocated list)
@@ -514,7 +511,7 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_GET_BUILTIN: {
         uint8_t idx = read_uint8((frame->ip + 1));
         frame->ip += 2;
-        vm_stack_push(vm, *get_builtin_by_index(idx));
+        vm_stack_push(vm, get_builtin_by_index(idx));
         DISPATCH();
     }
 

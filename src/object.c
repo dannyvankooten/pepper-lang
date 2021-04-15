@@ -10,129 +10,87 @@
 #include "object.h"
 #include "parser.h"
 
-static struct object _object_null = {
-    .type = OBJ_NULL,
-};
-static struct object _object_null_return = {
-    .type = OBJ_NULL,
-};
-static struct object _object_true = {
-    .type = OBJ_BOOL,
-    .value = { .boolean = true },
-};
-static struct object _object_false = {
-    .type = OBJ_BOOL,
-    .value = { .boolean = false },
-};
-
-struct object *object_null = &_object_null;
-struct object *object_null_return = &_object_null_return;
-struct object *object_true = &_object_true;
-struct object *object_false = &_object_false;
 struct object *object_pool_head = NULL;
 struct object_list *object_list_pool_head = NULL;
 
-static const char *object_names[] = {
-    "NULL",
-    "BOOLEAN",
-    "INTEGER",
-    "ERROR",
-    "STRING",
-    "BUILTIN",
-    "ARRAY",
-    "COMPILED_FUNCTION",
-};
-
-const char *object_type_to_str(enum object_type t)
-{
+const char *object_type_to_str(enum object_type t) {
+    const char *object_names[] = {
+        "NULL",
+        "BOOLEAN",
+        "INTEGER",
+        "ERROR",
+        "STRING",
+        "BUILTIN",
+        "ARRAY",
+        "COMPILED_FUNCTION",
+    };
     return object_names[t];
 }
 
-struct object *make_object(enum object_type type) {
-   struct object *obj = object_pool_head;
-
-   if (!obj) {
-       obj = malloc(sizeof (*obj));
-
-       if (!obj) {
-           err(EXIT_FAILURE, "out of memory");
-       }
-   } else {
-       object_pool_head = obj->next;
-   }
-
-   obj->type = type;
-   obj->next = NULL;
-   return obj;
+struct object make_object(enum object_type type) {
+    return (struct object) {
+        .type = type,
+    };
 }
 
-struct object *make_integer_object(long value)
+struct object make_integer_object(int64_t value)
 {
-    struct object *obj = make_object(OBJ_INT);
-    obj->value.integer = value;
-    return obj;
+    return (struct object) {
+        .type = OBJ_INT,
+        .value.integer = value,
+    };
 }
 
-struct object *make_array_object(struct object_list *elements) {
-    struct object *obj = make_object(OBJ_ARRAY);
-    obj->value.array = copy_object_list(elements);
-    return obj;
+struct object make_array_object(struct object_list *elements) {
+    return (struct object) {
+        .type = OBJ_ARRAY,
+        .value.array = copy_object_list(elements),
+    };
 }
 
-struct object *make_string_object(char *str1, char *str2)
+struct object make_string_object(const char *str1, const char *str2)
 {
-    struct object *obj = make_object(OBJ_STRING);
-    
-    // allocate enough memory to fit both strings
-    uint32_t l = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
-    obj->value.string = malloc(l);
-    if (!obj->value.string) {
-        err(EXIT_FAILURE, "out of memory");
-    }
-
-    // piece strings together
-    strcpy(obj->value.string, str1);
+    struct object obj;
+    obj.type = OBJ_STRING;
+    const uint32_t len = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
+    obj.value.string = malloc(len);
+    assert(obj.value.string != NULL);
+    strcpy(obj.value.string, str1);
     if (str2) {
-        strcat(obj->value.string, str2);
+        strcat(obj.value.string, str2);
     }
-   
+
     return obj;
 }
 
-
-struct object *make_error_object(char *format, ...) {
+struct object make_error_object(const char *format, ...) {
     va_list args;
+    struct object obj;
+    obj.type = OBJ_ERROR;
 
-    struct object *obj = make_object(OBJ_ERROR);
-
-    uint32_t l = strlen(format);
-    obj->value.error = malloc(l + 64);
-    if (!obj->value.error) {
-        err(EXIT_FAILURE, "out of memory");
-    }
-
-    // always return error objects
+    uint32_t len = strlen(format);
+    obj.value.error = malloc(len + 64);
+    assert(obj.value.error != NULL);
     va_start(args, format);  
-    vsnprintf(obj->value.error, l + 64, format, args);
+    vsnprintf(obj.value.error, len + 64, format, args);
     va_end(args);
     return obj;
 }
 
-
-
-struct object *make_compiled_function_object(struct instruction *ins, uint32_t num_locals) {
-    struct object *obj = make_object(OBJ_COMPILED_FUNCTION);
+struct object make_compiled_function_object(struct instruction *ins, uint32_t num_locals) {
+    struct object obj;
+    obj.type = OBJ_COMPILED_FUNCTION;
     struct compiled_function *f = malloc(sizeof (struct compiled_function));
     assert(f != NULL);
     f->num_locals = num_locals;
     f->instructions = *ins;
     free(ins);
-    obj->value.compiled_function = f;
+    obj.value.compiled_function = f;
     return obj;
 }   
 
-struct object *copy_object(struct object *obj) {
-    switch (obj->type) {
+struct object copy_object(struct object obj) {
+    switch (obj.type) {
         case OBJ_BOOL:
         case OBJ_NULL:
         case OBJ_BUILTIN:
@@ -140,43 +98,36 @@ struct object *copy_object(struct object *obj) {
             break;
 
         case OBJ_INT:
-            return make_integer_object(obj->value.integer);
+            return make_integer_object(obj.value.integer);
             break;
 
         case OBJ_ERROR: 
-            return make_error_object(obj->value.error);
+            return make_error_object(obj.value.error);
             break;
         
         case OBJ_STRING:
-            return make_string_object(obj->value.string, NULL);
+            return make_string_object(obj.value.string, NULL);
             break;
 
         case OBJ_ARRAY: 
-            return make_array_object(obj->value.array);
+            return make_array_object(obj.value.array);
             break;
 
         case OBJ_COMPILED_FUNCTION:
+            // TODO: Make copy here
+            return obj;
             break;
 
         default:
             err(EXIT_FAILURE, "unhandled object type passed to copy_object()");
         break;
     }
-
-    return NULL;
-}
-
-/* return object to object pool */
-void free_object_shallow(struct object *obj)
-{   
-    obj->next = object_pool_head;
-    object_pool_head = obj;
 }
 
 /* return object related memory and return object itself to memory pool */
-void free_object(struct object *obj)
+void free_object(struct object obj)
 {   
-    switch (obj->type) {
+    switch (obj.type) {
         case OBJ_NULL: 
         case OBJ_BOOL: 
         case OBJ_BUILTIN:
@@ -186,32 +137,30 @@ void free_object(struct object *obj)
             break;
 
         case OBJ_ERROR:
-            free(obj->value.error);
-            obj->value.error = NULL;
+            free(obj.value.error);
+            obj.value.error = NULL;
             break;
 
         case OBJ_ARRAY: 
-            free_object_list(obj->value.array);
-            obj->value.array = NULL;
+            free_object_list(obj.value.array);
+            obj.value.array = NULL;
             break;
 
         case OBJ_STRING: 
-            free(obj->value.string);
-            obj->value.string = NULL;
+            free(obj.value.string);
+            obj.value.string = NULL;
             break;
 
         case OBJ_COMPILED_FUNCTION: 
-            free(obj->value.compiled_function->instructions.bytes);
-            free(obj->value.compiled_function);
-            obj->value.compiled_function = NULL;
+            free(obj.value.compiled_function->instructions.bytes);
+            free(obj.value.compiled_function);
+            obj.value.compiled_function = NULL;
         break;
 
        default:
            // nothing special
            break;
     }
-
-    free_object_shallow(obj);
 }
 
 
@@ -243,7 +192,6 @@ void free_object_list_shallow(struct object_list *list) {
 void free_object_list(struct object_list *list) {
     for (uint32_t i=0; i < list->size; i++) {
         free_object(list->values[i]);
-        list->values[i] = NULL;
     }
     list->size = 0;
 
@@ -255,39 +203,39 @@ struct object_list *copy_object_list(struct object_list *original) {
     struct object_list *new = make_object_list(original->size);
     uint32_t size = original->size;
     for (uint32_t i=0; i < size; i++) {
-        new->values[i] = copy_object(original->values[i]);
+        new->values[i] = original->values[i];
     }
     new->size = size;
     return new;
 }
 
-void object_to_str(char *str, struct object *obj)
+void object_to_str(char *str, struct object obj)
 {
     char tmp[64] = {0};
 
-    switch (obj->type)
+    switch (obj.type)
     {
         case OBJ_NULL:
             strcat(str, "NULL");
             break;
             
         case OBJ_INT:
-            sprintf(tmp, "%ld", obj->value.integer);
+            sprintf(tmp, "%ld", obj.value.integer);
             strcat(str, tmp);
             break;
             
         case OBJ_BOOL:
             // We could do pointer comparison here, but since we've already followed the pointer above
             // It wouldn't really make a difference. So we check the actual value, as it's less error prone.
-            strcat(str, obj->value.boolean ? "true" : "false");
+            strcat(str, obj.value.boolean ? "true" : "false");
             break;
             
         case OBJ_ERROR: 
-            strcat(str, obj->value.error);
+            strcat(str, obj.value.error);
             break;  
 
         case OBJ_STRING: 
-            strcat(str, obj->value.string);
+            strcat(str, obj.value.string);
             break;
 
         case OBJ_BUILTIN: 
@@ -296,9 +244,9 @@ void object_to_str(char *str, struct object *obj)
 
         case OBJ_ARRAY: {
             strcat(str, "[");
-            for (uint32_t i=0; i < obj->value.array->size; i++) {
-                object_to_str(str, obj->value.array->values[i]);
-                if (i < (obj->value.array->size - 1)) {
+            for (uint32_t i=0; i < obj.value.array->size; i++) {
+                object_to_str(str, obj.value.array->values[i]);
+                if (i < (obj.value.array->size - 1)) {
                     strcat(str, ", ");
                 }
             }
@@ -307,25 +255,12 @@ void object_to_str(char *str, struct object *obj)
         }
 
         case OBJ_COMPILED_FUNCTION: {
-            char *instruction_str = instruction_to_str(&obj->value.compiled_function->instructions);
+            char *instruction_str = instruction_to_str(&obj.value.compiled_function->instructions);
             strcat(str, instruction_str);
             free(instruction_str);
             break;
         }
     }
-}
-
-void free_object_pool() {
-    struct object *node = object_pool_head;
-    struct object *next = NULL;
-
-    while (node) {
-        next = node->next;
-        free(node);
-        node = next;
-    }
-
-    object_pool_head = NULL;
 }
 
 void free_object_list_pool() {

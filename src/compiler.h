@@ -28,7 +28,7 @@ void compiler_free(struct compiler *c);
 int compile_program(struct compiler *compiler, struct program *program);
 struct bytecode *get_bytecode(struct compiler *c);
 void concat_instructions(struct instruction *ins1, struct instruction *ins2);
-const char *compiler_error_str(int err);
+const char *compiler_error_str(const int err);
 uint32_t compiler_emit(struct compiler *c, enum opcode opcode, ...);
 void compiler_enter_scope(struct compiler *c);
 struct instruction *compiler_leave_scope(struct compiler *c);

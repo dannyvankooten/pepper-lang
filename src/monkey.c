@@ -74,7 +74,7 @@ int repl() {
 
         struct object obj = vm_stack_last_popped(machine);
         if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_COMPILED_FUNCTION && obj.type != OBJ_BUILTIN) {
-            object_to_str(output, &obj);
+            object_to_str(output, obj);
             printf("%s\n", output);
         }
        

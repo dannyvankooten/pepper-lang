@@ -5,10 +5,6 @@
 #include "parser.h"
 #include "opcode.h"
 
-#define is_object_error(t) (t == OBJ_ERROR)
-#define is_object_truthy(obj) (obj != object_null && obj != object_false)
-#define make_boolean_object(value) (value ? object_true : object_false)
-
 // TODO: Dynamically allocate this
 #define OBJECT_LIST_MAX_VALUES 512
 
@@ -35,20 +31,12 @@ struct compiled_function {
     uint32_t num_locals;
 };
 
-struct object_list {
-    struct object *values[OBJECT_LIST_MAX_VALUES];
-    uint32_t size;
-
-    // for linking in pool
-    struct object_list *next;
-};
-
 union object_value {
     bool boolean;
     int64_t integer;
     char *error;
     char *string;
-    struct object *(*builtin)(struct object_list *);
+    struct object (*builtin)(struct object_list *);
     struct object_list *array;
     struct compiled_function* compiled_function;
 };
@@ -57,32 +45,30 @@ struct object
 {
     enum object_type type;
     union object_value value;
-
-    /* for linking in object pool */
-    struct object *next;
 };
 
-extern struct object *object_null;
-extern struct object *object_null_return;
-extern struct object *object_true;
-extern struct object *object_false;
-extern struct object *object_true_return;
-extern struct object *object_false_return;
+struct object_list {
+    struct object values[OBJECT_LIST_MAX_VALUES];
+    uint32_t size;
+
+    // for linking in pool
+    struct object_list *next;
+};
+
 
 const char *object_type_to_str(enum object_type t);
-struct object *make_integer_object(long value);
-struct object *make_string_object(char *str1, char *str2);
-struct object *make_error_object(char *format, ...);
-struct object *make_array_object(struct object_list *elements);
-struct object *make_compiled_function_object(struct instruction *ins, uint32_t num_locals);
-struct object *copy_object(struct object *obj);
-void free_object(struct object *obj);
-void free_object_shallow(struct object *obj);
-void object_to_str(char *str, struct object *obj);
+struct object make_integer_object(long value);
+struct object make_string_object(const char *str1, const char *str2);
+struct object make_error_object(const char *format, ...);
+struct object make_array_object(struct object_list *elements);
+struct object make_compiled_function_object(struct instruction *ins, uint32_t num_locals);
+struct object copy_object(struct object obj);
+
+void free_object(struct object obj);
+void object_to_str(char *str, struct object obj);
 
 struct object_list *make_object_list(uint32_t cap);
 struct object_list *copy_object_list(struct object_list *original);
 void free_object_list(struct object_list *list);
 void free_object_list_shallow(struct object_list *list);
 void free_object_list_pool();
-void free_object_pool();

@@ -325,15 +325,12 @@ void test_recursive_functions() {
 }
 
 void test_string_expressions() {
-
     struct {
         const char *input;
         char *expected;
     } tests[] = {
         {"\"monkey\"", "monkey"},
-
-        // TODO: Fix memory leak in below operations
-        // {"\"mon\" + \"key\"", "monkey"},
+        {"\"mon\" + \"key\"", "monkey"},
         // {"\"mon\" + \"key\" + \"banana\"", "monkeybanana"},
     };
     
@@ -344,7 +341,6 @@ void test_string_expressions() {
 }
 
 void test_builtin_functions() {
-
     struct
     {
         const char *input;
@@ -374,6 +370,7 @@ int main(int argc, const char *argv[]) {
     TEST(test_nulls);
     TEST(test_global_let_statements);
     TEST(test_while_statements);
+    TEST(test_string_expressions);
     TEST(test_function_calls);
     TEST(test_functions_without_return_value);
     TEST(test_first_class_functions);
@@ -381,9 +378,7 @@ int main(int argc, const char *argv[]) {
     TEST(test_function_calls_with_args_and_bindings);
     TEST(test_recursive_functions);
     TEST(test_fib);
-    TEST(test_string_expressions);
     TEST(test_builtin_functions);
 
-    free_object_pool();
     free_object_list_pool();
 }

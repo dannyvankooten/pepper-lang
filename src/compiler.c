@@ -14,13 +14,6 @@ enum {
     COMPILE_ERR_UNKNOWN_IDENT,
 };
 
-static const char *error_messages[] = {
-    "Success",
-    "Unknown operator",
-    "Unknown expression type",
-    "Undefined variable"
-};
-
 static int compile_statement(struct compiler *compiler, struct statement *statement);
 static int compile_expression(struct compiler *compiler, struct expression *expression);
 
@@ -69,7 +62,13 @@ void compiler_free(struct compiler *c) {
 }
 
 /* TODO: We probably want dynamic error messages that includes parts of the program string */
-const char *compiler_error_str(int err) {
+const char *compiler_error_str(const int err) {
+    const char *error_messages[] = {
+        "Success",
+        "Unknown operator",
+        "Unknown expression type",
+        "Undefined variable"
+    };
     return error_messages[err];
 }
 
@@ -102,12 +101,12 @@ add_instruction(struct compiler *c, struct instruction *ins) {
 }
 
 static uint32_t
-add_constant(struct compiler *c, struct object *obj) {
+add_constant(struct compiler *c, struct object obj) {
     c->constants->values[c->constants->size++] = obj;
     return c->constants->size - 1;
 }
 
-static void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, uint32_t pos) {
+static void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, const uint32_t pos) {
     struct emitted_instruction previous = compiler_current_scope(c).last_instruction;
     struct emitted_instruction last = {
         .position = pos,
@@ -123,7 +122,7 @@ static void compiler_remove_last_instruction(struct compiler *c) {
     c->scopes[c->scope_index].last_instruction = c->scopes[c->scope_index].previous_instruction;
 }
 
-static void compiler_replace_instruction(struct compiler *c, uint32_t pos, struct instruction *ins) {
+static void compiler_replace_instruction(struct compiler *c, const uint32_t pos, struct instruction *ins) {
     for (uint32_t i=0; i < ins->size; i++) {
         c->scopes[c->scope_index].instructions->bytes[pos + i] = ins->bytes[i];
     }
@@ -146,7 +145,7 @@ static bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode)
     return c->scopes[c->scope_index].last_instruction.opcode == opcode;
 }
 
-static void compiler_change_operand(struct compiler *c, uint32_t pos, int operand) {
+static void compiler_change_operand(struct compiler *c, const uint32_t pos, int operand) {
     enum opcode opcode = c->scopes[c->scope_index].instructions->bytes[pos];
     struct instruction *new = make_instruction(opcode, operand);
     compiler_replace_instruction(c, pos, new);
@@ -329,7 +328,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
         break;
 
         case EXPR_INT: {
-            struct object *obj = make_integer_object(expr->integer);
+            struct object obj = make_integer_object(expr->integer);
             compiler_emit(c,  OPCODE_CONST, add_constant(c, obj));
             break;
         }
@@ -344,7 +343,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
         break;
 
         case EXPR_STRING: {
-            struct object *obj = make_string_object(expr->string, NULL);
+            struct object obj = make_string_object(expr->string, NULL);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
         }
         break;
@@ -389,7 +388,7 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
             uint32_t num_locals = c->symbol_table->size;
             struct instruction *ins = compiler_leave_scope(c);
-            struct object *obj = make_compiled_function_object(ins, num_locals);
+            struct object obj = make_compiled_function_object(ins, num_locals);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
         }
         break;
@@ -451,7 +450,8 @@ compile_expression(struct compiler *c, struct expression *expr) {
 
 struct bytecode *
 get_bytecode(struct compiler *c) {
-    struct bytecode *b = malloc(sizeof *b);
+    struct bytecode *b;
+    b = malloc(sizeof *b);
     assert(b != NULL);
     b->instructions = compiler_current_instructions(c);
     b->constants = c->constants; // pointer, no copy

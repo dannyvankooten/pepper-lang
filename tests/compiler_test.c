@@ -3,42 +3,38 @@
 
 struct compiler_test_case {
     char *input;
-    struct object *constants[16];
+    struct object constants[16];
     uint32_t constants_size;
     struct instruction *instructions[16];
     uint32_t instructions_size;
 };
 
-void test_object(struct object *expected, struct object *actual) {
-    assertf(actual != NULL, "expected object, got null");
-    assertf(actual->type == expected->type, "invalid object type: expected %s, got %s", object_type_to_str(expected->type), object_type_to_str(actual->type));
+void test_object(struct object expected, struct object actual) {
+    assertf(actual.type == expected.type, "invalid object type: expected %s, got %s", object_type_to_str(expected.type), object_type_to_str(actual.type));
     
-    switch (expected->type) {
+    switch (expected.type) {
         case OBJ_INT:
-            assertf(actual->value.integer == expected->value.integer, "invalid integer value: expected %d, got %d", expected->value.integer, actual->value.integer);
-            free_object(expected);
+            assertf(actual.value.integer == expected.value.integer, "invalid integer value: expected %d, got %d", expected.value.integer, actual.value.integer);
         break;
         case OBJ_BOOL:
-            assertf(actual->value.boolean == expected->value.boolean, "invalid boolean value: expected %d, got %d", expected->value.boolean, actual->value.boolean);
+            assertf(actual.value.boolean == expected.value.boolean, "invalid boolean value: expected %d, got %d", expected.value.boolean, actual.value.boolean);
         break;
         case OBJ_COMPILED_FUNCTION: {
-            char *expected_str = instruction_to_str(&expected->value.compiled_function->instructions);
-            char *actual_str = instruction_to_str(&actual->value.compiled_function->instructions);
-            assertf(expected->value.compiled_function->instructions.size == actual->value.compiled_function->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
-            for (int i=0; i < expected->value.compiled_function->instructions.size; i++) {
-                assertf(expected->value.compiled_function->instructions.bytes[i] == actual->value.compiled_function->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, expected->value.compiled_function->instructions.bytes[i], actual->value.compiled_function->instructions.bytes[i], expected_str, actual_str);
+            char *expected_str = instruction_to_str(&expected.value.compiled_function->instructions);
+            char *actual_str = instruction_to_str(&actual.value.compiled_function->instructions);
+            assertf(expected.value.compiled_function->instructions.size == actual.value.compiled_function->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
+            for (int i=0; i < expected.value.compiled_function->instructions.size; i++) {
+                assertf(expected.value.compiled_function->instructions.bytes[i] == actual.value.compiled_function->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, expected.value.compiled_function->instructions.bytes[i], actual.value.compiled_function->instructions.bytes[i], expected_str, actual_str);
             }
             free(expected_str);
             free(actual_str);
-            free_object(expected);
         }
         break;
         case OBJ_STRING: 
-            assertf(strcmp(expected->value.string, actual->value.string) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected->value.string, actual->value.string);
-            free_object(expected);
+            assertf(strcmp(expected.value.string, actual.value.string) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected.value.string, actual.value.string);
         break;
         default: 
-            assertf(false, "missing test implementation for object of type %s", object_type_to_str(actual->type));
+            assertf(false, "missing test implementation for object of type %s", object_type_to_str(actual.type));
         break;
     }
 }
@@ -62,6 +58,7 @@ void run_compiler_test(struct compiler_test_case t) {
     assertf(bytecode->constants->size == t.constants_size, "wrong constants size: expected %d, got %d", t.constants_size, bytecode->constants->size);
     for (int i=0; i < t.constants_size; i++) {
         test_object(t.constants[i], bytecode->constants->values[i]);
+        free_object(t.constants[i]);
     }
 
     free(concatted_str);
@@ -886,6 +883,5 @@ int main(int argc, char *argv[]) {
     TEST(recursive_functions);
     TEST(builtin_functions);
 
-    free_object_pool();
     free_object_list_pool();
 }
