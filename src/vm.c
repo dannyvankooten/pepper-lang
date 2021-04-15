@@ -339,6 +339,7 @@ vm_run(struct vm* restrict vm) {
         &&GOTO_OPCODE_GET_LOCAL,
         &&GOTO_OPCODE_SET_LOCAL,
         &&GOTO_OPCODE_GET_BUILTIN,
+        &&GOTO_OPCODE_ARRAY,
         &&GOTO_OPCODE_HALT,
     };
     struct frame *frame = vm_current_frame(vm);
@@ -513,6 +514,8 @@ vm_run(struct vm* restrict vm) {
         vm_stack_push(vm, get_builtin_by_index(idx));
         DISPATCH();
     }
+
+    GOTO_OPCODE_ARRAY: ;
 
     GOTO_OPCODE_HALT: ;
 

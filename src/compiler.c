@@ -440,6 +440,14 @@ compile_expression(struct compiler *c, struct expression *expr) {
         }
         break;
 
+        case EXPR_ARRAY:
+            for (int i=0; i < expr->array.size; i++) {
+                err = compile_expression(c, expr->array.values[i]);
+                if (err) return err;
+            }
+            compiler_emit(c, OPCODE_ARRAY, expr->array.size);
+        break;
+
         default:
             return COMPILE_ERR_UNKNOWN_EXPR_TYPE;
         break;

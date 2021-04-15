@@ -869,6 +869,63 @@ void while_statements() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+void array_literals() {
+     struct compiler_test_case tests[] = {
+        {
+            .input = "[]",
+            .constants = {}, 0,
+            .instructions = {
+                make_instruction(OPCODE_ARRAY, 0),              
+                make_instruction(OPCODE_POP),  
+                make_instruction(OPCODE_HALT),              
+            }, 3
+        },
+        {
+            .input = "[1, 2, 3]",
+            .constants = {
+                make_integer_object(1),
+                make_integer_object(2),
+                make_integer_object(3),
+            }, 3,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),     
+                make_instruction(OPCODE_CONST, 1),     
+                make_instruction(OPCODE_CONST, 2),     
+                make_instruction(OPCODE_ARRAY, 3),              
+                make_instruction(OPCODE_POP),       
+                make_instruction(OPCODE_HALT),         
+            }, 6
+        },
+        {
+            .input = "[1 + 2, 3 - 4, 5 * 6]",
+            .constants = {
+                make_integer_object(1),
+                make_integer_object(2),
+                make_integer_object(3),
+                make_integer_object(4),
+                make_integer_object(5),
+                make_integer_object(6),
+            }, 6,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),     
+                make_instruction(OPCODE_CONST, 1),    
+                make_instruction(OPCODE_ADD), 
+                make_instruction(OPCODE_CONST, 2),  
+                make_instruction(OPCODE_CONST, 3),       
+                make_instruction(OPCODE_SUBTRACT),
+                make_instruction(OPCODE_CONST, 4),  
+                make_instruction(OPCODE_CONST, 5),       
+                make_instruction(OPCODE_MULTIPLY),    
+                make_instruction(OPCODE_ARRAY, 3),         
+                make_instruction(OPCODE_POP),  
+                make_instruction(OPCODE_HALT),            
+            }, 12
+        },
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main(int argc, char *argv[]) {    
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -882,4 +939,5 @@ int main(int argc, char *argv[]) {
     TEST(string_expressions);
     TEST(recursive_functions);
     TEST(builtin_functions);
+    TEST(array_literals);
 }

@@ -85,8 +85,11 @@ static const struct definition definitions[] = {
         "OpGetBuiltin", 1, {1},
     },
     {
+        "OpArray", 1, {2},
+    },
+    {
         "OpHalt", 0, {0},
-    }
+    },
 };
 
 inline const 
