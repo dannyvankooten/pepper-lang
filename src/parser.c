@@ -623,6 +623,10 @@ struct program *parse_program(struct parser *parser) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
     }
 
+    #ifdef DEBUG 
+        printf("\n\nProgram: %s\n", parser->lexer->input);
+    #endif
+
     program->size = 0;
     program->cap = 32;
     program->statements = malloc(program->cap * sizeof *program->statements);

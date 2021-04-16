@@ -36,7 +36,7 @@ union object_value {
     int64_t integer;
     char *error;
     char *string;
-    const struct object (*builtin)(struct object_list *);
+    struct object (*builtin)(struct object_list*);
     struct object_list *array;
     struct compiled_function* compiled_function;
 };
@@ -67,6 +67,6 @@ struct object copy_object(const struct object* obj);
 void free_object(struct object* obj);
 void object_to_str(char *str, struct object obj);
 
-struct object_list *make_object_list(const uint32_t cap);
+struct object_list *make_object_list(uint32_t cap);
 struct object_list *copy_object_list(struct object_list *original);
 void free_object_list(struct object_list *list);

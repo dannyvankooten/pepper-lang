@@ -40,8 +40,7 @@ run_vm_test(const char *program_str) {
     err = vm_run(vm);
     assertf(err == 0, "vm error: %d", err);
     struct object obj = vm_stack_last_popped(vm);
-    // obj = copy_object(obj);
-    
+    obj = copy_object(&obj);
     free(bc);
     free_program(p);
     compiler_free(c);
@@ -341,12 +340,15 @@ void test_builtin_functions() {
         union object_value value;
     } tests[] = {
         {"len(\"\")", OBJ_INT, {.integer = 0}},
+        {"let l = len(\"a\"); puts(\"Length: \", l);", OBJ_NULL},
+        {"puts(\"\", len(\"hello world\"));", OBJ_NULL},
         {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
         {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
         {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
         {"type(\"one\")", OBJ_STRING, {.string = "STRING"}},
         {"type(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
         {"puts(\"one\", \"two\")", OBJ_NULL, {}},
+        {"let s = \"\"; len(s); len(s);", OBJ_INT, {.integer = 0}},
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)

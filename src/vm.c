@@ -10,7 +10,7 @@
 #include "vm.h"
 #include "builtins.h"
 
-#define vm_current_frame(vm) (&vm->frames[vm->frame_index]);
+#define vm_current_frame(vm) (vm->frames[vm->frame_index])
 #define vm_stack_pop_ignore(vm) (vm->stack_pointer--)
 #define vm_stack_pop(vm) (vm->stack[--vm->stack_pointer])
 #define vm_stack_cur(vm) (vm->stack[vm->stack_pointer - 1])
@@ -26,27 +26,37 @@
 static void 
 print_debug_info(struct vm *vm) {
     char str[BUFSIZ] = {'\0'};
-    struct frame *frame = vm_current_frame(vm);
-    
-    printf("\nFrame: %2d | IP: %3d/%d | opcode: %16s | operand: ", vm->frame_index, frame->ip, frame->fn->instructions.size - 1, opcode_to_str(*frame->ip));
+    struct frame *frame = &vm_current_frame(vm);
+
+    int ip_now = frame->ip - frame->fn->instructions.bytes;
+    int ip_end = frame->fn->instructions.size - 1;
+    printf("\n\nFrame: %2d | IP: %3d/%d | opcode: %12s | operand: ", vm->frame_index, ip_now, ip_end, opcode_to_str(*frame->ip));
     struct definition def = lookup(*frame->ip);
     if (def.operands > 0) {
-        printf("%3d\n", read_bytes(frame->ip + 1, def.operand_widths[0]));
+        if (def.operand_widths[0] > 1) {
+            printf("%3d\n", read_uint16(frame->ip + 1));
+        } else {
+            printf("%3d\n", read_uint8(frame->ip + 1));
+        }
+        
     } else {
         printf("-\n");
     }
 
     printf("Globals: \n");
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < GLOBALS_SIZE; i++) {
+        if (vm->globals[i].type == OBJ_NULL) {
+            break;
+        }
         str[0] = '\0';
-        object_to_str(str, &vm->globals[i]);
+        object_to_str(str, vm->globals[i]);
         printf("  %3d: %s = %s\n", i, object_type_to_str(vm->globals[i].type), str);
     }
 
     printf("Stack: \n");
     for (int i=0; i < vm->stack_pointer; i++) {
         str[0] = '\0';
-        object_to_str(str, &vm->stack[i]);
+        object_to_str(str, vm->stack[i]);
         printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack[i].type), str);
     }
 }
@@ -58,9 +68,15 @@ struct vm *vm_new(struct bytecode *bc) {
     vm->stack_pointer = 0;
     vm->frame_index = 0;
 
+    // initialize globals as null objects for print_debug_info()
+    for (int32_t i=0; i < GLOBALS_SIZE; i++) {
+        vm->globals[i].type = OBJ_NULL;
+    }
+
     // copy over constants from compiled bytecode
+    vm->nconstants = 0;
     for (int32_t i=0; i < bc->constants->size; i++) {
-       vm->constants[i] = bc->constants->values[i];
+       vm->constants[vm->nconstants++] = bc->constants->values[i];
     }    
 
     // copy instruction as we are not adding this compiled function to a constant list
@@ -115,13 +131,9 @@ vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode o
 }
 
 static void 
-vm_do_binary_string_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
-    char *ptr = (char*) realloc(left->value.string, strlen(left->value.string) + strlen(right->value.string) + 1);
-    assert(ptr != NULL);
-    strcat(ptr, right->value.string);
-    left->value.string = ptr;
-
-    free_object((struct object *) right);
+vm_do_binary_string_operation(struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
+    struct object o = make_string_object(left->value.string, right->value.string); 
+    vm_stack_cur(vm) = o;
 }
 
 static void 
@@ -224,28 +236,28 @@ vm_do_minus_operation(struct vm* restrict vm) {
 
 /* handle call to built-in function */
 static void 
-vm_do_call_builtin(struct vm* restrict vm, const struct object (*builtin)(struct object_list *), const uint8_t num_args) {
+vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct object_list *), const uint8_t num_args) {
     static struct object_list *args;
-    args = make_object_list(num_args);
+    if (args == NULL) {
+        args = make_object_list(32);
+    }
 
-    for (uint32_t i = vm->stack_pointer - num_args; i <= num_args; i++) {
+    for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
         args->values[args->size++] = vm->stack[i];
-    }   
+    }  
+
     struct object result = builtin(args);
     vm->stack_pointer = vm->stack_pointer - num_args - 1;
     vm_stack_push(vm, result);
-    vm->frames[vm->frame_index].ip++;
+    vm_current_frame(vm).ip++;
 
-    // reset args object_list for next-use
-    free_object_list(args);
+    args->size = 0;
 }
 
 /* handle call to user-defined function */
 static void 
 vm_do_call_function(struct vm* restrict vm, struct compiled_function* restrict f, const uint8_t num_args) {
     /* TODO: Validate number of arguments */
-
-     // Push new frame (from pre-allocated list)
     struct frame* frame = &vm->frames[++vm->frame_index];
     frame->ip = f->instructions.bytes;
     frame->fn = f;
@@ -351,23 +363,20 @@ vm_run(struct vm* restrict vm) {
         &&GOTO_OPCODE_ARRAY,
         &&GOTO_OPCODE_HALT,
     };
-    struct frame *frame = vm_current_frame(vm);
+    struct frame *frame = &vm_current_frame(vm);
 
     #ifdef DEBUG
     char str[512];
     char *instruction_str = instruction_to_str(&frame->fn->instructions);
-    printf("Running VM\nInstructions: %s\n", instruction_str);
+    printf("Executing VM!\nInstructions: %s\n", instruction_str);
     free(instruction_str);
     printf("Constants: \n");
     for (int i = 0; i < vm->nconstants; i++) {
         str[0] = '\0';
-        object_to_str(str, &vm->constants[i]);
+        object_to_str(str, vm->constants[i]);
         printf("  %3d: %s = %s\n", i, object_type_to_str(vm->constants[i].type), str);
     }
-
-    print_debug_info(vm);
     #endif 
-
 
     // intitial dispatch
     DISPATCH();
@@ -376,16 +385,7 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_CONST: {
         uint16_t idx = read_uint16((frame->ip + 1));
         frame->ip += 3;
-
-        // if constant is of a non-primitive type, create a copy of it
-        // so that we can safely free it afterwards
-        struct object c = vm->constants[idx];
-        if (c.type > OBJ_INT) {
-            vm_stack_push(vm, copy_object(&c));  
-        } else {
-            vm_stack_push(vm, c);  
-        }
-         
+        vm_stack_push(vm, vm->constants[idx]); 
         DISPATCH();
     }
 

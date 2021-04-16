@@ -137,6 +137,18 @@ void free_instruction(struct instruction *ins) {
     free(ins);
 }
 
+struct instruction *copy_instructions(const struct instruction *a) {
+    struct instruction *b;
+    b = malloc(sizeof *b);
+    assert(b);
+    b->bytes = malloc(a->size);
+    assert(b->bytes);
+    memcpy(b->bytes, a->bytes, a->size * sizeof(*a->bytes));
+    b->size = a->size;
+    b->cap = a->size;
+    return b;
+}
+
 struct instruction *flatten_instructions_array(struct instruction *arr[], uint32_t size) {
     struct instruction *ins = arr[0];
 

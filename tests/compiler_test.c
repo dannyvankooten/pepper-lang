@@ -822,6 +822,23 @@ void builtin_functions() {
                 make_instruction(OPCODE_HALT),
             }, 5,
         },
+        {
+            .input = "puts(\"length = \", len(\"monkey\"))",
+            .constants = {
+                make_string_object("length = ", NULL),
+                make_string_object("monkey", NULL),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_GET_BUILTIN, 0), // 0 = index of puts builtin
+                make_instruction(OPCODE_CONST, 0),
+                make_instruction(OPCODE_GET_BUILTIN, 1), 
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_CALL, 1),
+                make_instruction(OPCODE_CALL, 2),
+                make_instruction(OPCODE_POP, 0),
+                make_instruction(OPCODE_HALT),
+            }, 8,
+        },
     };
 
     run_compiler_tests(tests, ARRAY_SIZE(tests));

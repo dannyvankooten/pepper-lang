@@ -88,7 +88,6 @@ struct object copy_object(const struct object* restrict obj) {
         case OBJ_NULL:
         case OBJ_BUILTIN:
         case OBJ_INT:
-        case OBJ_COMPILED_FUNCTION:
             return *obj;
             break;
 
@@ -102,7 +101,13 @@ struct object copy_object(const struct object* restrict obj) {
 
         case OBJ_ARRAY: 
             return make_array_object(obj->value.array);
-            break;      
+            break;    
+
+        case OBJ_COMPILED_FUNCTION: {
+            struct instruction *ins = copy_instructions(&obj->value.compiled_function->instructions);
+            return make_compiled_function_object(ins, obj->value.compiled_function->num_locals);
+        }
+        break;  
 
         default:
             err(EXIT_FAILURE, "unhandled object type passed to copy_object()");
@@ -115,9 +120,8 @@ void free_object(struct object* restrict obj)
     switch (obj->type) {
         case OBJ_NULL: 
         case OBJ_BOOL: 
+        case OBJ_INT:
         case OBJ_BUILTIN:
-            // we re-use objects of this type since they contain no unique data
-            // so we should not free anything here
             return;
             break;
 
@@ -151,7 +155,6 @@ void free_object(struct object* restrict obj)
 struct object_list *make_object_list(uint32_t cap) {
     struct object_list *list;
     list = malloc(sizeof (*list));
-    if (cap < 4) cap = 4;
     list->values = malloc(cap * sizeof(struct object));
     assert(list && list->values);
     list->size = 0;
@@ -179,7 +182,7 @@ struct object_list *copy_object_list(struct object_list *original) {
 
 void object_to_str(char *str, const struct object obj)
 {
-    char tmp[64] = {0};
+    char tmp[128] = {0};
 
     switch (obj.type)
     {
@@ -193,8 +196,6 @@ void object_to_str(char *str, const struct object obj)
             break;
             
         case OBJ_BOOL:
-            // We could do pointer comparison here, but since we've already followed the pointer above
-            // It wouldn't really make a difference. So we check the actual value, as it's less error prone.
             strcat(str, obj.value.boolean ? "true" : "false");
             break;
             
@@ -203,7 +204,13 @@ void object_to_str(char *str, const struct object obj)
             break;  
 
         case OBJ_STRING: 
+            #ifdef DEBUG 
+            strcat(str, "\"");
+            #endif
             strcat(str, obj.value.string);
+            #ifdef DEBUG 
+            strcat(str, "\"");
+            #endif
             break;
 
         case OBJ_BUILTIN: 

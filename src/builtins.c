@@ -5,9 +5,9 @@
 #include "object.h"
 #include "builtins.h"
 
-static const struct object builtin_len(struct object_list * args);
-static const struct object builtin_puts(struct object_list * args);
-static const struct object builtin_type(struct object_list * args);
+static struct object builtin_len(struct object_list * args);
+static struct object builtin_puts(struct object_list * args);
+static struct object builtin_type(struct object_list * args);
 const struct object builtin_functions[] = {
     {
         .type = OBJ_BUILTIN,
@@ -43,7 +43,7 @@ struct object get_builtin(const char* name) {
     };
 }
 
-static const struct object 
+static struct object 
 builtin_len(struct object_list* args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
@@ -57,7 +57,7 @@ builtin_len(struct object_list* args) {
     return make_integer_object(strlen(arg.value.string));
 }
 
-static const struct object 
+static struct object 
 builtin_puts(struct object_list* args) {
     char str[BUFSIZ];
     for (uint32_t i=0; i < args->size; i++) {
@@ -72,7 +72,7 @@ builtin_puts(struct object_list* args) {
     };
 }
 
-static const struct object 
+static struct object 
 builtin_type(struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);

@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 #define MAX_OP_SIZE 16
-#define read_uint8(b) (b[0])
-#define read_uint16(b) ((b[0] << 8) + (b[1]))
+#define read_uint8(b) ((b)[0])
+#define read_uint16(b) (((b)[0] << 8) + ((b)[1]))
 
 enum opcode {
     OPCODE_CONST = 0,
@@ -59,6 +59,7 @@ const char *opcode_to_str(enum opcode opcode);
 const struct definition lookup(enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, ...);
 struct instruction *make_instruction_va(enum opcode opcode, va_list operands);
+struct instruction *copy_instructions(const struct instruction *a);
 void free_instruction(struct instruction *ins);
 struct instruction *flatten_instructions_array(struct instruction *arr[], uint32_t size);
 char *instruction_to_str(struct instruction *ins);
