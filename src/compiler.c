@@ -49,6 +49,9 @@ struct compiler *compiler_new_with_state(struct symbol_table *t, struct object_l
     struct compiler *c = compiler_new();
     symbol_table_free(c->symbol_table);
     c->symbol_table = t;
+	symbol_table_define_builtin_function(c->symbol_table, 0, "puts");
+    symbol_table_define_builtin_function(c->symbol_table, 1, "len");
+    symbol_table_define_builtin_function(c->symbol_table, 2, "type");
     free_object_list(c->constants);
     c->constants = constants;
     return c;

@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <util.h>
+#include "util.h"
 #include "symbol_table.h"
 
 #define hash(v) (v[0] - 'a')
@@ -83,7 +83,6 @@ void hashmap_free(struct hashmap *hm) {
 struct symbol_table *symbol_table_new() {
     struct symbol_table *t = malloc(sizeof *t);
     if (!t) err(EXIT_FAILURE, "out of memory");
-
     t->size = 0;
     t->store = hashmap_new();
     t->outer = NULL;

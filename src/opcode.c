@@ -1,11 +1,10 @@
 #include <stdint.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
-#include <util.h>
-#include <assert.h>
-
+#include "util.h"
 #include "opcode.h"
 
 static const struct definition definitions[] = {

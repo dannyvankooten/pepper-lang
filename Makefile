@@ -1,5 +1,4 @@
 CFLAGS+= -Werror -Wall -Isrc/ -g 
-LDLIBS=-l edit
 VPATH= src
 LEXER_SRC= lexer.c
 PARSER_SRC= parser.c $(LEXER_SRC)
@@ -19,21 +18,21 @@ bin/:
 	mkdir -p bin/
 
 bin/monkey: monkey.c $(VM_SRC) monkey.c | bin/
-	$(CC) $(CFLAGS) $^ -Ofast -march=native -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -Ofast -march=native -o $@ 
 
 # tests
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/
-	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -o $@ 
 bin/parser_test: tests/parser_test.c $(PARSER_SRC) | bin/
-	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -o $@ 
 bin/opcode_test: tests/opcode_test.c opcode.c | bin/
-	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -o $@ 
 bin/compiler_test: tests/compiler_test.c $(COMPILER_SRC) | bin/
-	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -o $@ 
 bin/vm_test: tests/vm_test.c $(VM_SRC) compiler.c | bin/
-	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -o $@ 
 bin/symbol_table_test: tests/symbol_table_test.c symbol_table.c | bin/
-	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+	$(CC) $(CFLAGS) $^ -o $@ 
 
 check: $(TESTS)
 	for test in $^; do $$test || exit 1; done

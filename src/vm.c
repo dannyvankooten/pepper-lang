@@ -3,8 +3,8 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
-#include <util.h>
 
+#include "util.h"
 #include "object.h"
 #include "opcode.h"
 #include "vm.h"
