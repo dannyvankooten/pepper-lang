@@ -32,6 +32,9 @@ struct vm {
     struct object constants[GLOBALS_SIZE];
     struct frame frames[FRAMES_SIZE];
     struct object globals[GLOBALS_SIZE];
+
+    uint32_t heap_size;
+    struct object *heap;
 };
 
 struct vm *vm_new(struct bytecode *bc);

@@ -5,21 +5,24 @@
 #include "object.h"
 #include "builtins.h"
 
-static struct object builtin_len(struct object_list * args);
-static struct object builtin_puts(struct object_list * args);
-static struct object builtin_type(struct object_list * args);
+static struct object builtin_len(struct object_list* args);
+static struct object builtin_puts(struct object_list* args);
+static struct object builtin_type(struct object_list* args);
+
+// here we store the built-in function directly on the pointer by casting it to the wrong value
+// this saves us a level of indirection when calling built-in functions
 const struct object builtin_functions[] = {
     {
         .type = OBJ_BUILTIN,
-        .value = { .builtin = &builtin_puts }
+        .value = { .ptr = (struct heap_object *) &builtin_puts }
     },
     {
         .type = OBJ_BUILTIN,
-        .value = { .builtin = &builtin_len }
+        .value = { .ptr = (struct heap_object *) &builtin_len }
     },
     {
         .type = OBJ_BUILTIN,
-        .value = { .builtin = &builtin_type }
+        .value = { .ptr = (struct heap_object *) &builtin_type }
     }
 };
 
@@ -54,7 +57,7 @@ builtin_len(struct object_list* args) {
         return make_error_object("argument to len() not supported: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(arg.type));
     }
 
-    return make_integer_object(strlen(arg.value.string));
+    return make_integer_object(strlen(arg.value.ptr->value));
 }
 
 static struct object 

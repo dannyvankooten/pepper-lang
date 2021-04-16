@@ -23,6 +23,7 @@
         print_debug_info(vm);               \
         goto *dispatch_table[*frame->ip];      
 
+
 static void 
 print_debug_info(struct vm *vm) {
     char str[BUFSIZ] = {'\0'};
@@ -41,6 +42,13 @@ print_debug_info(struct vm *vm) {
         
     } else {
         printf("-\n");
+    }
+
+    printf("Constants: \n");
+    for (int i = 0; i < vm->nconstants; i++) {
+        str[0] = '\0';
+        object_to_str(str, vm->constants[i]);
+        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->constants[i].type), str);
     }
 
     printf("Globals: \n");
@@ -62,6 +70,9 @@ print_debug_info(struct vm *vm) {
 }
 #endif 
 
+static void gc(struct vm* vm);
+static struct object_list *_builtin_args_list;
+
 struct vm *vm_new(struct bytecode *bc) {
     struct vm *vm = malloc(sizeof *vm);
     assert(vm != NULL);
@@ -79,15 +90,23 @@ struct vm *vm_new(struct bytecode *bc) {
        vm->constants[vm->nconstants++] = bc->constants->values[i];
     }    
 
+    _builtin_args_list = make_object_list(32);
+
+    vm->heap_size = 0;
+    vm->heap = malloc(256 * sizeof(struct object));
+    assert(vm->heap);
+
     // copy instruction as we are not adding this compiled function to a constant list
     // the bytes are freed through the bytecode object
     struct instruction *ins = malloc(sizeof (struct instruction));
     assert(ins != NULL);
     memcpy(ins, bc->instructions, sizeof(struct instruction));
-    struct object fn = make_compiled_function_object(ins, 0);
-    vm->frames[0].ip = fn.value.compiled_function->instructions.bytes;
-    vm->frames[0].fn = fn.value.compiled_function;
+    struct object fn_obj = make_compiled_function_object(ins, 0);
+    struct compiled_function* fn = (struct compiled_function*) fn_obj.value.ptr->value;
+    vm->frames[0].ip = fn->instructions.bytes;
+    vm->frames[0].fn = fn;
     vm->frames[0].base_pointer = 0;
+    free(fn_obj.value.ptr);
     return vm;
 }
 
@@ -103,6 +122,15 @@ struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[GLOBAL
 void vm_free(struct vm *vm) {
     /* free initial compiled function since it's not on the constants list */
     free(vm->frames[0].fn);
+
+    // free args list for builtin functions
+    free_object_list(_builtin_args_list);
+
+    // free all objects on heap
+    for (int i=0; i < vm->heap_size; i++) {
+        free_object(&vm->heap[i]);
+    }
+    free(vm->heap);
 
     /* free vm itself */
     free(vm);
@@ -132,8 +160,14 @@ vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode o
 
 static void 
 vm_do_binary_string_operation(struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
-    struct object o = make_string_object(left->value.string, right->value.string); 
+    struct object o = make_string_object(left->value.ptr->value, right->value.ptr->value); 
     vm_stack_cur(vm) = o;
+
+    // register in heap
+    vm->heap[vm->heap_size++] = o;
+
+    // run garbage collector
+    gc(vm);
 }
 
 static void 
@@ -237,11 +271,8 @@ vm_do_minus_operation(struct vm* restrict vm) {
 /* handle call to built-in function */
 static void 
 vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct object_list *), const uint8_t num_args) {
-    static struct object_list *args;
-    if (args == NULL) {
-        args = make_object_list(32);
-    }
-
+    struct object_list *args = _builtin_args_list;
+    
     for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
         args->values[args->size++] = vm->stack[i];
     }  
@@ -250,8 +281,15 @@ vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct objec
     vm->stack_pointer = vm->stack_pointer - num_args - 1;
     vm_stack_push(vm, result);
     vm_current_frame(vm).ip++;
-
+    
+    // reset args for next use
     args->size = 0;
+
+    // register result object in heap for GC
+    if(result.type > OBJ_INT) {
+        vm->heap[vm->heap_size++] = result;
+        gc(vm);
+    }
 }
 
 /* handle call to user-defined function */
@@ -270,11 +308,11 @@ vm_do_call(struct vm* restrict vm, const uint8_t num_args) {
     const struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
         case OBJ_COMPILED_FUNCTION:
-            return vm_do_call_function(vm, callee.value.compiled_function, num_args);
+            return vm_do_call_function(vm, callee.value.ptr->value, num_args);
         break;
 
         case OBJ_BUILTIN:
-            return vm_do_call_builtin(vm, callee.value.builtin, num_args);
+            return vm_do_call_builtin(vm, (struct object (*)(struct object_list *)) callee.value.ptr, num_args);
         break;
 
         default:
@@ -289,7 +327,67 @@ vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_
     for (int i = start_index; i < end_index; i++) {
         list->values[list->size++] = vm->stack[i];
     }
-    return make_array_object(list);
+    struct object o = make_array_object(list);
+    vm->heap[vm->heap_size++] = o;
+    return o;
+}
+
+static void 
+gc(struct vm* restrict vm) 
+{
+    // we want to run the garbage collector pretty much all the time when in debug mode
+    // so this code gets properly exercised
+    #ifndef DEBUG 
+    if (vm->heap_size < 100) {
+        return;
+    }
+    #endif 
+
+    // traverse VM constants, stack and globals and mark every object that is reachable
+    for (uint32_t i=0; i < vm->stack_pointer; i++) {
+        if (vm->stack[i].type <= OBJ_INT) { 
+            continue;
+        }
+        vm->stack[i].value.ptr->marked = true;
+    }
+    for (uint32_t i=0; i < vm->nconstants; i++) {
+        if (vm->constants[i].type <= OBJ_INT) { 
+            continue;
+        }
+        vm->constants[i].value.ptr->marked = true;
+    }
+    for (uint32_t i=0; i < GLOBALS_SIZE && vm->globals[i].type != OBJ_NULL; i++) {
+        if (vm->globals[i].type <= OBJ_INT) { 
+            continue;
+        }
+        vm->globals[i].value.ptr->marked = true;
+    }
+
+    #ifdef DEBUG
+    printf("GARBAGE COLLECTION START\n");
+    printf("Heap size (before): %d\n", vm->heap_size);
+    #endif
+
+    // traverse all objects, free all unmarked objects
+    for (int32_t i = vm->heap_size - 1; i >= 0; i--) {
+        if (vm->heap[i].value.ptr->marked) {
+            // unset marked bit for next gc run
+            vm->heap[i].value.ptr->marked = false;
+            continue;
+        }
+
+        // free object
+        free_object(&vm->heap[i]);
+
+
+        // remove from heap (swap with last value)
+        vm->heap[i] = vm->heap[--vm->heap_size];       
+    }
+
+    #ifdef DEBUG
+    printf("Heap size (after): %d\n", vm->heap_size);
+    printf("GARBAGE COLLECTION DONE\n");
+    #endif
 }
 
 enum result 
@@ -366,16 +464,9 @@ vm_run(struct vm* restrict vm) {
     struct frame *frame = &vm_current_frame(vm);
 
     #ifdef DEBUG
-    char str[512];
     char *instruction_str = instruction_to_str(&frame->fn->instructions);
     printf("Executing VM!\nInstructions: %s\n", instruction_str);
     free(instruction_str);
-    printf("Constants: \n");
-    for (int i = 0; i < vm->nconstants; i++) {
-        str[0] = '\0';
-        object_to_str(str, vm->constants[i]);
-        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->constants[i].type), str);
-    }
     #endif 
 
     // intitial dispatch

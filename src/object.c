@@ -11,9 +11,8 @@
 #include "object.h"
 #include "parser.h"
 
-struct object_list *object_list_pool_head = NULL;
-
-const char *object_type_to_str(const enum object_type t) {
+const char *object_type_to_str(const enum object_type t) 
+{
     const char *object_names[] = {
         "NULL",
         "BOOLEAN",
@@ -27,45 +26,60 @@ const char *object_type_to_str(const enum object_type t) {
     return object_names[t];
 }
   
-struct object make_integer_object(const int64_t value) {
+struct object make_integer_object(const int64_t value) 
+{
     return (struct object) {
         .type = OBJ_INT,
         .value.integer = value,
     };
 }
 
-struct object make_array_object(struct object_list *elements) {
-    return (struct object) {
-        .type = OBJ_ARRAY,
-        .value.array = elements,
-    };
+struct object make_array_object(struct object_list *elements) 
+{
+    struct object obj;
+    obj.type = OBJ_ARRAY;
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
+    assert(obj.value.ptr != NULL);
+    obj.value.ptr->marked = false;
+    obj.value.ptr->value = elements;
+    return obj;
 }
 
 struct object make_string_object(const char *str1, const char *str2)
 {
     struct object obj;
     obj.type = OBJ_STRING;
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
+    assert(obj.value.ptr != NULL);
+    obj.value.ptr->marked = false;
+
     const uint32_t len = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
-    obj.value.string = malloc(len);
-    assert(obj.value.string != NULL);
-    strcpy(obj.value.string, str1);
+    obj.value.ptr->value = malloc(len);
+    assert(obj.value.ptr->value != NULL);
+
+    strcpy(obj.value.ptr->value, str1);
     if (str2) {
-        strcat(obj.value.string, str2);
+        strcat(obj.value.ptr->value, str2);
     }
 
     return obj;
 }
 
-struct object make_error_object(const char *format, ...) {
+struct object make_error_object(const char *format, ...) 
+{
     va_list args;
     struct object obj;
     obj.type = OBJ_ERROR;
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
+    assert(obj.value.ptr != NULL);
+    obj.value.ptr->marked = false;
 
     uint32_t len = strlen(format);
-    obj.value.error = malloc(len + 64);
-    assert(obj.value.error != NULL);
+    obj.value.ptr->value = malloc(len + 64);
+    assert(obj.value.ptr->value != NULL);
+
     va_start(args, format);  
-    vsnprintf(obj.value.error, len + 64, format, args);
+    vsnprintf(obj.value.ptr->value, len + 64, format, args);
     va_end(args);
     return obj;
 }
@@ -78,10 +92,13 @@ struct object make_compiled_function_object(struct instruction *ins, uint32_t nu
     f->num_locals = num_locals;
     f->instructions = *ins;
     free(ins);
-    obj.value.compiled_function = f;
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
+    assert(obj.value.ptr != NULL);
+    obj.value.ptr->value = f;
     return obj;
 }   
  
+ // deep copy
 struct object copy_object(const struct object* restrict obj) {
     switch (obj->type) {
         case OBJ_BOOL:
@@ -92,20 +109,23 @@ struct object copy_object(const struct object* restrict obj) {
             break;
 
         case OBJ_ERROR: 
-            return make_error_object(obj->value.error);
+            return make_error_object(obj->value.ptr->value);
             break;
         
         case OBJ_STRING:
-            return make_string_object(obj->value.string, NULL);
+            return make_string_object(obj->value.ptr->value, NULL);
             break;
 
-        case OBJ_ARRAY: 
-            return make_array_object(obj->value.array);
+        case OBJ_ARRAY: {
+            struct object_list* list = (struct object_list*) obj->value.ptr->value;
+            return make_array_object(copy_object_list(list));
             break;    
+        }
 
         case OBJ_COMPILED_FUNCTION: {
-            struct instruction *ins = copy_instructions(&obj->value.compiled_function->instructions);
-            return make_compiled_function_object(ins, obj->value.compiled_function->num_locals);
+            struct compiled_function* f = (struct compiled_function*) obj->value.ptr->value;
+            struct instruction *ins = copy_instructions(&f->instructions);
+            return make_compiled_function_object(ins, f->num_locals);
         }
         break;  
 
@@ -125,31 +145,27 @@ void free_object(struct object* restrict obj)
             return;
             break;
 
-        case OBJ_ERROR:
-            free(obj->value.error);
-            obj->value.error = NULL;
+        case OBJ_COMPILED_FUNCTION: {
+            struct compiled_function* fn = (struct compiled_function*) obj->value.ptr->value;
+            free(fn->instructions.bytes);
             break;
-
-        case OBJ_ARRAY: 
-            free_object_list(obj->value.array);
-            obj->value.array = NULL;
+        }
+        case OBJ_ARRAY: {
+            // Note that we do not free the values in the list here
+            // As these are also handled by the GC
+            struct object_list* list = (struct object_list*) obj->value.ptr->value;
+            free(list->values);
             break;
+        }
 
-        case OBJ_STRING: 
-            free(obj->value.string);
-            obj->value.string = NULL;
-            break;
-
-        case OBJ_COMPILED_FUNCTION: 
-            free(obj->value.compiled_function->instructions.bytes);
-            free(obj->value.compiled_function);
-            obj->value.compiled_function = NULL;
+        default: 
+            // see below
         break;
-
-       default:
-           // nothing special
-           break;
     }
+
+    free(obj->value.ptr->value);
+    free(obj->value.ptr);
+    obj->value.ptr = NULL;
 }
 
 struct object_list *make_object_list(uint32_t cap) {
@@ -200,14 +216,14 @@ void object_to_str(char *str, const struct object obj)
             break;
             
         case OBJ_ERROR: 
-            strcat(str, obj.value.error);
+            strcat(str, obj.value.ptr->value);
             break;  
 
         case OBJ_STRING: 
             #ifdef DEBUG 
             strcat(str, "\"");
             #endif
-            strcat(str, obj.value.string);
+            strcat(str, obj.value.ptr->value);
             #ifdef DEBUG 
             strcat(str, "\"");
             #endif
@@ -219,9 +235,10 @@ void object_to_str(char *str, const struct object obj)
 
         case OBJ_ARRAY: {
             strcat(str, "[");
-            for (uint32_t i=0; i < obj.value.array->size; i++) {
-                object_to_str(str, obj.value.array->values[i]);
-                if (i < (obj.value.array->size - 1)) {
+            struct object_list* arr = (struct object_list*) obj.value.ptr->value;
+            for (uint32_t i=0; i < arr->size; i++) {
+                object_to_str(str, arr->values[i]);
+                if (i < (arr->size - 1)) {
                     strcat(str, ", ");
                 }
             }
@@ -230,7 +247,8 @@ void object_to_str(char *str, const struct object obj)
         }
 
         case OBJ_COMPILED_FUNCTION: {
-            char *instruction_str = instruction_to_str(&obj.value.compiled_function->instructions);
+            struct compiled_function* f = (struct compiled_function*) obj.value.ptr->value;
+            char *instruction_str = instruction_to_str(&f->instructions);
             strcat(str, instruction_str);
             free(instruction_str);
             break;

@@ -20,18 +20,20 @@ void test_object(struct object expected, struct object actual) {
             assertf(actual.value.boolean == expected.value.boolean, "invalid boolean value: expected %d, got %d", expected.value.boolean, actual.value.boolean);
         break;
         case OBJ_COMPILED_FUNCTION: {
-            char *expected_str = instruction_to_str(&expected.value.compiled_function->instructions);
-            char *actual_str = instruction_to_str(&actual.value.compiled_function->instructions);
-            assertf(expected.value.compiled_function->instructions.size == actual.value.compiled_function->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
-            for (int i=0; i < expected.value.compiled_function->instructions.size; i++) {
-                assertf(expected.value.compiled_function->instructions.bytes[i] == actual.value.compiled_function->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, expected.value.compiled_function->instructions.bytes[i], actual.value.compiled_function->instructions.bytes[i], expected_str, actual_str);
+            struct compiled_function* af = (struct compiled_function*) actual.value.ptr->value;
+            struct compiled_function* ef = (struct compiled_function*) expected.value.ptr->value;
+            char *expected_str = instruction_to_str(&ef->instructions);
+            char *actual_str = instruction_to_str(&af->instructions);
+            assertf(ef->instructions.size == af->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
+            for (int i=0; i < ef->instructions.size; i++) {
+                assertf(ef->instructions.bytes[i] == af->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, ef->instructions.bytes[i], af->instructions.bytes[i], expected_str, actual_str);
             }
             free(expected_str);
             free(actual_str);
         }
         break;
         case OBJ_STRING: 
-            assertf(strcmp(expected.value.string, actual.value.string) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected.value.string, actual.value.string);
+            assertf(strcmp(expected.value.ptr->value, actual.value.ptr->value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected.value.ptr->value, actual.value.ptr->value);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(actual.type));

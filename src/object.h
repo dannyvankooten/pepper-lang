@@ -31,14 +31,17 @@ struct compiled_function {
     uint32_t num_locals;
 };
 
+struct heap_object {
+    void *value;
+
+    /* for gc */
+    bool marked;
+};
+
 union object_value {
     bool boolean;
     int64_t integer;
-    char *error;
-    char *string;
-    struct object (*builtin)(struct object_list*);
-    struct object_list *array;
-    struct compiled_function* compiled_function;
+    struct heap_object* ptr;
 };
 
 struct object
@@ -50,9 +53,6 @@ struct object
 struct object_list {
     struct object* values;
     uint32_t size;
-
-    // for linking in pool
-    struct object_list *next;
 };
 
 
