@@ -85,11 +85,7 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     struct identifier id = {
         .token = p->current_token,
     };
-    uint32_t i = 0;
-    for(; p->current_token.literal[i] != '\0'; i++){
-        id.value[i] = p->current_token.literal[i];
-    }
-    id.value[i] = '\0';
+    strcpy(id.value, p->current_token.literal);   
     s->name = id;
 
     if (!expect_next_token(p, TOKEN_ASSIGN)) {
@@ -100,12 +96,7 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     next_token(p);
     s->value = parse_expression(p, LOWEST);
     if (s->value->type == EXPR_FUNCTION) {
-        uint32_t i = 0;
-        while (s->name.value[i] != '\0') {
-            s->value->function.name[i] = s->name.value[i];
-            i++;
-        }
-        s->value->function.name[i] = '\0';
+        strcpy(s->value->function.name, s->name.value);
     } 
     if (next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
@@ -145,7 +136,7 @@ struct expression *parse_identifier_expression(struct parser *p) {
 
 static
 struct expression *parse_string_literal(const struct parser *p) {
-    const uint32_t len = strlen(p->current_token.literal) + 1;
+    const uint32_t len = strlen(p->current_token.str_literal) + 1;
     struct expression *expr = (struct expression *) malloc(sizeof(*expr) + len);
     if (!expr) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
@@ -154,7 +145,10 @@ struct expression *parse_string_literal(const struct parser *p) {
     expr->type = EXPR_STRING;
     expr->token = p->current_token;
     expr->string = (char *) (expr + 1);
-    strcpy(expr->string, p->current_token.literal);
+    strcpy(expr->string, p->current_token.str_literal);
+
+    // free string malloc'd in gettoken()
+    free(p->current_token.str_literal);
     return expr;
 }
 
@@ -198,7 +192,6 @@ struct expression_list parse_expression_list(struct parser *p, const enum token_
         return list;
     }
 
-    // allocate memory here, so we do not need an alloc for calls without any arguments
     list.cap = 4;
     list.values = malloc(list.cap * sizeof **list.values);
     if (!list.values) {

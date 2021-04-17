@@ -5,8 +5,6 @@
 #include <stdint.h>
 #include "lexer.h"
 
-#define MAX_IDENT_LENGTH 32
-
 enum precedence {
     LOWEST = 1,
     EQUALS,         // ==

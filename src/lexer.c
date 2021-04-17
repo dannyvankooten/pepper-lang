@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 void get_ident(struct token *t) {
   if (strcmp(t->literal, "let") == 0) {
@@ -45,6 +46,9 @@ static bool is_digit(const char ch) { return (ch >= '0' && ch <= '9'); }
 
 int gettoken(struct lexer *l, struct token *t) {
   char ch = l->input[l->pos++];
+
+  // clear out literal
+  t->literal[0] = '\0';
 
   // skip whitespace
   while (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
@@ -181,23 +185,30 @@ int gettoken(struct lexer *l, struct token *t) {
   case '"': {
     t->type = TOKEN_STRING;
     uint16_t len = 0;
+	uint16_t cap = 64;
+	t->str_literal = malloc(64 * sizeof(char));
     char ch = l->input[l->pos++];
-    while (ch != '"' && ch != '\0' && len < (MAX_LITERAL_LENGTH - 1)) {
-      t->literal[len++] = ch;
+    while (ch != '"' && ch != '\0') {
+      t->str_literal[len++] = ch;
       ch = l->input[l->pos++];
 
       if (ch == '"' && l->input[l->pos - 2] == '\\') {
-        t->literal[len - 1] = ch;
+        t->str_literal[len - 1] = ch;
         ch = l->input[l->pos++];
       }
+
+	  if (len == cap) {
+		  cap *= 2;
+		  t->str_literal = realloc(t->str_literal, cap * sizeof(char));
+	  }
     }
-    t->literal[len] = '\0';
+    t->str_literal[len] = '\0';
   } break;
 
   default: {
     if (is_letter(ch)) {
       int32_t i = 0;
-      while (is_letter(ch) && i < MAX_LITERAL_LENGTH - 1) {
+      while (is_letter(ch) && i < MAX_IDENT_LENGTH - 1) {
         t->literal[i++] = ch;
         ch = l->input[l->pos++];
       }
@@ -208,7 +219,7 @@ int gettoken(struct lexer *l, struct token *t) {
       l->pos--;
     } else if (is_digit(ch)) {
       int32_t i = 0;
-      while (is_digit(ch) && i < MAX_LITERAL_LENGTH - 1) {
+      while (is_digit(ch) && i < MAX_IDENT_LENGTH - 1) {
         t->literal[i++] = ch;
         ch = l->input[l->pos++];
       }

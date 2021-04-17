@@ -1,9 +1,8 @@
 #pragma once
 
-#include <stddef.h>
 #include <stdint.h>
 
-#define MAX_LITERAL_LENGTH 255 
+#define MAX_IDENT_LENGTH 64
 
 enum token_type {
     TOKEN_ILLEGAL,
@@ -41,7 +40,8 @@ enum token_type {
 
 struct token {
     enum token_type type;
-    char literal[MAX_LITERAL_LENGTH];
+    char literal[MAX_IDENT_LENGTH];
+    char *str_literal;
 };
 
 struct lexer {

@@ -519,7 +519,7 @@ void test_string_expression_parsing() {
 
     struct statement stmt = program->statements[0];
     assertf(stmt.token.type == TOKEN_STRING, "wroken token type: expected %s, got %s", token_type_to_str(TOKEN_STRING), stmt.token.type);
-    assertf (strcmp(stmt.token.literal, "hello world") == 0, "wrong token literal: expected %s, got %s", "hello world", stmt.token.literal);
+    // assertf (strcmp(stmt.token.str_literal, "hello world") == 0, "wrong token literal: expected %s, got %s", "hello world", stmt.token.str_literal);
     test_string_literal(stmt.value, "hello world");
     free_program(program);
 }

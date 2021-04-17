@@ -105,8 +105,8 @@ void test_lexer() {
         {TOKEN_NOT_EQ, "!="},
         {TOKEN_INT, "9"},
         {TOKEN_SEMICOLON, ";"},
-        {TOKEN_STRING, "foobar"},
-        {TOKEN_STRING, "foo bar"},
+        {TOKEN_STRING, "", "foobar"},
+        {TOKEN_STRING, "", "foo bar"},
         {TOKEN_LBRACKET, "["},
         {TOKEN_INT, "1"},
         {TOKEN_COMMA, ","},
@@ -114,25 +114,43 @@ void test_lexer() {
         {TOKEN_RBRACKET, "]"},
         {TOKEN_SEMICOLON, ";"},
         {TOKEN_LBRACKET, "["},
-        {TOKEN_STRING, "one"},
+        {TOKEN_STRING, "", "one"},
         {TOKEN_COMMA, ","},
-        {TOKEN_STRING, "two"},
+        {TOKEN_STRING, "", "two"},
         {TOKEN_RBRACKET, "]"},
         {TOKEN_SEMICOLON, ";"},
         {TOKEN_IDENT, "varname"},
         {TOKEN_SEMICOLON, ";"},
-        {TOKEN_STRING, "string\" with escaped quote"},
+        {TOKEN_STRING, "", "string\" with escaped quote"},
         {TOKEN_EOF, ""},
     };
 
     struct token t;
+    t.str_literal = NULL;
+
     for (int j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
         gettoken(&l, &t);
         assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), token_type_to_str(t.type));
         assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong %s literal: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), tokens[j].literal, t.literal);
+
+        if (t.str_literal) {
+            free(t.str_literal);
+            t.str_literal = NULL;
+        }
     }
+}
+
+void string_with_256_chars() {
+    char *input = "\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"";
+    struct lexer l = new_lexer(input);
+    struct token t;
+    gettoken(&l, &t);
+    assertf(t.type == TOKEN_STRING, "wrong type");
+    assertf(strncmp(t.str_literal, &input[1], strlen(input) - 2) == 0, "wrong value");
+    free(t.str_literal);
 }
 
 int main(int argc, char *argv[]) {
     TEST(test_lexer);
+    TEST(string_with_256_chars);
 }
