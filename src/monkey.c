@@ -33,7 +33,9 @@ int repl() {
 	while (1)
 	{
 		printf("> ");
-		fgets(input, BUFSIZ, stdin); 
+		if (fgets(input, BUFSIZ, stdin) == NULL) {
+			continue;
+		}
 
 		struct lexer lexer = new_lexer(input);
 		struct parser parser = new_parser(&lexer);

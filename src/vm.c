@@ -324,10 +324,12 @@ vm_do_call(struct vm* restrict vm, const uint8_t num_args) {
 struct object 
 vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_t end_index) {
     struct object_list *list = make_object_list(end_index - start_index);
-    for (int i = start_index; i < end_index; i++) {
-        list->values[list->size++] = vm->stack[i];
+    for (int32_t i = start_index; i < end_index; i++) {
+        list->values[list->size++] = copy_object(&vm->stack[i]);
     }
     struct object o = make_array_object(list);
+
+    // register array in heap for GC 
     vm->heap[vm->heap_size++] = o;
     return o;
 }

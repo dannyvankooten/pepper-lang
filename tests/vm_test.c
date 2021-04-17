@@ -351,9 +351,9 @@ void test_builtin_functions() {
         {"puts(\"\", len(\"hello world\"));", OBJ_NULL},
         {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
         {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
-        // {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
+        {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
         {"type(\"one\")", OBJ_STRING, {.error = "STRING"}},
-        // {"type(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
+        {"type(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
         {"puts(\"one\", \"two\")", OBJ_NULL, {}},
         {"let s = \"\"; len(s); len(s);", OBJ_INT, {.integer = 0}},
     };
@@ -392,6 +392,36 @@ void array_literals() {
     }
 }
 
+
+void mixed_arrays() {
+    struct
+    {
+        const char *input;
+        enum object_type types[4];
+        union values values[4];
+    } tests[] = {
+        {
+            .input = "[ \"hello\", true, 0, 5 + 3]", 
+            .types = { OBJ_STRING, OBJ_BOOL, OBJ_INT, OBJ_INT },
+            .values = { {.string = "hello"}, { .boolean = true }, { .integer = 0 }, {.integer = 8 } }
+        }
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
+
+        struct object_list* arr = obj.value.ptr->value;
+        assertf(arr->size == 4, "invalid array size");
+
+        for (int j=0; j < 4; j++) {
+            assertf(arr->values[j].type == tests[i].types[j], "invalid element type");
+            // assertf(arr->values[j].value.integer == tests[i].values[j], "invalid integer value: expected %d, got %d", tests[i].expected[j], arr->values[j].value.integer);
+        }
+        free_object(&obj);
+    }
+}
+
 int main(int argc, const char *argv[]) {
     TEST(test_integer_arithmetic);
     TEST(test_boolean_expressions);
@@ -409,4 +439,5 @@ int main(int argc, const char *argv[]) {
     TEST(test_fib);
     TEST(test_builtin_functions);
     TEST(array_literals);
+    TEST(mixed_arrays);
 }

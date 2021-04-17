@@ -49,12 +49,13 @@ struct object make_string_object(const char *str1, const char *str2)
 {
     struct object obj;
     obj.type = OBJ_STRING;
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
-    assert(obj.value.ptr != NULL);
-    obj.value.ptr->marked = false;
 
     const uint32_t len = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
-    obj.value.ptr->value = malloc(len);
+
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + len);
+    assert(obj.value.ptr != NULL);
+    obj.value.ptr->marked = false;
+    obj.value.ptr->value = obj.value.ptr + 1;
     assert(obj.value.ptr->value != NULL);
 
     strcpy(obj.value.ptr->value, str1);
@@ -70,14 +71,14 @@ struct object make_error_object(const char *format, ...)
     va_list args;
     struct object obj;
     obj.type = OBJ_ERROR;
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
+
+    // assume all expansions in the format string take up at most 64 bytes
+    uint32_t len = strlen(format) + 64;
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + len);
     assert(obj.value.ptr != NULL);
     obj.value.ptr->marked = false;
-
-    uint32_t len = strlen(format);
-    obj.value.ptr->value = malloc(len + 64);
+    obj.value.ptr->value = obj.value.ptr + 1;
     assert(obj.value.ptr->value != NULL);
-
     va_start(args, format);  
     vsnprintf(obj.value.ptr->value, len + 64, format, args);
     va_end(args);
@@ -98,13 +99,14 @@ struct object make_compiled_function_object(struct instruction *ins, uint32_t nu
     return obj;
 }   
  
- // deep copy
+ // deep copy, incl. all children and values pointed to
 struct object copy_object(const struct object* restrict obj) {
     switch (obj->type) {
         case OBJ_BOOL:
         case OBJ_NULL:
         case OBJ_BUILTIN:
         case OBJ_INT:
+            // these values contain no pointers, so we can just dereference them
             return *obj;
             break;
 
@@ -148,13 +150,14 @@ void free_object(struct object* restrict obj)
         case OBJ_COMPILED_FUNCTION: {
             struct compiled_function* fn = (struct compiled_function*) obj->value.ptr->value;
             free(fn->instructions.bytes);
+            free(obj->value.ptr->value);
             break;
         }
         case OBJ_ARRAY: {
             // Note that we do not free the values in the list here
             // As these are also handled by the GC
             struct object_list* list = (struct object_list*) obj->value.ptr->value;
-            free(list->values);
+            free_object_list(list);
             break;
         }
 
@@ -163,7 +166,6 @@ void free_object(struct object* restrict obj)
         break;
     }
 
-    free(obj->value.ptr->value);
     free(obj->value.ptr);
     obj->value.ptr = NULL;
 }
@@ -186,11 +188,12 @@ void free_object_list(struct object_list *list) {
     free(list);
 }
 
+/* deep copy of object list, incl. all values */
 struct object_list *copy_object_list(struct object_list *original) {
     struct object_list *new = make_object_list(original->size);
     uint32_t size = original->size;
     for (uint32_t i=0; i < size; i++) {
-        new->values[i] = original->values[i];
+        new->values[i] = copy_object(&original->values[i]);
     }
     new->size = size;
     return new;
