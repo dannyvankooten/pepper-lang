@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <bits/stdint-intn.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,15 +8,15 @@
 #include "lexer.h"
 #include "util.h"
 
-static struct expression *parse_expression(struct parser *p, int precedence);
+static struct expression *parse_expression(struct parser *p, const int8_t precedence);
 static int parse_statement(struct parser *p, struct statement *s);
-static void expression_to_str(char *str, struct expression *expr);
+static void expression_to_str(char *str, const struct expression *expr);
 static void free_expression(struct expression *expr);
-static enum operator parse_operator(enum token_type t);
+static enum operator parse_operator(const enum token_type t);
 
 static 
 enum precedence 
-get_token_precedence(struct token t) {
+get_token_precedence(const struct token t) {
     switch (t.type) {
         case TOKEN_EQ: return EQUALS;
         case TOKEN_NOT_EQ: return EQUALS;
@@ -51,17 +52,17 @@ struct parser new_parser(struct lexer *l) {
 }
 
 static
-int current_token_is(struct parser *p, enum token_type t) {
+int current_token_is(struct parser *p, const enum token_type t) {
     return t == p->current_token.type;
 }
 
 static
-int next_token_is(struct parser *p, enum token_type t) {
+int next_token_is(struct parser *p, const enum token_type t) {
     return t == p->next_token.type;
 }
 
 static
-int expect_next_token(struct parser *p, enum token_type t) {
+int expect_next_token(struct parser *p, const enum token_type t) {
     if (next_token_is(p, t)) {
         next_token(p);
         return 1;
@@ -186,7 +187,7 @@ struct expression *parse_prefix_expression(struct parser *p) {
 }
 
 static
-struct expression_list parse_expression_list(struct parser *p, enum token_type end_token) {
+struct expression_list parse_expression_list(struct parser *p, const enum token_type end_token) {
     struct expression_list list = {
         .size = 0,
         .cap = 0,
@@ -346,7 +347,7 @@ struct block_statement *parse_block_statement(struct parser *p) {
 }
 
 static
-struct expression *make_expression(enum expression_type type, struct token tok) {
+struct expression *make_expression(enum expression_type type, const struct token tok) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
@@ -504,7 +505,7 @@ struct expression *parse_function_literal(struct parser *p) {
 }
 
 static
-struct expression *parse_expression(struct parser *p, int precedence) {
+struct expression *parse_expression(struct parser *p, const int8_t precedence) {
     struct expression *left;
     switch (p->current_token.type) {
         case TOKEN_IDENT: 
@@ -650,7 +651,7 @@ struct program *parse_program(struct parser *parser) {
     return program;
 }
 
-void let_statement_to_str(char *str, struct statement *stmt) {    
+void let_statement_to_str(char *str, const struct statement *stmt) {    
     strcat(str, stmt->token.literal);
     strcat(str, " ");
     strcat(str, stmt->name.value);
@@ -659,14 +660,14 @@ void let_statement_to_str(char *str, struct statement *stmt) {
     strcat(str, ";");
 }
 
-void return_statement_to_str(char *str, struct statement *stmt) {
+void return_statement_to_str(char *str, const struct statement *stmt) {
     strcat(str, stmt->token.literal);
     strcat(str, " ");
     expression_to_str(str, stmt->value);
     strcat(str, ";");
 }
 
-void statement_to_str(char *str, struct statement *stmt) {
+void statement_to_str(char *str, const struct statement *stmt) {
     switch (stmt->type) {
         case STMT_LET: let_statement_to_str(str, stmt); break;
         case STMT_RETURN: return_statement_to_str(str, stmt); break;
@@ -674,22 +675,22 @@ void statement_to_str(char *str, struct statement *stmt) {
     }
 }
 
-void block_statement_to_str(char *str, struct block_statement *b) {
+void block_statement_to_str(char *str, const struct block_statement *b) {
     for (int32_t i=0; i < b->size; i++) {
         statement_to_str(str, &b->statements[i]);
     }
 }
 
-void identifier_list_to_str(char *str, struct identifier_list *identifiers) {
+void identifier_list_to_str(char *str, const struct identifier_list *identifiers) {
     for (int32_t i=0; i < identifiers->size; i++) {
-        strcat(str, identifiers->values[i].value);
-        if (i < (identifiers->size - 1)) {
+        if (i > 0) {
             strcat(str, ", ");
         }
+        strcat(str, identifiers->values[i].value);
     }
 }
 
-void expression_to_str(char *str, struct expression *expr) {
+void expression_to_str(char *str, const struct expression *expr) {
     switch (expr->type) {
         case EXPR_PREFIX: 
             strcat(str, "(");
@@ -791,7 +792,7 @@ void expression_to_str(char *str, struct expression *expr) {
 
 }
 
-char *program_to_str(struct program *p) {
+char *program_to_str(const struct program *p) {
     char *str = malloc(BUFSIZ);
     if (!str) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
@@ -805,7 +806,7 @@ char *program_to_str(struct program *p) {
     return str;
 }
 
-enum operator parse_operator(enum token_type t) {
+enum operator parse_operator(const enum token_type t) {
     switch (t) {
         case TOKEN_BANG: return OP_NEGATE; break;
         case TOKEN_MINUS: return OP_SUBTRACT; break;
@@ -840,7 +841,7 @@ char *operator_to_str(enum operator operator) {
     return "???";
 }
 
-void free_statements(struct statement *stmts, uint32_t size) {
+void free_statements(struct statement *stmts, const uint32_t size) {
     for (uint32_t i=0; i < size; i++) {
         free_expression(stmts[i].value);
     }

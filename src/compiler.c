@@ -14,8 +14,8 @@ enum {
     COMPILE_ERR_UNKNOWN_IDENT,
 };
 
-static int compile_statement(struct compiler *compiler, struct statement *statement);
-static int compile_expression(struct compiler *compiler, struct expression *expression);
+static int compile_statement(struct compiler *compiler, const struct statement *statement);
+static int compile_expression(struct compiler *compiler, const struct expression *expression);
 
 struct compiler *compiler_new() {
     struct compiler *c = malloc(sizeof *c);
@@ -109,7 +109,7 @@ add_constant(struct compiler *c, struct object obj) {
     return c->constants->size - 1;
 }
 
-static void compiler_set_last_instruction(struct compiler *c, enum opcode opcode, const uint32_t pos) {
+static void compiler_set_last_instruction(struct compiler *c, const enum opcode opcode, const uint32_t pos) {
     struct emitted_instruction previous = compiler_current_scope(c).last_instruction;
     struct emitted_instruction last = {
         .position = pos,
@@ -148,7 +148,7 @@ static bool compiler_last_instruction_is(struct compiler *c, enum opcode opcode)
     return c->scopes[c->scope_index].last_instruction.opcode == opcode;
 }
 
-static void compiler_change_operand(struct compiler *c, const uint32_t pos, int operand) {
+static void compiler_change_operand(struct compiler *c, const uint32_t pos, const int32_t operand) {
     enum opcode opcode = c->scopes[c->scope_index].instructions->bytes[pos];
     struct instruction *new = make_instruction(opcode, operand);
     compiler_replace_instruction(c, pos, new);
@@ -165,7 +165,7 @@ uint32_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
 }
 
 int
-compile_program(struct compiler *compiler, struct program *program) {
+compile_program(struct compiler *compiler, const struct program *program) {
     int err;
     for (uint32_t i=0; i < program->size; i++) {
         err = compile_statement(compiler, &program->statements[i]);
@@ -180,7 +180,7 @@ compile_program(struct compiler *compiler, struct program *program) {
 }
 
 static int
-compile_block_statement(struct compiler *compiler, struct block_statement *block) {
+compile_block_statement(struct compiler *compiler, const struct block_statement *block) {
     int err;
     for (uint32_t i=0; i < block->size; i++) {
         err = compile_statement(compiler, &block->statements[i]);
@@ -191,7 +191,7 @@ compile_block_statement(struct compiler *compiler, struct block_statement *block
 }
 
 static int
-compile_statement(struct compiler *c, struct statement *stmt) {
+compile_statement(struct compiler *c, const struct statement *stmt) {
     int err;
     switch (stmt->type) {
         case STMT_EXPR: {
@@ -223,7 +223,7 @@ compile_statement(struct compiler *c, struct statement *stmt) {
 
 
 static int 
-compile_expression(struct compiler *c, struct expression *expr) {
+compile_expression(struct compiler *c, const struct expression *expr) {
     int err;
     switch (expr->type) {
         case EXPR_INFIX: {

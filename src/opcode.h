@@ -55,12 +55,12 @@ struct bytecode {
     struct object_list *constants;
 };
 
-const char *opcode_to_str(enum opcode opcode);
-const struct definition lookup(enum opcode opcode);
+const char *opcode_to_str(const enum opcode opcode);
+const struct definition lookup(const enum opcode opcode);
 struct instruction *make_instruction(enum opcode opcode, ...);
-struct instruction *make_instruction_va(enum opcode opcode, va_list operands);
+struct instruction *make_instruction_va(const enum opcode opcode, va_list operands);
 struct instruction *copy_instructions(const struct instruction *a);
 void free_instruction(struct instruction *ins);
-struct instruction *flatten_instructions_array(struct instruction *arr[], uint32_t size);
+struct instruction *flatten_instructions_array(struct instruction *arr[], const uint32_t size);
 char *instruction_to_str(struct instruction *ins);
 uint32_t read_operands(uint32_t dest[], struct definition def, struct instruction *ins, uint32_t offset);

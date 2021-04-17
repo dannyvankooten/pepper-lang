@@ -342,6 +342,11 @@ gc(struct vm* restrict vm)
     }
     #endif 
 
+    #ifdef DEBUG
+    printf("GARBAGE COLLECTION START\n");
+    printf("Heap size (before): %d\n", vm->heap->size);
+    #endif
+
     // traverse VM constants, stack and globals and mark every object that is reachable
     for (uint32_t i=0; i < vm->stack_pointer; i++) {
         if (vm->stack[i].type <= OBJ_INT) { 
@@ -361,11 +366,6 @@ gc(struct vm* restrict vm)
         }
         vm->globals[i].value.ptr->marked = true;
     }
-
-    #ifdef DEBUG
-    printf("GARBAGE COLLECTION START\n");
-    printf("Heap size (before): %d\n", vm->heap->size);
-    #endif
 
     // traverse all objects, free all unmarked objects
     for (int32_t i = vm->heap->size - 1; i >= 0; i--) {

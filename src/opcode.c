@@ -92,16 +92,16 @@ static const struct definition definitions[] = {
 };
 
 inline const 
-char *opcode_to_str(enum opcode opcode) {
+char *opcode_to_str(const enum opcode opcode) {
     return definitions[opcode].name;
 }
 
 inline const
-struct definition lookup(enum opcode opcode) {
+struct definition lookup(const enum opcode opcode) {
     return definitions[opcode];
 }
 
-struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
+struct instruction *make_instruction_va(const enum opcode opcode, va_list operands) {
     struct definition def = lookup(opcode);
     struct instruction *ins = malloc(sizeof *ins);
     assert(ins != NULL);
@@ -148,7 +148,7 @@ struct instruction *copy_instructions(const struct instruction *a) {
     return b;
 }
 
-struct instruction *flatten_instructions_array(struct instruction *arr[], uint32_t size) {
+struct instruction *flatten_instructions_array(struct instruction *arr[], const uint32_t size) {
     struct instruction *ins = arr[0];
 
     // reallocate to fit all bytecode 

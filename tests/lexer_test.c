@@ -27,7 +27,8 @@ void test_lexer() {
         "[\"one\", \"two\"];\n"
         "varname; // comment\n"
         "// varname\n"
-        "\"string\\\" with escaped quote\"";
+        "\"string\\\" with escaped quote\""
+    ;
 
     struct lexer l = {input, 0};
     struct token tokens[] = {

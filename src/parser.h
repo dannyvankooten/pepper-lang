@@ -159,8 +159,8 @@ struct parser {
 struct parser new_parser(struct lexer *l);
 struct program *parse_program(struct parser *parser);
 struct program *parse_program_str(const char *str);
-void block_statement_to_str(char *str, struct block_statement *b);
-void identifier_list_to_str(char *str, struct identifier_list *identifiers);
-char *program_to_str(struct program *p);
+void block_statement_to_str(char *str, const struct block_statement *b);
+void identifier_list_to_str(char *str, const struct identifier_list *identifiers);
+char *program_to_str(const struct program *p);
 void free_program(struct program *p);
-char *operator_to_str(enum operator operator);
+char *operator_to_str(const enum operator operator);
