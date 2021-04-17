@@ -170,11 +170,11 @@ void free_object(struct object* restrict obj)
     obj->value.ptr = NULL;
 }
 
-struct object_list *make_object_list(uint32_t cap) {
+struct object_list *make_object_list(const uint32_t cap) {
     struct object_list *list;
-    list = malloc(sizeof (*list));
-    list->values = malloc(cap * sizeof(struct object));
-    assert(list && list->values);
+    list = malloc(sizeof (*list) + cap * sizeof(struct object));
+    assert(list);
+    list->values = (struct object*) (list + 1);
     list->size = 0;
     return list;
 }
@@ -184,7 +184,6 @@ void free_object_list(struct object_list *list) {
     for (uint32_t i=0; i < list->size; i++) {
         free_object(&list->values[i]);
     }
-    free(list->values);
     free(list);
 }
 

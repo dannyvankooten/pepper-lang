@@ -92,12 +92,12 @@ struct vm *vm_new(struct bytecode *bc) {
 
     _builtin_args_list = make_object_list(32);
 
-    vm->heap_size = 0;
-    vm->heap = malloc(256 * sizeof(struct object));
-    assert(vm->heap);
+    // initialize heap
+    vm->heap = make_object_list(256);
 
     // copy instruction as we are not adding this compiled function to a constant list
     // the bytes are freed through the bytecode object
+    // TODO: Simplify this
     struct instruction *ins = malloc(sizeof (struct instruction));
     assert(ins != NULL);
     memcpy(ins, bc->instructions, sizeof(struct instruction));
@@ -127,10 +127,7 @@ void vm_free(struct vm *vm) {
     free_object_list(_builtin_args_list);
 
     // free all objects on heap
-    for (int i=0; i < vm->heap_size; i++) {
-        free_object(&vm->heap[i]);
-    }
-    free(vm->heap);
+    free_object_list(vm->heap);
 
     /* free vm itself */
     free(vm);
@@ -164,7 +161,7 @@ vm_do_binary_string_operation(struct vm* restrict vm, const enum opcode opcode, 
     vm_stack_cur(vm) = o;
 
     // register in heap
-    vm->heap[vm->heap_size++] = o;
+    vm->heap->values[vm->heap->size++] = o;
 
     // run garbage collector
     gc(vm);
@@ -277,17 +274,17 @@ vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct objec
         args->values[args->size++] = vm->stack[i];
     }  
 
-    struct object result = builtin(args);
+    struct object obj = builtin(args);
     vm->stack_pointer = vm->stack_pointer - num_args - 1;
-    vm_stack_push(vm, result);
+    vm_stack_push(vm, obj);
     vm_current_frame(vm).ip++;
     
     // reset args for next use
     args->size = 0;
 
     // register result object in heap for GC
-    if(result.type > OBJ_INT) {
-        vm->heap[vm->heap_size++] = result;
+    if(obj.type > OBJ_INT) {
+        vm->heap->values[vm->heap->size++] = obj;
         gc(vm);
     }
 }
@@ -330,7 +327,7 @@ vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_
     struct object o = make_array_object(list);
 
     // register array in heap for GC 
-    vm->heap[vm->heap_size++] = o;
+    vm->heap->values[vm->heap->size++] = o;
     return o;
 }
 
@@ -340,7 +337,7 @@ gc(struct vm* restrict vm)
     // we want to run the garbage collector pretty much all the time when in debug mode
     // so this code gets properly exercised
     #ifndef DEBUG 
-    if (vm->heap_size < 100) {
+    if (vm->heap->size < 100) {
         return;
     }
     #endif 
@@ -367,27 +364,27 @@ gc(struct vm* restrict vm)
 
     #ifdef DEBUG
     printf("GARBAGE COLLECTION START\n");
-    printf("Heap size (before): %d\n", vm->heap_size);
+    printf("Heap size (before): %d\n", vm->heap->size);
     #endif
 
     // traverse all objects, free all unmarked objects
-    for (int32_t i = vm->heap_size - 1; i >= 0; i--) {
-        if (vm->heap[i].value.ptr->marked) {
+    for (int32_t i = vm->heap->size - 1; i >= 0; i--) {
+        if (vm->heap->values[i].value.ptr->marked) {
             // unset marked bit for next gc run
-            vm->heap[i].value.ptr->marked = false;
+            vm->heap->values[i].value.ptr->marked = false;
             continue;
         }
 
         // free object
-        free_object(&vm->heap[i]);
+        free_object(&vm->heap->values[i]);
 
 
         // remove from heap (swap with last value)
-        vm->heap[i] = vm->heap[--vm->heap_size];       
+        vm->heap[i] = vm->heap[--vm->heap->size];       
     }
 
     #ifdef DEBUG
-    printf("Heap size (after): %d\n", vm->heap_size);
+    printf("Heap size (after): %d\n", vm->heap->size);
     printf("GARBAGE COLLECTION DONE\n");
     #endif
 }

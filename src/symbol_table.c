@@ -26,7 +26,7 @@ hashmap_new() {
 
 static void 
 hashmap_insert(struct hashmap *hm, const char *key, void *item) {
-    int8_t pos = hash(key);
+    const int8_t pos = hash(key);
     struct hashmap_node *head = hm->table[pos];
     struct hashmap_node *node = head;
 
@@ -51,7 +51,7 @@ hashmap_insert(struct hashmap *hm, const char *key, void *item) {
 
 static void *
 hashmap_get(struct hashmap *hm, const char *key) {
-    int8_t pos = hash(key);
+    const int8_t pos = hash(key);
     struct hashmap_node *node = hm->table[pos];
     while (node) {
          if (strcmp(node->key, key) == 0) {

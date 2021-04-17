@@ -143,19 +143,16 @@ struct expression *parse_identifier_expression(struct parser *p) {
 }
 
 static
-struct expression *parse_string_literal(struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
+struct expression *parse_string_literal(const struct parser *p) {
+    const uint32_t len = strlen(p->current_token.literal) + 1;
+    struct expression *expr = (struct expression *) malloc(sizeof(*expr) + len);
     if (!expr) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
     }
 
-    uint32_t len = strlen(p->current_token.literal) + 1;
-    expr->string = malloc(len);
-    if (!expr->string) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
     expr->type = EXPR_STRING;
     expr->token = p->current_token;
+    expr->string = (char *) (expr + 1);
     strcpy(expr->string, p->current_token.literal);
     return expr;
 }
@@ -210,7 +207,7 @@ struct expression_list parse_expression_list(struct parser *p, enum token_type e
     list.values[list.size++] = parse_expression(p, LOWEST);
 
     while (next_token_is(p, TOKEN_COMMA)) {
-        next_token(p);
+        next_token(p); // skip comma
         next_token(p);
 
         list.values[list.size++] = parse_expression(p, LOWEST);
@@ -321,19 +318,16 @@ struct expression *parse_grouped_expression(struct parser *p) {
 
 static
 struct block_statement *parse_block_statement(struct parser *p) {
-    struct block_statement *b = malloc(sizeof *b);
+    const uint32_t cap = 16;
+    struct block_statement *b = (struct block_statement *) malloc(sizeof *b + cap * sizeof (struct statement));
     if (!b) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
     }
-
-    b->cap = 16;
+    b->cap = cap;
     b->size = 0;
-    b->statements = malloc(b->cap * sizeof (struct statement));
-    if (!b->statements) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-    next_token(p);
+    b->statements = (struct statement*) (b + 1);
 
+    next_token(p);
     while (!current_token_is(p, TOKEN_RBRACE) && !current_token_is(p, TOKEN_EOF)) {
         struct statement s;
         if (parse_statement(p, &s) > -1) {
@@ -617,7 +611,8 @@ struct program *parse_program_str(const char *str) {
 }
 
 struct program *parse_program(struct parser *parser) {
-    struct program *program = malloc(sizeof *program);
+    const int cap = 4;
+    struct program *program = (struct program *) malloc(sizeof *program + cap * sizeof *program->statements);
     if (!program) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
     }
@@ -627,14 +622,11 @@ struct program *parse_program(struct parser *parser) {
     #endif
 
     program->size = 0;
-    program->cap = 32;
-    program->statements = malloc(program->cap * sizeof *program->statements);
-    if (!program->statements) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
+    program->cap = cap;
+    program->statements = (struct statement *) (program + 1);
 
-    struct statement s;
     while (parser->current_token.type != TOKEN_EOF) {
+        struct statement s;
         
         // if an error occured, skip token & continue
         if (parse_statement(parser, &s) == -1) {
@@ -647,8 +639,9 @@ struct program *parse_program(struct parser *parser) {
         // double program capacity if needed
         if (program->size >= program->cap) {
             program->cap *= 2;
-            program->statements = realloc(program->statements, sizeof *program->statements * program->cap);
-            assert(program->statements != NULL);
+            program = realloc(program, sizeof (struct program) + (sizeof (struct statement) * program->cap));
+            assert(program != NULL);
+            program->statements = (struct statement *) (program + 1);
         }
 
         next_token(parser);        
@@ -851,8 +844,6 @@ void free_statements(struct statement *stmts, uint32_t size) {
     for (uint32_t i=0; i < size; i++) {
         free_expression(stmts[i].value);
     }
-    
-    free(stmts);
 }
 
 void free_block_statement(struct block_statement *b) {
@@ -903,7 +894,7 @@ void free_expression(struct expression *expr) {
         break;
 
         case EXPR_STRING:
-            free(expr->string);
+            // free(expr->string);
         break;
 
        case EXPR_ARRAY: 
