@@ -945,6 +945,31 @@ void array_literals() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+void index_expressions() {
+    struct compiler_test_case tests[] = {
+        {
+            .input = "[1, 2][1]",
+            .constants = {
+                make_integer_object(1),
+                make_integer_object(2),
+                make_integer_object(1),
+            }, 3,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),     
+                make_instruction(OPCODE_CONST, 1),     
+                make_instruction(OPCODE_ARRAY, 2),  
+                make_instruction(OPCODE_CONST, 2),   
+                make_instruction(OPCODE_INDEX),         
+                make_instruction(OPCODE_POP),       
+                make_instruction(OPCODE_HALT),              
+            }, 7
+        },
+        
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main(int argc, char *argv[]) {    
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -959,4 +984,5 @@ int main(int argc, char *argv[]) {
     TEST(recursive_functions);
     TEST(builtin_functions);
     TEST(array_literals);
+    TEST(index_expressions);
 }

@@ -458,6 +458,7 @@ vm_run(struct vm* restrict vm) {
         &&GOTO_OPCODE_SET_LOCAL,
         &&GOTO_OPCODE_GET_BUILTIN,
         &&GOTO_OPCODE_ARRAY,
+        &&GOTO_OPCODE_INDEX,
         &&GOTO_OPCODE_HALT,
     };
     struct frame *frame = &vm_current_frame(vm);
@@ -620,6 +621,23 @@ vm_run(struct vm* restrict vm) {
         struct object array = vm_build_array(vm, vm->stack_pointer - num_elements, vm->stack_pointer);
         vm->stack_pointer -= num_elements;
         vm_stack_push(vm, array);
+        DISPATCH();
+    }
+
+     GOTO_OPCODE_INDEX: {
+        struct object index = vm_stack_pop(vm);
+        struct object array = vm_stack_pop(vm);
+        assert(index.type == OBJ_INT);
+        assert(array.type == OBJ_ARRAY);
+        struct object_list* list = (struct object_list*) array.value.ptr->value;
+        if (index.value.integer < 0 || index.value.integer >= list->size) {
+            vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
+        } else {
+            struct object value = list->values[index.value.integer];
+            vm_stack_push(vm, value);
+        }
+        
+        frame->ip++;
         DISPATCH();
     }
 

@@ -87,6 +87,9 @@ static const struct definition definitions[] = {
         "OpArray", 1, {2},
     },
     {
+        "OpIndex", 0, {0},
+    },
+    {
         "OpHalt", 0, {0},
     },
 };

@@ -422,6 +422,61 @@ void mixed_arrays() {
     }
 }
 
+void array_indexing() {
+    struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {
+            .input = "[1, 2, 3][1]", 
+            .type = OBJ_INT,
+            .value = { .integer = 2 }
+        },
+        {
+            .input = "[1][0]", 
+            .type = OBJ_INT,
+            .value = { .integer = 1 }
+        },
+        {
+            .input = "[1, true, \"foobar\"][2]", 
+            .type = OBJ_STRING,
+            .value = { .string = "foobar" }
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
+void array_indexing_out_of_bounds() {
+    struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {  
+            .input = "[0][1]", 
+            .type = OBJ_NULL,
+        },
+        {   
+            .input = "[0][-1]", 
+            .type = OBJ_NULL,
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
+
+
 int main(int argc, const char *argv[]) {
     TEST(test_integer_arithmetic);
     TEST(test_boolean_expressions);
@@ -440,4 +495,6 @@ int main(int argc, const char *argv[]) {
     TEST(test_builtin_functions);
     TEST(array_literals);
     TEST(mixed_arrays);
+    TEST(array_indexing);
+    TEST(array_indexing_out_of_bounds);
 }

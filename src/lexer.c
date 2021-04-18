@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 void get_ident(struct token *t) {
   if (strcmp(t->literal, "let") == 0) {
@@ -185,8 +185,8 @@ int gettoken(struct lexer *l, struct token *t) {
   case '"': {
     t->type = TOKEN_STRING;
     uint16_t len = 0;
-	uint16_t cap = 64;
-	t->str_literal = malloc(64 * sizeof(char));
+    uint16_t cap = 64;
+    t->str_literal = malloc(64 * sizeof(char));
     char ch = l->input[l->pos++];
     while (ch != '"' && ch != '\0') {
       t->str_literal[len++] = ch;
@@ -197,10 +197,10 @@ int gettoken(struct lexer *l, struct token *t) {
         ch = l->input[l->pos++];
       }
 
-	  if (len == cap) {
-		  cap *= 2;
-		  t->str_literal = realloc(t->str_literal, cap * sizeof(char));
-	  }
+      if (len == cap) {
+        cap *= 2;
+        t->str_literal = realloc(t->str_literal, cap * sizeof(char));
+      }
     }
     t->str_literal[len] = '\0';
   } break;

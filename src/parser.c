@@ -44,7 +44,7 @@ struct parser new_parser(struct lexer *l) {
         .lexer = l,
         .errors = 0,
     };
-   
+
     // read two tokens so that both current_token and next_token are set
     gettoken(p.lexer, &p.current_token);
     gettoken(p.lexer, &p.next_token);
@@ -82,11 +82,11 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     }
 
     // parse identifier
-    struct identifier id = {
+    struct identifier ident = {
         .token = p->current_token,
     };
-    strcpy(id.value, p->current_token.literal);   
-    s->name = id;
+    strcpy(ident.value, p->current_token.literal);   
+    s->name = ident;
 
     if (!expect_next_token(p, TOKEN_ASSIGN)) {
         return -1;
@@ -122,7 +122,7 @@ int parse_return_statement(struct parser *p, struct statement *s) {
 }
 
 static
-struct expression *parse_identifier_expression(struct parser *p) {
+struct expression *parse_identifier_expression(const struct parser *p) {
     struct expression *expr = malloc(sizeof *expr);
     if (!expr) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
@@ -135,7 +135,7 @@ struct expression *parse_identifier_expression(struct parser *p) {
 }
 
 static
-struct expression *parse_string_literal(const struct parser *p) {
+struct expression *parse_string_literal(struct parser *p) {
     const uint32_t len = strlen(p->current_token.str_literal) + 1;
     struct expression *expr = (struct expression *) malloc(sizeof(*expr) + len);
     if (!expr) {
@@ -146,9 +146,6 @@ struct expression *parse_string_literal(const struct parser *p) {
     expr->token = p->current_token;
     expr->string = (char *) (expr + 1);
     strcpy(expr->string, p->current_token.str_literal);
-
-    // free string malloc'd in gettoken()
-    free(p->current_token.str_literal);
     return expr;
 }
 
@@ -601,7 +598,8 @@ parse_statement(struct parser *p, struct statement *s) {
 struct program *parse_program_str(const char *str) {
     struct lexer lexer = new_lexer(str);
     struct parser parser = new_parser(&lexer);
-    return parse_program(&parser);
+    struct program *program = parse_program(&parser);
+    return program;
 }
 
 struct program *parse_program(struct parser *parser) {
@@ -888,7 +886,6 @@ void free_expression(struct expression *expr) {
         break;
 
         case EXPR_STRING:
-            // free(expr->string);
         break;
 
        case EXPR_ARRAY: 

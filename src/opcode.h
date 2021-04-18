@@ -35,6 +35,7 @@ enum opcode {
     OPCODE_SET_LOCAL,
     OPCODE_GET_BUILTIN,
     OPCODE_ARRAY,
+    OPCODE_INDEX,
     OPCODE_HALT,
 };
 

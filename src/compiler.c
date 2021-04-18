@@ -4,6 +4,7 @@
 #include "compiler.h"
 #include "object.h"
 #include "opcode.h"
+#include "parser.h"
 #include "symbol_table.h"
 #include "vm.h"
 
@@ -450,6 +451,15 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             }
             compiler_emit(c, OPCODE_ARRAY, expr->array.size);
         break;
+
+        case EXPR_INDEX: {
+            err = compile_expression(c, expr->index.left);
+            if (err) return err;
+            err = compile_expression(c, expr->index.index);
+            if (err) return err;
+            compiler_emit(c, OPCODE_INDEX);
+        break;
+        }
 
         default:
             return COMPILE_ERR_UNKNOWN_EXPR_TYPE;
