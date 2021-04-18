@@ -41,7 +41,8 @@ enum token_type {
 struct token {
     enum token_type type;
     char literal[MAX_IDENT_LENGTH];
-    char *str_literal;
+    const char *start;
+    const char *end;
 };
 
 struct lexer {

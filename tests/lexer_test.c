@@ -140,8 +140,7 @@ void string_with_256_chars() {
     struct token t;
     gettoken(&l, &t);
     assertf(t.type == TOKEN_STRING, "wrong type");
-    assertf(strncmp(t.str_literal, &input[1], strlen(input) - 2) == 0, "wrong value");
-    free(t.str_literal);
+    assertf(strncmp(t.start, &input[1], t.end - t.start) == 0, "wrong value");
 }
 
 int main(int argc, char *argv[]) {

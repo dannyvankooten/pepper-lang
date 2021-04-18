@@ -136,7 +136,7 @@ struct expression *parse_identifier_expression(const struct parser *p) {
 
 static
 struct expression *parse_string_literal(struct parser *p) {
-    const uint32_t len = strlen(p->current_token.str_literal) + 1;
+    const uint32_t len = p->current_token.end - p->current_token.start + 1;
     struct expression *expr = (struct expression *) malloc(sizeof(*expr) + len);
     if (!expr) {
         err(EXIT_FAILURE, "OUT OF MEMORY");
@@ -145,7 +145,9 @@ struct expression *parse_string_literal(struct parser *p) {
     expr->type = EXPR_STRING;
     expr->token = p->current_token;
     expr->string = (char *) (expr + 1);
-    strcpy(expr->string, p->current_token.str_literal);
+    
+    memcpy(expr->string, p->current_token.start, len - 1);
+    expr->string[len-1] = '\0';
     return expr;
 }
 
