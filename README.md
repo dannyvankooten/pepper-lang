@@ -15,7 +15,16 @@ Since I like uselessly optimizing for performance, it runs [quite fast](#Benchma
 let a = 5;
 let b = 25;
 
-// While statements
+// Redeclare existing variables
+a = a * 5;
+b == a; // True
+
+// For loops
+for (let i=0; i < 10; i++) {
+    // i = 0 .. 9
+}
+
+// While loops
 while (b > a) {
     let b = b - 5;
 }
@@ -27,9 +36,13 @@ if (b == a) {
 
 // Strings
 let c = "Hello world";
+str_split(c, " "); // Array: [ "Hello", "world" ]
 
 // Arrays
 let d = [5, true, "Monkey"];
+d[0]; // 5
+array_push(d, 10);
+array_pop(d); // 10
 
 // Functions
 let fibonacci = fn(x) {
@@ -44,6 +57,7 @@ let fibonacci = fn(x) {
 puts("35th fibonacci number is: ", fibonacci(35));
 puts("Type of c = ", type(c));
 puts("Length of c = ", len(c));
+puts("Integer value of true = ", int(true));
 
 ```
 
