@@ -145,9 +145,37 @@ struct expression *parse_string_literal(struct parser *p) {
     expr->type = EXPR_STRING;
     expr->token = p->current_token;
     expr->string = (char *) (expr + 1);
-    
-    memcpy(expr->string, p->current_token.start, len - 1);
-    expr->string[len-1] = '\0';
+
+    char *dest = expr->string;
+    const char *source = p->current_token.start;
+    while (source != p->current_token.end) {
+        // handle (some) backslash escape sequences
+        if (*source == '\\') {
+            switch(*(source + 1)) {
+                case 'n':
+                    *dest++ = '\n';
+                    source += 2;
+                break;
+                
+                case 't':
+                    *dest++ = '\t';
+                    source += 2;
+                break;
+
+                case '"':
+                    *dest++ = '"';
+                    source += 2;
+                break;
+
+                default:
+                    *dest++ = *source++;
+                break;
+            }
+        } else {
+            *dest++ = *source++;
+        }
+    }
+    *dest = '\0';
     return expr;
 }
 

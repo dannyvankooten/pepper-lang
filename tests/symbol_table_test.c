@@ -1,7 +1,7 @@
 #include "test_helpers.h"
 #include "../src/symbol_table.h"
 
-static void test_define() {
+static void define() {
     struct {
         char *name;
         struct symbol expected;
@@ -26,7 +26,7 @@ static void test_define() {
     symbol_table_free(global);
 }
 
-static void test_resolve_global() {
+static void resolve_global() {
 
     struct symbol_table *global = symbol_table_new();
     symbol_table_define(global, "a");
@@ -49,7 +49,7 @@ static void test_resolve_global() {
 }
 
 
-static void test_resolve_local() {
+static void resolve_local() {
 
     struct symbol_table *global = symbol_table_new();
     symbol_table_define(global, "a");
@@ -78,7 +78,7 @@ static void test_resolve_local() {
     symbol_table_free(local);
 }
 
-static void test_define_and_resolve_builtins() {
+static void define_and_resolve_builtins() {
     struct symbol_table *global = symbol_table_new();
     struct symbol_table *local1 = symbol_table_new_enclosed(global);
     struct symbol_table *local2 = symbol_table_new_enclosed(local1);
@@ -110,8 +110,8 @@ static void test_define_and_resolve_builtins() {
 }
 
 int main(int argc, char *argv[]) {
-    TEST(test_define);
-    TEST(test_resolve_global);
-    TEST(test_resolve_local);
-    TEST(test_define_and_resolve_builtins);
+    TEST(define);
+    TEST(resolve_global);
+    TEST(resolve_local);
+    TEST(define_and_resolve_builtins);
 }

@@ -188,6 +188,20 @@ void free_object_list(struct object_list *list) {
     free(list);
 }
 
+struct object_list*
+append_to_object_list(struct object_list* list, struct object obj) {
+    if (list->size == list->cap) {
+        list->cap = list->cap > 0 ? list->cap * 2 : 1;
+        list = (struct object_list*) realloc(list, sizeof(struct object_list) + list->cap * sizeof(struct object));
+        list->values = (struct object*) (list + 1);
+    }
+
+    list->values[list->size++] = obj;
+
+    // return (possibly modified) pointer
+    return list;
+}
+
 /* deep copy of object list, incl. all values */
 struct object_list *copy_object_list(const struct object_list *original) {
     struct object_list *new = make_object_list(original->size);

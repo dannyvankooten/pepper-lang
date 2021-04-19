@@ -29,7 +29,7 @@ static void assert_program_size(struct program *p, uint32_t expected_size) {
     assertf(p->size == expected_size, "wrong program size. expected %d, got %d\n", expected_size, p->size); 
 }
 
-static void test_let_statements() {
+static void let_statements() {
     char *input = ""
         "let x = 5;\n"
         "let y = true;\n"
@@ -64,7 +64,7 @@ static void test_let_statements() {
 }
 
 
-static void test_return_statements() {
+static void return_statements() {
     char *input = ""
         "return 5;\n"
         "return true;\n"
@@ -96,7 +96,7 @@ static void test_return_statements() {
     free_program(program);
 }
 
-static void test_program_string() {
+static void program_string() {
     struct expression e1 = {
         .type = EXPR_INT,
         .token = {
@@ -179,7 +179,7 @@ static void test_identifier_expression(struct expression *e, char *expected) {
 }
 
 
-static void test_identifier_expression_parsing() {
+static void identifier_expression_parsing() {
     char *input = "foobar;";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -204,7 +204,7 @@ static void test_integer_expression(struct expression *expr, int expected) {
 }
 
 
-static void test_integer_expression_parsing() {
+static void integer_expression_parsing() {
     char *input = "5;";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -228,7 +228,7 @@ static void test_boolean_expression(struct expression * expr, char expected) {
     assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
 }
 
-static void test_boolean_expression_parsing() {
+static void boolean_expression_parsing() {
     struct test {
         char * input;
         char expected;
@@ -267,7 +267,7 @@ static void test_infix_expression(struct expression *expr, union expression_valu
     test_expression(expr->infix.right, right_value);
 }
 
-static void test_infix_expression_parsing() {
+static void infix_expression_parsing() {
     struct test{
         char *input;
         union expression_value left_value;
@@ -301,7 +301,7 @@ static void test_infix_expression_parsing() {
     }
 }
 
-static void test_prefix_expression_parsing() {
+static void prefix_expression_parsing() {
     typedef struct test {
         char *input;
         enum operator operator;
@@ -332,7 +332,7 @@ static void test_prefix_expression_parsing() {
     }
 }
 
-static void test_operator_precedence_parsing() {
+static void operator_precedence_parsing() {
     struct test {
         char *input;
         char *expected;
@@ -383,7 +383,7 @@ static void test_operator_precedence_parsing() {
     }
 }
 
-static void test_if_expression_parsing() {
+static void if_expression_parsing() {
     char *input = "if (x < y) { x }";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
@@ -408,7 +408,7 @@ static void test_if_expression_parsing() {
     free_program(program);
 }
 
-static void test_if_else_expression_parsing() {
+static void if_else_expression_parsing() {
     char *input = "if (x < y) { x } else { 5 }";
     struct lexer lexer = {input, 0};
     struct parser parser = new_parser(&lexer);
@@ -436,7 +436,7 @@ static void test_if_else_expression_parsing() {
     free_program(program);
 }
 
-static void test_function_literal_parsing() {
+static void function_literal_parsing() {
     char *input = "fn(x, y) { x + y; }";
     struct lexer lexer = {input, 0};
     struct parser parser = new_parser(&lexer);
@@ -462,7 +462,7 @@ static void test_function_literal_parsing() {
     free_program(program);
 }
 
-static void test_call_expression_parsing() {
+static void call_expression_parsing() {
     char *input = "add(1, 2 * 3, 4 + 5);";
     struct lexer lexer = {input, 0};
     struct parser parser = new_parser(&lexer);
@@ -509,7 +509,7 @@ static void test_string_literal(struct expression *expr, char *expected) {
     assertf(strcmp(expr->string, expected) == 0, "wrong expression value: expected \"%s\", got %s", expected, expr->string);
 }
 
-static void test_string_expression_parsing() {
+static void string_expression_parsing() {
     char *input = "\"hello world\";";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -523,7 +523,7 @@ static void test_string_expression_parsing() {
     free_program(program);
 }
 
-static void test_array_literal_parsing() {
+static void array_literal_parsing() {
     char *input = "[ 1, 2 * 2, 3 + 3, \"four\"];";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -543,7 +543,7 @@ static void test_array_literal_parsing() {
     free_program(program);
 }
 
-static void test_index_expression_parsing() {
+static void index_expression_parsing() {
     char *input = "myArray[1+2];";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -565,7 +565,7 @@ static void test_index_expression_parsing() {
 }
 
 
-static void test_while_expression_parsing() {
+static void while_expression_parsing() {
     char *input = "while (x < y) { x }";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
@@ -589,8 +589,7 @@ static void test_while_expression_parsing() {
     free_program(program);
 }
 
-static void test_function_literal_with_name() {
-
+static void function_literal_with_name() {
     char *input = "let myFunction = fn() {};";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
@@ -606,22 +605,22 @@ static void test_function_literal_with_name() {
 }
 
 int main(int argc, char *argv[]) {
-    TEST(test_let_statements);
-    TEST(test_return_statements);
-    TEST(test_program_string);
-    TEST(test_identifier_expression_parsing);
-    TEST(test_integer_expression_parsing);
-    TEST(test_boolean_expression_parsing);
-    TEST(test_prefix_expression_parsing);
-    TEST(test_infix_expression_parsing);
-    TEST(test_operator_precedence_parsing);
-    TEST(test_if_expression_parsing);
-    TEST(test_if_else_expression_parsing);
-    TEST(test_function_literal_parsing);
-    TEST(test_call_expression_parsing);
-    TEST(test_string_expression_parsing);
-    TEST(test_array_literal_parsing);
-    TEST(test_index_expression_parsing);
-    TEST(test_while_expression_parsing);
-    TEST(test_function_literal_with_name);
+    TEST(let_statements);
+    TEST(return_statements);
+    TEST(program_string);
+    TEST(identifier_expression_parsing);
+    TEST(integer_expression_parsing);
+    TEST(boolean_expression_parsing);
+    TEST(prefix_expression_parsing);
+    TEST(infix_expression_parsing);
+    TEST(operator_precedence_parsing);
+    TEST(if_expression_parsing);
+    TEST(if_else_expression_parsing);
+    TEST(function_literal_parsing);
+    TEST(call_expression_parsing);
+    TEST(string_expression_parsing);
+    TEST(array_literal_parsing);
+    TEST(index_expression_parsing);
+    TEST(while_expression_parsing);
+    TEST(function_literal_with_name);
 }

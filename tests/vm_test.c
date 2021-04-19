@@ -55,7 +55,7 @@ run_vm_test(const char *program_str) {
     return obj;;
 }
 
-static void test_integer_arithmetic() {
+static void integer_arithmetic() {
     struct {
         const char *input;
         int expected;
@@ -84,7 +84,7 @@ static void test_integer_arithmetic() {
      }
 }
 
-static void test_boolean_expressions() {
+static void boolean_expressions() {
 
 
     struct {
@@ -125,7 +125,7 @@ static void test_boolean_expressions() {
      }
 }
 
-static void test_if_statements() {
+static void if_statements() {
     struct {
         const char *input;
         int expected;
@@ -147,7 +147,7 @@ static void test_if_statements() {
 }
 
 
-static void test_while_statements() {
+static void while_statements() {
     struct {
         const char *input;
         int expected;
@@ -164,7 +164,7 @@ static void test_while_statements() {
      }
 }
 
-static void test_nulls() {
+static void nulls() {
     struct {
         const char *input;
     } tests[] = {
@@ -178,7 +178,7 @@ static void test_nulls() {
      }
 }
 
-static void test_global_let_statements() {
+static void global_let_statements() {
 
     struct {
         const char *input;
@@ -196,7 +196,7 @@ static void test_global_let_statements() {
      }
 }
 
-static void test_function_calls() {
+static void function_calls() {
 
     struct {
         const char *input;
@@ -215,7 +215,7 @@ static void test_function_calls() {
      }
 }
 
-static void test_functions_without_return_value() {
+static void functions_without_return_value() {
 
 
    const char *tests[] = {
@@ -229,7 +229,7 @@ static void test_functions_without_return_value() {
      }
 }
 
-static void test_first_class_functions() {
+static void first_class_functions() {
 
     struct {
         const char *input;
@@ -244,7 +244,7 @@ static void test_first_class_functions() {
      }
 }
 
-static void test_function_calls_with_bindings() {
+static void function_calls_with_bindings() {
 
     struct {
         const char *input;
@@ -264,7 +264,7 @@ static void test_function_calls_with_bindings() {
 }
 
 
-static void test_function_calls_with_args_and_bindings() {
+static void function_calls_with_args_and_bindings() {
     struct {
         const char *input;
         int expected;
@@ -293,7 +293,7 @@ static void test_function_calls_with_args_and_bindings() {
 }
 
 
-static void test_fib() {
+static void fib() {
     const char *input = "              \
         let fibonacci = fn(x) {  \
             if (x < 2) {         \
@@ -307,7 +307,7 @@ static void test_fib() {
     test_object(obj, OBJ_INT, (union values) { .integer = expected });    
 }
 
-static void test_recursive_functions() {
+static void recursive_functions() {
 
     struct {
         const char *input;
@@ -323,7 +323,7 @@ static void test_recursive_functions() {
      }
 }
 
-static void test_string_expressions() {
+static void string_expressions() {
     struct {
         const char *input;
         char *expected;
@@ -339,7 +339,7 @@ static void test_string_expressions() {
      }
 }
 
-static void test_builtin_functions() {
+static void builtin_functions() {
     struct
     {
         const char *input;
@@ -564,22 +564,77 @@ static void file_get_contents() {
     }
 }
 
+static void str_split() {
+     struct
+    {
+        const char* input;
+        char* expected[3];
+    } tests[] = {
+        {  
+            "str_split(\"a,b,c\", \",\")", 
+            {"a", "b", "c" }
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
+        struct object_list* arr = obj.value.ptr->value;
+        assertf(arr->size == 3, "invalid array size: expected 3, got %d", arr->size);
+        for (int j=0; j < 3; j++) {
+            assertf(arr->values[j].type == OBJ_STRING, "invalid type");
+            assertf(strcmp(arr->values[j].value.ptr->value, tests[i].expected[j]) == 0, "invalid type");
+        }
+        free_object(&obj);
+    }
+}
+
+static void builtin_int() {
+    struct
+    {
+        const char* input;
+        int expected;
+    } tests[] = {
+        {  
+            "int(5)", 
+            5,
+        },
+        {  
+            "int(\"5\")", 
+            5,
+        },
+        {  
+            "int(true)", 
+            1,
+        },
+        {  
+            "int(false)", 
+            0,
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, OBJ_INT, (union values) { .integer = tests[i].expected } );
+    }
+}
+
 int main(int argc, const char *argv[]) {
-    TEST(test_integer_arithmetic);
-    TEST(test_boolean_expressions);
-    TEST(test_if_statements);
-    TEST(test_nulls);
-    TEST(test_global_let_statements);
-    TEST(test_while_statements);
-    TEST(test_string_expressions);
-    TEST(test_function_calls);
-    TEST(test_functions_without_return_value);
-    TEST(test_first_class_functions);
-    TEST(test_function_calls_with_bindings);
-    TEST(test_function_calls_with_args_and_bindings);
-    TEST(test_recursive_functions);
-    TEST(test_fib);
-    TEST(test_builtin_functions);
+    TEST(integer_arithmetic);
+    TEST(boolean_expressions);
+    TEST(if_statements);
+    TEST(nulls);
+    TEST(global_let_statements);
+    TEST(while_statements);
+    TEST(string_expressions);
+    TEST(function_calls);
+    TEST(functions_without_return_value);
+    TEST(first_class_functions);
+    TEST(function_calls_with_bindings);
+    TEST(function_calls_with_args_and_bindings);
+    TEST(recursive_functions);
+    TEST(fib);
+    TEST(builtin_functions);
     TEST(array_literals);
     TEST(mixed_arrays);
     TEST(array_indexing);
@@ -587,4 +642,6 @@ int main(int argc, const char *argv[]) {
     TEST(array_pop);
     TEST(array_push);
     TEST(file_get_contents);
+    TEST(str_split);
+    TEST(builtin_int);
 }
