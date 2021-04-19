@@ -10,7 +10,7 @@ union values {
     char *error;
 };
 
-void test_object(struct object obj, enum object_type expected_type, union values expected_value) {
+static void test_object(struct object obj, enum object_type expected_type, union values expected_value) {
     assertf(obj.type == expected_type, "invalid object type: expected \"%s\", got \"%s\"", object_type_to_str(expected_type), object_type_to_str(obj.type));
     switch (expected_type) {
         case OBJ_INT:
@@ -55,7 +55,7 @@ run_vm_test(const char *program_str) {
     return obj;;
 }
 
-void test_integer_arithmetic() {
+static void test_integer_arithmetic() {
     struct {
         const char *input;
         int expected;
@@ -84,7 +84,7 @@ void test_integer_arithmetic() {
      }
 }
 
-void test_boolean_expressions() {
+static void test_boolean_expressions() {
 
 
     struct {
@@ -125,7 +125,7 @@ void test_boolean_expressions() {
      }
 }
 
-void test_if_statements() {
+static void test_if_statements() {
     struct {
         const char *input;
         int expected;
@@ -147,7 +147,7 @@ void test_if_statements() {
 }
 
 
-void test_while_statements() {
+static void test_while_statements() {
     struct {
         const char *input;
         int expected;
@@ -164,7 +164,7 @@ void test_while_statements() {
      }
 }
 
-void test_nulls() {
+static void test_nulls() {
     struct {
         const char *input;
     } tests[] = {
@@ -178,7 +178,7 @@ void test_nulls() {
      }
 }
 
-void test_global_let_statements() {
+static void test_global_let_statements() {
 
     struct {
         const char *input;
@@ -196,7 +196,7 @@ void test_global_let_statements() {
      }
 }
 
-void test_function_calls() {
+static void test_function_calls() {
 
     struct {
         const char *input;
@@ -215,7 +215,7 @@ void test_function_calls() {
      }
 }
 
-void test_functions_without_return_value() {
+static void test_functions_without_return_value() {
 
 
    const char *tests[] = {
@@ -229,7 +229,7 @@ void test_functions_without_return_value() {
      }
 }
 
-void test_first_class_functions() {
+static void test_first_class_functions() {
 
     struct {
         const char *input;
@@ -244,7 +244,7 @@ void test_first_class_functions() {
      }
 }
 
-void test_function_calls_with_bindings() {
+static void test_function_calls_with_bindings() {
 
     struct {
         const char *input;
@@ -264,7 +264,7 @@ void test_function_calls_with_bindings() {
 }
 
 
-void test_function_calls_with_args_and_bindings() {
+static void test_function_calls_with_args_and_bindings() {
     struct {
         const char *input;
         int expected;
@@ -293,7 +293,7 @@ void test_function_calls_with_args_and_bindings() {
 }
 
 
-void test_fib() {
+static void test_fib() {
     const char *input = "              \
         let fibonacci = fn(x) {  \
             if (x < 2) {         \
@@ -307,7 +307,7 @@ void test_fib() {
     test_object(obj, OBJ_INT, (union values) { .integer = expected });    
 }
 
-void test_recursive_functions() {
+static void test_recursive_functions() {
 
     struct {
         const char *input;
@@ -323,7 +323,7 @@ void test_recursive_functions() {
      }
 }
 
-void test_string_expressions() {
+static void test_string_expressions() {
     struct {
         const char *input;
         char *expected;
@@ -339,7 +339,7 @@ void test_string_expressions() {
      }
 }
 
-void test_builtin_functions() {
+static void test_builtin_functions() {
     struct
     {
         const char *input;
@@ -365,7 +365,7 @@ void test_builtin_functions() {
     }
 }
 
-void array_literals() {
+static void array_literals() {
     struct
     {
         const char *input;
@@ -393,7 +393,7 @@ void array_literals() {
 }
 
 
-void mixed_arrays() {
+static void mixed_arrays() {
     struct
     {
         const char *input;
@@ -422,7 +422,7 @@ void mixed_arrays() {
     }
 }
 
-void array_indexing() {
+static void array_indexing() {
     struct
     {
         const char *input;
@@ -452,7 +452,7 @@ void array_indexing() {
     }
 }
 
-void array_indexing_out_of_bounds() {
+static void array_indexing_out_of_bounds() {
     struct
     {
         const char *input;

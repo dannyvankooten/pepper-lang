@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void test_lexer() {
+static void test_lexer() {
     const char *input = "let five = 5;\n"
         "let ten = 10;\n"
         "let add = fn(x, y) {\n"
@@ -27,7 +27,7 @@ void test_lexer() {
         "[\"one\", \"two\"];\n"
         "varname; // comment\n"
         "// varname\n"
-        "\"string\\\" with escaped quote\""
+        // "\"string\\\" with escaped quote\""
     ;
 
     struct lexer l = {input, 0};
@@ -121,7 +121,7 @@ void test_lexer() {
         {TOKEN_SEMICOLON, ";"},
         {TOKEN_IDENT, "varname"},
         {TOKEN_SEMICOLON, ";"},
-        {TOKEN_STRING, "", "string\" with escaped quote"},
+        // {TOKEN_STRING, "", "string\" with escaped quote"},
         {TOKEN_EOF, ""},
     };
 
@@ -131,10 +131,13 @@ void test_lexer() {
         gettoken(&l, &t);
         assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), token_type_to_str(t.type));
         assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong %s literal: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), tokens[j].literal, t.literal);
+        if (t.type == TOKEN_STRING) {
+            assertf(strncmp(t.start, tokens[j].start, strlen(tokens[j].start)) == 0, "invalid string: expected \"%s\", got \"%s\"\n", tokens[j].start, t.start);
+        }
     }
 }
 
-void string_with_256_chars() {
+static void string_with_256_chars() {
     char *input = "\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"";
     struct lexer l = new_lexer(input);
     struct token t;

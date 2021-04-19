@@ -2,8 +2,8 @@ CFLAGS+= -Werror -Wall -Isrc/ -g
 VPATH= src
 LEXER_SRC= lexer.c
 PARSER_SRC= parser.c $(LEXER_SRC)
-COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c $(PARSER_SRC)
-VM_SRC= vm.c opcode.c object.c symbol_table.c builtins.c $(COMPILER_SRC)
+COMPILER_SRC= compiler.c object.c symbol_table.c opcode.c builtins.c $(PARSER_SRC)
+VM_SRC= vm.c opcode.c object.c symbol_table.c $(COMPILER_SRC)
 PREFIX= /usr/local
 TESTS= bin/lexer_test bin/parser_test bin/opcode_test bin/compiler_test bin/vm_test bin/symbol_table_test 
 

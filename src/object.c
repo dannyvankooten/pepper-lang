@@ -188,7 +188,7 @@ void free_object_list(struct object_list *list) {
 }
 
 /* deep copy of object list, incl. all values */
-struct object_list *copy_object_list(struct object_list *original) {
+struct object_list *copy_object_list(const struct object_list *original) {
     struct object_list *new = make_object_list(original->size);
     uint32_t size = original->size;
     for (uint32_t i=0; i < size; i++) {

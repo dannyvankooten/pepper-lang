@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "symbol_table.h"
 #include "vm.h"
+#include "builtins.h"
 
 enum {
     COMPILE_SUCCESS = 0,
@@ -29,13 +30,9 @@ struct compiler *compiler_new() {
     assert(scope.instructions->bytes != NULL);
     scope.instructions->size = 0;
     c->constants = make_object_list(64);
-    c->symbol_table = symbol_table_new();
 
-    // define builtin functions
-    // TODO: Do this programmatically
-    symbol_table_define_builtin_function(c->symbol_table, 0, "puts");
-    symbol_table_define_builtin_function(c->symbol_table, 1, "len");
-    symbol_table_define_builtin_function(c->symbol_table, 2, "type");
+    c->symbol_table = symbol_table_new();
+    define_builtins(c->symbol_table);
 
     // initialize scopes
     for (uint32_t i=0; i < 64; i++) {
@@ -50,9 +47,7 @@ struct compiler *compiler_new_with_state(struct symbol_table *t, struct object_l
     struct compiler *c = compiler_new();
     symbol_table_free(c->symbol_table);
     c->symbol_table = t;
-	symbol_table_define_builtin_function(c->symbol_table, 0, "puts");
-    symbol_table_define_builtin_function(c->symbol_table, 1, "len");
-    symbol_table_define_builtin_function(c->symbol_table, 2, "type");
+	define_builtins(c->symbol_table);
     free_object_list(c->constants);
     c->constants = constants;
     return c;

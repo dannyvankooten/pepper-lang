@@ -5,7 +5,7 @@
 #include "../src/opcode.h"
 #include "test_helpers.h"
 
-void test_make_instruction() {
+static void test_make_instruction() {
     struct {
         enum opcode opcode;
         uint32_t operands[MAX_OP_SIZE];
@@ -41,7 +41,7 @@ void test_make_instruction() {
     }
 }
 
-void test_instruction_string() {
+static void test_instruction_string() {
     struct instruction *instructions[] = {
         make_instruction(OPCODE_ADD),
         make_instruction(OPCODE_GET_LOCAL, 1),
@@ -57,7 +57,7 @@ void test_instruction_string() {
     free(str);
 }
 
-void test_read_operands() {
+static void test_read_operands() {
     struct {
         enum opcode opcode;
         uint32_t operands[MAX_OP_SIZE];
@@ -81,7 +81,7 @@ void test_read_operands() {
     }
 }
 
-void test_read_bytes() {
+static void test_read_bytes() {
     uint8_t bytes[] = {100, 20, 255};
     uint8_t v1 = read_uint8(bytes);
     assertf(v1 == 100, "read_bytes(uint8_t) failed: expected %d, got %d", 100, v1);

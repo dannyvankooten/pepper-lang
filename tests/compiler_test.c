@@ -9,7 +9,7 @@ struct compiler_test_case {
     uint32_t instructions_size;
 };
 
-void test_object(struct object expected, struct object actual) {
+static void test_object(struct object expected, struct object actual) {
     assertf(actual.type == expected.type, "invalid object type: expected %s, got %s", object_type_to_str(expected.type), object_type_to_str(actual.type));
     
     switch (expected.type) {
@@ -41,7 +41,7 @@ void test_object(struct object expected, struct object actual) {
     }
 }
 
-void run_compiler_test(struct compiler_test_case t) {
+static void run_compiler_test(struct compiler_test_case t) {
     struct program *program = parse_program_str(t.input);
     struct compiler *compiler = compiler_new();
     int err = compile_program(compiler, program);
@@ -71,13 +71,13 @@ void run_compiler_test(struct compiler_test_case t) {
     compiler_free(compiler);
 }
 
-void run_compiler_tests(struct compiler_test_case tests[], uint32_t n) {
+static void run_compiler_tests(struct compiler_test_case tests[], uint32_t n) {
     for (int t=0; t < n; t++) {
        run_compiler_test(tests[t]);
     }
 }
 
-void integer_arithmetic() {
+static void integer_arithmetic() {
 
     struct compiler_test_case tests[] = {
         {
@@ -177,7 +177,7 @@ void integer_arithmetic() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void boolean_expressions() {
+static void boolean_expressions() {
 
     struct compiler_test_case tests[] = {
         {
@@ -294,7 +294,7 @@ void boolean_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void if_statements() {
+static void if_statements() {
 
     struct compiler_test_case tests[] = {
         {
@@ -338,7 +338,7 @@ void if_statements() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void global_let_statements() {
+static void global_let_statements() {
 
     struct compiler_test_case tests[] = {
         {
@@ -424,7 +424,7 @@ void global_let_statements() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void functions() {
+static void functions() {
     {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
@@ -511,7 +511,7 @@ void functions() {
     }
 }
 
-void compiler_scopes() {
+static void compiler_scopes() {
     struct compiler_scope scope;
     struct compiler *compiler = compiler_new();
     assertf(compiler->scope_index == 0, "wrong scope index: expected %d, got %d", 0, compiler->scope_index);
@@ -539,7 +539,7 @@ void compiler_scopes() {
     compiler_free(compiler);
 }
 
-void function_calls() {
+static void function_calls() {
     {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
@@ -673,7 +673,7 @@ void function_calls() {
 }
 
 
-void let_statement_scopes() {
+static void let_statement_scopes() {
 
     {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -747,7 +747,7 @@ void let_statement_scopes() {
 
 }
 
-void recursive_functions() {
+static void recursive_functions() {
     struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
         make_instruction(OPCODE_GET_GLOBAL, 0),
         make_instruction(OPCODE_GET_LOCAL, 0),
@@ -776,7 +776,7 @@ void recursive_functions() {
     run_compiler_test(t);
 }
 
-void string_expressions() {
+static void string_expressions() {
 
     struct compiler_test_case tests[] = {
         {
@@ -809,7 +809,7 @@ void string_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void builtin_functions() {
+static void builtin_functions() {
     struct compiler_test_case tests[] = {
         {
             .input = "len(\"monkey\")",
@@ -846,7 +846,7 @@ void builtin_functions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void while_statements() {
+static void while_statements() {
     struct compiler_test_case tests[] = {
         {
             .input = "while (true) { 10; } 3333;",
@@ -888,7 +888,7 @@ void while_statements() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void array_literals() {
+static void array_literals() {
      struct compiler_test_case tests[] = {
         {
             .input = "[]",
@@ -945,7 +945,7 @@ void array_literals() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-void index_expressions() {
+static void index_expressions() {
     struct compiler_test_case tests[] = {
         {
             .input = "[1, 2][1]",

@@ -43,8 +43,6 @@ static bool is_letter(const char ch) {
   return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch == '_');
 }
 
-static bool is_digit(const char ch) { return (ch >= '0' && ch <= '9'); }
-
 int gettoken(struct lexer *l, struct token *t) {
   char ch = l->input[l->pos++];
 
@@ -185,11 +183,10 @@ int gettoken(struct lexer *l, struct token *t) {
   case '"': {
     t->type = TOKEN_STRING;
     t->start = &l->input[l->pos];
-    char ch = l->input[l->pos++];
-    while (ch != '"' && ch != '\0') {
+    while (1) {
       ch = l->input[l->pos++];
-      if (ch == '"' && l->input[l->pos - 2] == '\\') {
-        ch = l->input[l->pos++];
+      if (ch == '\0' || (ch == '"' && l->input[l->pos - 2] != '\\')) {
+        break;
       }
     }
     t->end = &l->input[l->pos - 1];
@@ -207,9 +204,9 @@ int gettoken(struct lexer *l, struct token *t) {
 
       // return last character to input
       l->pos--;
-    } else if (is_digit(ch)) {
+    } else if (isdigit(ch)) {
       int32_t i = 0;
-      while (is_digit(ch) && i < MAX_IDENT_LENGTH - 1) {
+      while (isdigit(ch) && i < MAX_IDENT_LENGTH - 1) {
         t->literal[i++] = ch;
         ch = l->input[l->pos++];
       }

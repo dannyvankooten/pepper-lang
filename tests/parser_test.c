@@ -12,9 +12,9 @@ union expression_value {
     char *str_value;
 };
 
-void test_expression(struct expression *e, union expression_value expected);
+static void test_expression(struct expression *e, union expression_value expected);
 
-void assert_parser_errors(struct parser *p) {
+static void assert_parser_errors(struct parser *p) {
     if (p->errors > 0) {
         printf("parser has %d errors: \n", p->errors);
         for (int i = 0; i < p->errors; i++) {
@@ -25,11 +25,11 @@ void assert_parser_errors(struct parser *p) {
     }
 }
 
-void assert_program_size(struct program *p, uint32_t expected_size) {
+static void assert_program_size(struct program *p, uint32_t expected_size) {
     assertf(p->size == expected_size, "wrong program size. expected %d, got %d\n", expected_size, p->size); 
 }
 
-void test_let_statements() {
+static void test_let_statements() {
     char *input = ""
         "let x = 5;\n"
         "let y = true;\n"
@@ -64,7 +64,7 @@ void test_let_statements() {
 }
 
 
-void test_return_statements() {
+static void test_return_statements() {
     char *input = ""
         "return 5;\n"
         "return true;\n"
@@ -96,7 +96,7 @@ void test_return_statements() {
     free_program(program);
 }
 
-void test_program_string() {
+static void test_program_string() {
     struct expression e1 = {
         .type = EXPR_INT,
         .token = {
@@ -172,14 +172,14 @@ void test_program_string() {
     free(str);
 }
 
-void test_identifier_expression(struct expression *e, char *expected) {
+static void test_identifier_expression(struct expression *e, char *expected) {
     assertf(e->type == EXPR_IDENT, "wrong expression type: expected %d, got %d\n", EXPR_IDENT, e->type);
     assertf(strcmp(e->ident.token.literal, expected) == 0, "wrong token literal: expected \"%s\", got \"%s\"\n", expected, e->ident.token.literal);
     assertf(strcmp(e->ident.value, expected) == 0, "wrong expression value: expected \"%s\", got \"%s\"\n", expected, e->ident.value);
 }
 
 
-void test_identifier_expression_parsing() {
+static void test_identifier_expression_parsing() {
     char *input = "foobar;";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -194,7 +194,7 @@ void test_identifier_expression_parsing() {
 }
 
 
-void test_integer_expression(struct expression *expr, int expected) {
+static void test_integer_expression(struct expression *expr, int expected) {
     assertf(expr->type == EXPR_INT, "wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
     assertf(expr->integer == expected, "wrong integer value: expected %d, got %d\n", expected, expr->integer);
 
@@ -204,7 +204,7 @@ void test_integer_expression(struct expression *expr, int expected) {
 }
 
 
-void test_integer_expression_parsing() {
+static void test_integer_expression_parsing() {
     char *input = "5;";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -220,7 +220,7 @@ void test_integer_expression_parsing() {
 }
 
 
-void test_boolean_expression(struct expression * expr, char expected) {
+static void test_boolean_expression(struct expression * expr, char expected) {
     assertf(expr->type == EXPR_BOOL, "wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
     assertf(expr->boolean == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->boolean);
     
@@ -228,7 +228,7 @@ void test_boolean_expression(struct expression * expr, char expected) {
     assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
 }
 
-void test_boolean_expression_parsing() {
+static void test_boolean_expression_parsing() {
     struct test {
         char * input;
         char expected;
@@ -251,7 +251,7 @@ void test_boolean_expression_parsing() {
     }
 }
 
-void test_expression(struct expression *e, union expression_value expected) {
+static void test_expression(struct expression *e, union expression_value expected) {
     switch (e->type) {
         case EXPR_BOOL: test_boolean_expression(e, expected.bool_value); break;
         case EXPR_INT: test_integer_expression(e, expected.int_value); break;
@@ -260,14 +260,14 @@ void test_expression(struct expression *e, union expression_value expected) {
     }
 }
 
-void test_infix_expression(struct expression *expr, union expression_value left_value, enum operator operator, union expression_value right_value) {
+static void test_infix_expression(struct expression *expr, union expression_value left_value, enum operator operator, union expression_value right_value) {
     assertf(expr->type == EXPR_INFIX, "wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
     test_expression(expr->infix.left, left_value);
     assertf(expr->infix.operator == operator, "wrong operator: expected %d, got %d\n", operator, expr->infix.operator);
     test_expression(expr->infix.right, right_value);
 }
 
-void test_infix_expression_parsing() {
+static void test_infix_expression_parsing() {
     struct test{
         char *input;
         union expression_value left_value;
@@ -301,7 +301,7 @@ void test_infix_expression_parsing() {
     }
 }
 
-void test_prefix_expression_parsing() {
+static void test_prefix_expression_parsing() {
     typedef struct test {
         char *input;
         enum operator operator;
@@ -332,7 +332,7 @@ void test_prefix_expression_parsing() {
     }
 }
 
-void test_operator_precedence_parsing() {
+static void test_operator_precedence_parsing() {
     struct test {
         char *input;
         char *expected;
@@ -383,7 +383,7 @@ void test_operator_precedence_parsing() {
     }
 }
 
-void test_if_expression_parsing() {
+static void test_if_expression_parsing() {
     char *input = "if (x < y) { x }";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
@@ -408,7 +408,7 @@ void test_if_expression_parsing() {
     free_program(program);
 }
 
-void test_if_else_expression_parsing() {
+static void test_if_else_expression_parsing() {
     char *input = "if (x < y) { x } else { 5 }";
     struct lexer lexer = {input, 0};
     struct parser parser = new_parser(&lexer);
@@ -436,7 +436,7 @@ void test_if_else_expression_parsing() {
     free_program(program);
 }
 
-void test_function_literal_parsing() {
+static void test_function_literal_parsing() {
     char *input = "fn(x, y) { x + y; }";
     struct lexer lexer = {input, 0};
     struct parser parser = new_parser(&lexer);
@@ -462,7 +462,7 @@ void test_function_literal_parsing() {
     free_program(program);
 }
 
-void test_call_expression_parsing() {
+static void test_call_expression_parsing() {
     char *input = "add(1, 2 * 3, 4 + 5);";
     struct lexer lexer = {input, 0};
     struct parser parser = new_parser(&lexer);
@@ -504,12 +504,12 @@ void test_call_expression_parsing() {
 }
 
 
-void test_string_literal(struct expression *expr, char *expected) {
+static void test_string_literal(struct expression *expr, char *expected) {
     assertf(expr->type == EXPR_STRING, "wrong expression type: expected EXPR_STRING, got %s", expr->type);
     assertf(strcmp(expr->string, expected) == 0, "wrong expression value: expected \"%s\", got %s", expected, expr->string);
 }
 
-void test_string_expression_parsing() {
+static void test_string_expression_parsing() {
     char *input = "\"hello world\";";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -523,7 +523,7 @@ void test_string_expression_parsing() {
     free_program(program);
 }
 
-void test_array_literal_parsing() {
+static void test_array_literal_parsing() {
     char *input = "[ 1, 2 * 2, 3 + 3, \"four\"];";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -543,7 +543,7 @@ void test_array_literal_parsing() {
     free_program(program);
 }
 
-void test_index_expression_parsing() {
+static void test_index_expression_parsing() {
     char *input = "myArray[1+2];";
     struct lexer l = {input, 0};
     struct parser parser = new_parser(&l);
@@ -565,7 +565,7 @@ void test_index_expression_parsing() {
 }
 
 
-void test_while_expression_parsing() {
+static void test_while_expression_parsing() {
     char *input = "while (x < y) { x }";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
@@ -589,7 +589,7 @@ void test_while_expression_parsing() {
     free_program(program);
 }
 
-void test_function_literal_with_name() {
+static void test_function_literal_with_name() {
 
     char *input = "let myFunction = fn() {};";
     struct lexer lexer = {input};
