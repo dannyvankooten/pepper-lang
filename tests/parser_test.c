@@ -564,7 +564,6 @@ static void index_expression_parsing() {
     free_program(program);
 }
 
-
 static void while_expression_parsing() {
     char *input = "while (x < y) { x }";
     struct lexer lexer = {input};
@@ -579,13 +578,24 @@ static void while_expression_parsing() {
 
     union expression_value left = {.str_value = "x"};
     union expression_value right = {.str_value = "y"};
-    test_infix_expression(expr->whilst.condition, left, OP_LT, right);
+    test_infix_expression(expr->while_loop.condition, left, OP_LT, right);
 
-    struct block_statement *body = expr->whilst.body;
+    struct block_statement *body = expr->while_loop.body;
     assertf(!!body, "expected consequence block statement, got NULL\n");
     assertf(body->size == 1, "invalid consequence size: expected %d, got %d\n", 1, body->size);
     assertf(body->statements[0].type == STMT_EXPR, "statements[0] is not a statement expression, got %d\n", body->statements[0].type);
     test_identifier_expression(body->statements[0].value, "x");
+    free_program(program);
+}
+
+static void for_expressions() {
+    char *input = "for (let i=0; i < 5; i = i + 1) { x }";
+    struct program *program = parse_program_str(input);
+    assert_program_size(program, 1);
+    struct statement stmt = program->statements[0];
+    struct expression *expr = stmt.value;
+    assertf (expr->type == EXPR_FOR, "invalid statement type: expected %d, got %d\n", EXPR_WHILE, stmt.type);
+   
     free_program(program);
 }
 
@@ -613,6 +623,7 @@ static void assignment_expressions() {
     assertf(expr->type == EXPR_ASSIGN, "invalid expression type: expected %d, got %d\n", EXPR_ASSIGN, expr->type);
     assertf(strcmp(expr->ident.value, "a") == 0, "invalid expression ident");
     test_expression(expr->assign.value, (union expression_value) { .int_value = 10 });
+    free_program(program);
 }
 
 int main(int argc, char *argv[]) {
@@ -633,6 +644,7 @@ int main(int argc, char *argv[]) {
     TEST(array_literal_parsing);
     TEST(index_expression_parsing);
     TEST(while_expression_parsing);
+    TEST(for_expressions);
     TEST(function_literal_with_name);
     TEST(assignment_expressions);
 }

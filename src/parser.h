@@ -28,6 +28,7 @@ enum expression_type {
     EXPR_STRING,
     EXPR_ARRAY,
     EXPR_INDEX,
+    EXPR_FOR,
     EXPR_WHILE,
     EXPR_ASSIGN,
 };
@@ -120,6 +121,13 @@ struct while_expression {
     struct block_statement *body;
 };
 
+struct for_expression {
+    struct statement init;
+    struct expression* condition;
+    struct statement inc;
+    struct block_statement *body;
+};
+
 struct assignment_expression {
     struct identifier ident;
     struct expression *value;
@@ -140,8 +148,9 @@ struct expression {
         struct call_expression call;
         struct expression_list array;
         struct index_expression index;
-        struct while_expression whilst;
+        struct while_expression while_loop;
         struct assignment_expression assign;
+        struct for_expression for_loop;
     };
 };
 

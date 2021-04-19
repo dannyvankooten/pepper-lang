@@ -411,7 +411,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
 
             uint32_t before_pos = c->scopes[c->scope_index].instructions->size;
 
-            err = compile_expression(c, expr->whilst.condition);
+            err = compile_expression(c, expr->while_loop.condition);
             if (err) return err;
 
             /* we don't know where to jump yet, so we use 9999 as placeholder */
@@ -420,7 +420,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             // pop null or last value from previous iteration
             compiler_emit(c, OPCODE_POP);
 
-            err = compile_block_statement(c, expr->whilst.body);
+            err = compile_block_statement(c, expr->while_loop.body);
             if (err) { return err; }
 
             // leave last item on the stack
@@ -429,6 +429,46 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             } else {
                  compiler_emit(c, OPCODE_NULL);
             }
+
+            /* jump back to beginning to re-evaluate condition */
+            compiler_emit(c, OPCODE_JUMP, before_pos);
+
+            /* now we know actual position to jump to, so change operand */
+            uint32_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
+            compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+        }
+        break;
+
+         case EXPR_FOR: {
+            compiler_emit(c, OPCODE_NULL);
+
+            err = compile_statement(c, &expr->for_loop.init);
+            if (err) return err;
+
+            uint32_t before_pos = c->scopes[c->scope_index].instructions->size;
+
+            err = compile_expression(c, expr->for_loop.condition);
+            if (err) return err;
+
+            /* we don't know where to jump yet, so we use 9999 as placeholder */
+            uint32_t jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
+
+            // pop null or last value from previous iteration
+            compiler_emit(c, OPCODE_POP);
+
+            err = compile_block_statement(c, expr->for_loop.body);
+            if (err) { return err; }
+
+            // leave last item on the stack
+            if (compiler_last_instruction_is(c, OPCODE_POP)) {
+                compiler_remove_last_instruction(c);
+            } else {
+                compiler_emit(c, OPCODE_NULL);
+            }
+
+            // run increment step
+            err = compile_statement(c, &expr->for_loop.inc);
+            if (err) return err;
 
             /* jump back to beginning to re-evaluate condition */
             compiler_emit(c, OPCODE_JUMP, before_pos);

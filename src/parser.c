@@ -102,10 +102,6 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     if (s->value->type == EXPR_FUNCTION) {
         strcpy(s->value->function.name, s->name.value);
     } 
-    if (next_token_is(p, TOKEN_SEMICOLON)) {
-        next_token(p);
-    }
-
     return 1;
 }
 
@@ -113,15 +109,8 @@ static
 int parse_return_statement(struct parser *p, struct statement *s) {
     s->type = STMT_RETURN;
     s->token = p->current_token;
-
-    // parse expression
     next_token(p);
     s->value = parse_expression(p, LOWEST);
-
-    if (next_token_is(p, TOKEN_SEMICOLON)) {
-        next_token(p);
-    }
-
     return 1;
 }
 
@@ -377,14 +366,20 @@ struct block_statement *parse_block_statement(struct parser *p) {
     while (!current_token_is(p, TOKEN_RBRACE) && !current_token_is(p, TOKEN_EOF)) {
         struct statement s;
         if (parse_statement(p, &s) > -1) {
-            b->statements[b->size++] = s;
-
-            if (b->size >= b->cap) {
+            if (b->size == b->cap) {
                 b->cap *= 2;
                 b->statements = realloc(b->statements, b->cap * sizeof *b->statements);
                 assert(b->statements != NULL);
             }
+
+            b->statements[b->size++] = s;
         }
+
+        // optional semicolon after every statement
+        if (next_token_is(p, TOKEN_SEMICOLON)) {
+            next_token(p);
+        }
+
         next_token(p);
     }
 
@@ -404,6 +399,34 @@ struct expression *make_expression(enum expression_type type, const struct token
 }
 
 static
+struct expression *parse_for_expression(struct parser *p) {
+    struct expression *expr = make_expression(EXPR_FOR, p->current_token);
+    if (!expect_next_token(p, TOKEN_LPAREN)) {
+        free(expr);
+        return NULL;
+    }
+
+    next_token(p); // skip LPAREN
+
+    parse_statement(p, &expr->for_loop.init);
+    assert(expect_next_token(p, TOKEN_SEMICOLON));
+    next_token(p); // skip SEMICOLON
+
+    expr->for_loop.condition = parse_expression(p, LOWEST);
+    assert(expect_next_token(p, TOKEN_SEMICOLON));
+    next_token(p); // skip SEMICOLON
+    
+    parse_statement(p, &expr->for_loop.inc);
+
+    if (!expect_next_token(p, TOKEN_RPAREN) || !expect_next_token(p, TOKEN_LBRACE)) {
+        return NULL;
+    }
+
+    expr->for_loop.body = parse_block_statement(p);
+    return expr;
+}
+
+static
 struct expression *parse_while_expression(struct parser *p) {
     struct expression *expr = make_expression(EXPR_WHILE, p->current_token);
     if (!expect_next_token(p, TOKEN_LPAREN)) {
@@ -412,20 +435,14 @@ struct expression *parse_while_expression(struct parser *p) {
     }
 
     next_token(p);
-    expr->whilst.condition = parse_expression(p, LOWEST);
-     if (!expect_next_token(p, TOKEN_RPAREN)) {
-        free(expr->whilst.condition);
+    expr->while_loop.condition = parse_expression(p, LOWEST);
+     if (!expect_next_token(p, TOKEN_RPAREN) || !expect_next_token(p, TOKEN_LBRACE)) {
+        free(expr->while_loop.condition);
         free(expr);
         return NULL;
     }
 
-    if (!expect_next_token(p, TOKEN_LBRACE)) {
-        free(expr->whilst.condition);
-        free(expr);
-        return NULL;
-    }
-
-    expr->whilst.body = parse_block_statement(p);
+    expr->while_loop.body = parse_block_statement(p);
     return expr;
 }
 
@@ -573,6 +590,9 @@ struct expression *parse_expression(struct parser *p, const int8_t precedence) {
         case TOKEN_IF:
             left = parse_if_expression(p);
         break; 
+        case TOKEN_FOR:
+            left = parse_for_expression(p);
+        break;
         case TOKEN_WHILE: 
             left = parse_while_expression(p);
         break;
@@ -635,11 +655,6 @@ int parse_expression_statement(struct parser *p, struct statement *s) {
     s->type = STMT_EXPR;
     s->token = p->current_token;
     s->value = parse_expression(p, LOWEST);
-
-    if (next_token_is(p, TOKEN_SEMICOLON)) {
-        next_token(p);
-    } 
-
     return 1;
 }
 
@@ -658,6 +673,7 @@ struct program *parse_program_str(const char *str) {
     struct lexer lexer = new_lexer(str);
     struct parser parser = new_parser(&lexer);
     struct program *program = parse_program(&parser);
+    // TODO: Do something with parser errors?
     return program;
 }
 
@@ -684,17 +700,20 @@ struct program *parse_program(struct parser *parser) {
             next_token(parser);
             continue;
         }
-        
-        program->statements[program->size++] = s;
 
+        if (next_token_is(parser, TOKEN_SEMICOLON)) {
+            next_token(parser);
+        }
+        
         // double program capacity if needed
-        if (program->size >= program->cap) {
+        if (program->size == program->cap) {
             program->cap *= 2;
             program = realloc(program, sizeof (struct program) + (sizeof (struct statement) * program->cap));
             assert(program != NULL);
             program->statements = (struct statement *) (program + 1);
         }
 
+        program->statements[program->size++] = s;
         next_token(parser);        
     }
 
@@ -794,9 +813,21 @@ void expression_to_str(char *str, const struct expression *expr) {
 
         case EXPR_WHILE: 
             strcat(str, "while ");
-            expression_to_str(str, expr->whilst.condition);
+            expression_to_str(str, expr->while_loop.condition);
             strcat(str, " ");
-            block_statement_to_str(str, expr->whilst.body);
+            block_statement_to_str(str, expr->while_loop.body);
+        break;
+
+        case EXPR_FOR: 
+            strcat(str, "for (");
+            statement_to_str(str, &expr->for_loop.init);
+            strcat(str, "; ");
+            expression_to_str(str, expr->for_loop.condition);
+            strcat(str, "; ");
+            statement_to_str(str, &expr->for_loop.inc);
+            strcat(str, ") {");
+            block_statement_to_str(str, expr->for_loop.body);
+            strcat(str, "}");
         break;
 
         case EXPR_FUNCTION:
@@ -942,8 +973,15 @@ void free_expression(struct expression *expr) {
         break;
 
         case EXPR_WHILE: 
-            free_expression(expr->whilst.condition);
-            free_block_statement(expr->whilst.body);
+            free_expression(expr->while_loop.condition);
+            free_block_statement(expr->while_loop.body);
+        break;
+
+        case EXPR_FOR: 
+            free_expression(expr->for_loop.init.value);
+            free_expression(expr->for_loop.condition);
+            free_expression(expr->for_loop.inc.value);
+            free_block_statement(expr->for_loop.body);
         break;
 
         case EXPR_CALL:

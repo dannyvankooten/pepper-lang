@@ -27,6 +27,7 @@ static void test_lexer() {
         "[\"one\", \"two\"];\n"
         "varname; // comment\n"
         "// varname\n"
+        "for"
         // "\"string\\\" with escaped quote\""
     ;
 
@@ -121,6 +122,7 @@ static void test_lexer() {
         {TOKEN_SEMICOLON, ";"},
         {TOKEN_IDENT, "varname"},
         {TOKEN_SEMICOLON, ";"},
+        {TOKEN_FOR, "for"},
         // {TOKEN_STRING, "", "string\" with escaped quote"},
         {TOKEN_EOF, ""},
     };

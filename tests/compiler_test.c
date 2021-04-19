@@ -5,7 +5,7 @@ struct compiler_test_case {
     char *input;
     struct object constants[16];
     uint32_t constants_size;
-    struct instruction *instructions[16];
+    struct instruction *instructions[20];
     uint32_t instructions_size;
 };
 
@@ -294,7 +294,7 @@ static void boolean_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void if_statements() {
+static void if_expressions() {
 
     struct compiler_test_case tests[] = {
         {
@@ -845,7 +845,7 @@ static void builtin_functions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void while_statements() {
+static void while_expressions() {
     struct compiler_test_case tests[] = {
         {
             .input = "while (true) { 10; } 3333;",
@@ -881,6 +881,42 @@ static void while_statements() {
                 make_instruction(OPCODE_POP),  
                 make_instruction(OPCODE_HALT),
             }, 8
+        },
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
+static void for_expressions() {
+    struct compiler_test_case tests[] = {
+        {
+            .input = "for (let i = 0; i < 10; i = i + 1) { 5 }",
+            .constants = {
+                make_integer_object(0),
+                make_integer_object(10),
+                make_integer_object(5),
+                make_integer_object(1),
+            }, 4,
+            .instructions = {
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_CONST, 0), 
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_LESS_THAN),
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 38), 
+                make_instruction(OPCODE_POP), // pops null
+                make_instruction(OPCODE_CONST, 2), // pushes 3
+                make_instruction(OPCODE_GET_GLOBAL, 0),        
+                make_instruction(OPCODE_CONST, 3),          
+                make_instruction(OPCODE_ADD),  
+                make_instruction(OPCODE_SET_GLOBAL, 0), 
+                make_instruction(OPCODE_GET_GLOBAL, 0), 
+                make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_JUMP, 0007),            
+                make_instruction(OPCODE_POP),               
+                make_instruction(OPCODE_HALT),
+            }, 18
         },
     };
 
@@ -995,8 +1031,9 @@ static void var_assignment() {
 int main(int argc, char *argv[]) {    
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
-    TEST(if_statements);
-    TEST(while_statements);
+    TEST(if_expressions);
+    TEST(while_expressions);
+    TEST(for_expressions);
     TEST(global_let_statements);
     TEST(compiler_scopes);
     TEST(functions);

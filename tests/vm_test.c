@@ -620,7 +620,7 @@ static void builtin_int() {
 }
 
 static void var_assignment() {
-     struct
+    struct
     {
         const char *input;
         enum object_type type;
@@ -630,6 +630,30 @@ static void var_assignment() {
             .input = "let a = 1; a = 2; a", 
             .type = OBJ_INT,
             .value = { .integer = 2 },
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
+static void for_loops() {
+    struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {  
+            .input = "for (let i=0; i < 10; i = i + 1) { i }", 
+            .type = OBJ_INT,
+            .value = { .integer = 9 },
+        },
+        {  
+            .input = "for (let i=0; i > 0; i = i + 1) { i }", 
+            .type = OBJ_NULL,
         },
     };
 
@@ -665,4 +689,5 @@ int main(int argc, const char *argv[]) {
     TEST(str_split);
     TEST(builtin_int);
     TEST(var_assignment);
+    TEST(for_loops);
 }
