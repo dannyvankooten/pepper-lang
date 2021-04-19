@@ -29,6 +29,7 @@ enum expression_type {
     EXPR_ARRAY,
     EXPR_INDEX,
     EXPR_WHILE,
+    EXPR_ASSIGN,
 };
 
 enum statement_type {
@@ -119,11 +120,16 @@ struct while_expression {
     struct block_statement *body;
 };
 
+struct assignment_expression {
+    struct identifier ident;
+    struct expression *value;
+};
+
 struct expression {
     enum expression_type type;
     struct token token;
     union {
-        long integer;
+        int64_t integer;
         bool boolean;
         char *string;
         struct identifier ident;
@@ -135,9 +141,9 @@ struct expression {
         struct expression_list array;
         struct index_expression index;
         struct while_expression whilst;
+        struct assignment_expression assign;
     };
 };
-extern struct expression expression;
 
 struct program {
     struct statement *statements;

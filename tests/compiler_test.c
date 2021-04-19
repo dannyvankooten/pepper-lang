@@ -339,7 +339,6 @@ static void if_statements() {
 }
 
 static void global_let_statements() {
-
     struct compiler_test_case tests[] = {
         {
             .input = "let one = 1; let two = 2;",
@@ -970,6 +969,29 @@ static void index_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+static void var_assignment() {
+     struct compiler_test_case tests[] = {
+        {
+            .input = "let a = 1; a = 2;",
+            .constants = {
+                make_integer_object(1),
+                make_integer_object(2),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),     
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_SET_GLOBAL, 0), 
+                make_instruction(OPCODE_GET_GLOBAL, 0),     
+                make_instruction(OPCODE_POP),       
+                make_instruction(OPCODE_HALT),              
+            }, 7
+        },
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main(int argc, char *argv[]) {    
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -985,4 +1007,5 @@ int main(int argc, char *argv[]) {
     TEST(builtin_functions);
     TEST(array_literals);
     TEST(index_expressions);
+    TEST(var_assignment);
 }

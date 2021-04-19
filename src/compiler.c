@@ -456,6 +456,35 @@ compile_expression(struct compiler *c, const struct expression *expr) {
         break;
         }
 
+        case EXPR_ASSIGN: {
+            struct symbol *s = symbol_table_resolve(c->symbol_table, expr->assign.ident.value);
+            if (s == NULL) {
+                return COMPILE_ERR_UNKNOWN_IDENT;
+            }
+
+            err = compile_expression(c, expr->assign.value);
+            if (err) return err;
+
+            switch (s->scope) {
+                case SCOPE_GLOBAL:
+                    compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
+                    compiler_emit(c, OPCODE_GET_GLOBAL, s->index);
+                break;
+
+                case SCOPE_LOCAL:
+                    compiler_emit(c, OPCODE_SET_LOCAL, s->index);
+                    compiler_emit(c, OPCODE_GET_LOCAL, s->index);
+                break;
+                default:
+                    exit(1);
+                    // TODO: emit error, can not redefine built-ins
+                break;
+            }
+
+            
+        }
+        break;
+
         default:
             return COMPILE_ERR_UNKNOWN_EXPR_TYPE;
         break;

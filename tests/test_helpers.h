@@ -9,7 +9,8 @@
 #define assertf(assertion, fmt, ...) _assertf(assertion, fmt, ##__VA_ARGS__)
 #define TEST(testname)                                         \
     if (argc < 2 || strcmp(argv[1], #testname) == 0) {         \
-        printf("%s: %s ... ", __FILE__, #testname);  \
+        printf("%s: %s ... ", __FILE__, #testname);            \
+        fflush(stdout);                                        \
         testname();                                            \
         printf("\x1b[32mok\033[0m\n");  \
     }

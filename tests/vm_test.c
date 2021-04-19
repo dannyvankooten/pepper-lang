@@ -619,6 +619,26 @@ static void builtin_int() {
     }
 }
 
+static void var_assignment() {
+     struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {  
+            .input = "let a = 1; a = 2; a", 
+            .type = OBJ_INT,
+            .value = { .integer = 2 },
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -644,4 +664,5 @@ int main(int argc, const char *argv[]) {
     TEST(file_get_contents);
     TEST(str_split);
     TEST(builtin_int);
+    TEST(var_assignment);
 }

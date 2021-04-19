@@ -28,6 +28,10 @@ get_token_precedence(const struct token t) {
         case TOKEN_ASTERISK: return PRODUCT;
         case TOKEN_LPAREN: return CALL;
         case TOKEN_LBRACKET: return INDEX;
+
+        // TODO: Not sure about this precedence level. 
+        // Confirm whether this is OK.
+        case TOKEN_ASSIGN: return EQUALS;
         default: return LOWEST;
     }
 
@@ -290,6 +294,27 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
     expr->token = p->current_token;
     expr->call.function = left;
     expr->call.arguments = parse_expression_list(p, TOKEN_RPAREN);
+    return expr;
+}
+
+static
+struct expression *parse_assignment_expression(struct parser *p, struct expression *left) {
+    struct expression * expr = malloc(sizeof *expr);
+    if (!expr) {
+        err(EXIT_FAILURE, "OUT OF MEMORY");
+    }
+
+    if (left->type != EXPR_IDENT) {
+        err(EXIT_FAILURE, "invalid assignment left-hand side");
+    }
+
+    expr->type = EXPR_ASSIGN;
+    expr->token = p->current_token;
+    expr->assign.ident = left->ident;
+    int precedence = get_token_precedence(p->current_token);
+    next_token(p);
+    expr->assign.value = parse_expression(p, precedence);
+    free(left);
     return expr;
 }
 
@@ -561,7 +586,7 @@ struct expression *parse_expression(struct parser *p, const int8_t precedence) {
             left = parse_array_literal(p);
         break;
         default: 
-            err(EXIT_FAILURE, "Syntax error: unexpected token '%s' at line %d", p->current_token.literal, p->lexer->cur_lineno);
+            err(EXIT_FAILURE, "Syntax error: unexpected token '%s' at line %d\n", p->current_token.literal, p->lexer->cur_lineno);
             return NULL;
         break;
     }
@@ -570,6 +595,10 @@ struct expression *parse_expression(struct parser *p, const int8_t precedence) {
     while (!next_token_is(p, TOKEN_SEMICOLON) && precedence < get_token_precedence(p->next_token)) {
         enum token_type type = p->next_token.type;
         switch (type) {
+            case TOKEN_ASSIGN:
+                next_token(p);
+                left = parse_assignment_expression(p, left);
+            break;
             case TOKEN_PLUS: 
             case TOKEN_MINUS: 
             case TOKEN_ASTERISK: 
@@ -746,6 +775,12 @@ void expression_to_str(char *str, const struct expression *expr) {
             strcat(str, expr->token.literal);
         break;
 
+        case EXPR_ASSIGN:
+            strcat(str, expr->ident.value);
+            strcat(str, " = ");
+            expression_to_str(str, expr->assign.value);
+        break;
+
         case EXPR_IF:
             strcat(str, "if ");
             expression_to_str(str, expr->ifelse.condition);
@@ -893,6 +928,10 @@ void free_expression(struct expression *expr) {
             free_block_statement(expr->function.body);
         break;
 
+        case EXPR_ASSIGN:
+            free_expression(expr->assign.value);
+        break;
+
         case EXPR_IF:
             free_expression(expr->ifelse.condition);
             free_block_statement(expr->ifelse.consequence);
@@ -929,7 +968,7 @@ void free_expression(struct expression *expr) {
             free_expression(expr->index.left);
             free_expression(expr->index.index);
        break;
-
+    
        case EXPR_INT: 
        case EXPR_IDENT: 
        case EXPR_BOOL: 
