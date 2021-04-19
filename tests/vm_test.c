@@ -539,7 +539,30 @@ static void array_push() {
     }
 }
 
+static void file_get_contents() {
+     struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {  
+            .input = "file_get_contents(\"tests/file.txt\")", 
+            .type = OBJ_STRING,
+            .value = { .string = "hello from file.txt" },
+        },
+        {  
+            .input = "file_get_contents(\"tests/unexisting-file.txt\")", 
+            .type = OBJ_ERROR,
+            .value = { .error = "error opening file" },
+        },
+    };
 
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
 
 int main(int argc, const char *argv[]) {
     TEST(test_integer_arithmetic);
@@ -563,4 +586,5 @@ int main(int argc, const char *argv[]) {
     TEST(array_indexing_out_of_bounds);
     TEST(array_pop);
     TEST(array_push);
+    TEST(file_get_contents);
 }

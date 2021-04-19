@@ -160,6 +160,8 @@ char *read_file(const char *filename) {
 			assert(input != NULL);
 		}
 	}
+	input[size] = '\0';
+
 	fclose(f);
 	return input;
 }

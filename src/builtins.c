@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h> 
@@ -15,6 +16,8 @@ static struct object builtin_puts(const struct object_list* args);
 static struct object builtin_type(const struct object_list* args);
 static struct object builtin_array_pop(struct object_list* args);
 static struct object builtin_array_push(struct object_list* args);
+static struct object builtin_file_get_contents(const struct object_list* args);
+
 
 // here we store the built-in function directly on the pointer by casting it to the wrong value
 // this saves us a level of indirection when calling built-in functions
@@ -27,6 +30,7 @@ const struct {
     { "type", MAKE_BUILTIN(builtin_type) },
     { "array_pop", MAKE_BUILTIN(builtin_array_pop) },
     { "array_push", MAKE_BUILTIN(builtin_array_push) },
+    { "file_get_contents", MAKE_BUILTIN(builtin_file_get_contents) },
 };
 
 inline 
@@ -143,4 +147,41 @@ builtin_array_push(struct object_list *args) {
 
     // return new size of array
     return make_integer_object(arr->size);
+}
+
+static struct object 
+builtin_file_get_contents(const struct object_list *args) {
+    if (args->size != 1) {
+        return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
+    }
+
+    if (args->values[0].type != OBJ_STRING) {
+        return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
+    }
+
+    char *filename = (char *) args->values[0].value.ptr->value;
+    FILE *fd = fopen(filename, "rb");
+    if (!fd) {
+        return make_error_object("error opening file");
+    }
+
+    char* buf = malloc(BUFSIZ);
+    assert(buf != NULL);
+    size_t size = 0;
+    size_t read = 0;
+    while ((read = fread(buf, sizeof(char), BUFSIZ, fd)) > 0) {
+        size += read;
+
+        if (read >= BUFSIZ) {
+            buf = realloc(buf, size + BUFSIZ);
+            assert(buf != NULL);
+        }
+    }
+    buf[size] = '\0';
+   
+    struct object obj = make_string_object(buf, NULL);
+    
+    free(buf);
+    fclose(fd);
+    return obj;
 }
