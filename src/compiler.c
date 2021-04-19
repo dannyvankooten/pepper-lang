@@ -274,6 +274,14 @@ compile_expression(struct compiler *c, const struct expression *expr) {
                     compiler_emit(c, OPCODE_LESS_THAN_OR_EQUALS);
                 break;
 
+                case OP_AND:
+                    compiler_emit(c, OPCODE_AND);
+                break;
+
+                case OP_OR:
+                    compiler_emit(c, OPCODE_OR);
+                break;
+
                 default: 
                     return COMPILE_ERR_UNKNOWN_OPERATOR;
                 break;

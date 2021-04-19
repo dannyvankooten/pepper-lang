@@ -171,6 +171,21 @@ vm_do_binary_string_operation(struct vm* restrict vm, const enum opcode opcode, 
 }
 
 static void 
+vm_do_binary_boolean_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {    
+    switch (opcode) {
+        case OPCODE_AND: 
+            left->value.boolean = left->value.boolean && right->value.boolean;
+        break;
+        case OPCODE_OR: 
+            left->value.boolean = left->value.boolean || right->value.boolean;
+        break;
+        default:
+            err(VM_ERR_INVALID_BOOL_OPERATOR, "Invalid operator for boolean operation.");
+        break;
+    }
+}
+
+static void 
 vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
     const struct object* right = &vm_stack_pop(vm);
     struct object* left = &vm_stack_cur(vm);
@@ -182,6 +197,9 @@ vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
         break;
         case OBJ_STRING: 
             return vm_do_binary_string_operation(vm, opcode, left, right); 
+        break;
+        case OBJ_BOOL:
+            return vm_do_binary_boolean_operation(vm, opcode, left, right);
         break;
         default: 
             err(VM_ERR_INVALID_OP_TYPE, "Invalid type for binary operation.");
@@ -458,6 +476,8 @@ vm_run(struct vm* restrict vm) {
         &&GOTO_OPCODE_GREATER_THAN_OR_EQUALS,
         &&GOTO_OPCODE_LESS_THAN,
         &&GOTO_OPCODE_LESS_THAN_OR_EQUALS,
+        &&GOTO_OPCODE_AND,
+        &&GOTO_OPCODE_OR,
         &&GOTO_OPCODE_MINUS,
         &&GOTO_OPCODE_BANG,
         &&GOTO_OPCODE_JUMP,
@@ -572,6 +592,8 @@ vm_run(struct vm* restrict vm) {
         DISPATCH();
     }
 
+    GOTO_OPCODE_AND:
+    GOTO_OPCODE_OR:
     GOTO_OPCODE_ADD:
     GOTO_OPCODE_SUBTRACT:
     GOTO_OPCODE_MULTIPLY:

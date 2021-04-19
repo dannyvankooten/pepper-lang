@@ -23,6 +23,8 @@ static const struct definition definitions[] = {
     { "OpGreaterThanOrEquals", 0, {0} },
     { "OpLessThan", 0, {0} },
     { "OpLessThanOrEquals", 0, {0} },
+    { "OpAnd", 0, {0} },
+    { "OpOr", 0, {0} },
     { "OpMinus", 0, {0} },
     { "OpBang", 0, {0} },
     { "OpJump", 1, {2} },
