@@ -53,6 +53,7 @@ struct object
 struct object_list {
     struct object* values;
     uint32_t size;
+    uint32_t cap;
 };
 
 
