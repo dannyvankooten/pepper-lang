@@ -25,8 +25,11 @@ enum token_type {
     TOKEN_BANG,
     TOKEN_ASTERISK,
     TOKEN_SLASH,
+    TOKEN_PERCENT,
     TOKEN_LT,
+    TOKEN_LTE,
     TOKEN_GT,
+    TOKEN_GTE,
     TOKEN_EQ,
     TOKEN_NOT_EQ,
     TOKEN_COMMA,
@@ -38,6 +41,8 @@ enum token_type {
     TOKEN_STRING,
     TOKEN_LBRACKET,
     TOKEN_RBRACKET,
+    TOKEN_AND,
+    TOKEN_OR,
 };
 
 struct token {

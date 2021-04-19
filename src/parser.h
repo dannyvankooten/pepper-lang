@@ -7,6 +7,7 @@
 
 enum precedence {
     LOWEST = 1,
+    GROUP,          // and and or
     EQUALS,         // ==
     LESSGREATER,    // < or >
     SUM,            // - and +
@@ -46,10 +47,15 @@ enum operator {
     OP_MULTIPLY,
     OP_DIVIDE,
     OP_GT,
+    OP_GTE,
     OP_LT,
+    OP_LTE,
     OP_EQ,
     OP_NOT_EQ,
     OP_NEGATE,
+    OP_AND,
+    OP_OR,
+    OP_MODULO,
 };
 
 struct prefix_expression {

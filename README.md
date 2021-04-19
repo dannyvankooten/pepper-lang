@@ -26,7 +26,7 @@ for (let i=0; i < 10; i++) {
 
 // While loops
 while (b > a) {
-    let b = b - 5;
+    b = b - 5;
 }
 
 // If statements

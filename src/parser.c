@@ -18,21 +18,48 @@ static
 enum precedence 
 get_token_precedence(const struct token t) {
     switch (t.type) {
-        case TOKEN_EQ: return EQUALS;
-        case TOKEN_NOT_EQ: return EQUALS;
-        case TOKEN_LT: return LESSGREATER;
-        case TOKEN_GT: return LESSGREATER;
-        case TOKEN_PLUS: return SUM;
-        case TOKEN_MINUS: return SUM;
-        case TOKEN_SLASH: return PRODUCT;
-        case TOKEN_ASTERISK: return PRODUCT;
-        case TOKEN_LPAREN: return CALL;
-        case TOKEN_LBRACKET: return INDEX;
+        case TOKEN_AND:
+        case TOKEN_OR:
+            return GROUP;
+        break;
+        case TOKEN_EQ:
+        case TOKEN_NOT_EQ: 
+            return EQUALS;
+        break;
 
-        // TODO: Not sure about this precedence level. 
-        // Confirm whether this is OK.
-        case TOKEN_ASSIGN: return EQUALS;
-        default: return LOWEST;
+        case TOKEN_LTE:
+        case TOKEN_LT:
+        case TOKEN_GT:
+        case TOKEN_GTE:
+            return LESSGREATER;
+        break;
+
+        case TOKEN_PLUS: 
+        case TOKEN_MINUS: 
+            return SUM;
+        break;
+
+        case TOKEN_PERCENT:
+        case TOKEN_SLASH:
+        case TOKEN_ASTERISK: 
+            return PRODUCT;
+        break;
+
+        case TOKEN_LPAREN: 
+            return CALL;
+        break;
+
+        case TOKEN_LBRACKET: 
+            return INDEX;
+        break;
+
+        case TOKEN_ASSIGN: 
+            return EQUALS;
+        break;
+
+        default: 
+            return LOWEST;
+        break;
     }
 
     return LOWEST;
@@ -626,7 +653,12 @@ struct expression *parse_expression(struct parser *p, const int8_t precedence) {
             case TOKEN_EQ: 
             case TOKEN_NOT_EQ: 
             case TOKEN_LT: 
+            case TOKEN_LTE:
             case TOKEN_GT: 
+            case TOKEN_GTE:
+            case TOKEN_AND:
+            case TOKEN_OR:
+            case TOKEN_PERCENT:
                 next_token(p);
                 left = parse_infix_expression(p, left);
             break; 
@@ -900,10 +932,15 @@ enum operator parse_operator(const enum token_type t) {
         case TOKEN_PLUS: return OP_ADD; break;
         case TOKEN_ASTERISK: return OP_MULTIPLY; break;
         case TOKEN_GT: return OP_GT; break;
+        case TOKEN_GTE: return OP_GTE; break;
         case TOKEN_LT: return OP_LT; break;
+        case TOKEN_LTE: return OP_LTE; break;
         case TOKEN_EQ: return OP_EQ; break;
         case TOKEN_NOT_EQ: return OP_NOT_EQ; break;
         case TOKEN_SLASH: return OP_DIVIDE; break;
+        case TOKEN_AND: return OP_AND; break;
+        case TOKEN_OR: return OP_OR; break;
+        case TOKEN_PERCENT: return OP_MODULO; break;
         default: 
         break;
     }
@@ -921,7 +958,12 @@ char *operator_to_str(enum operator operator) {
         case OP_NOT_EQ: return "!="; break;
         case OP_EQ: return "=="; break;
         case OP_LT: return "<"; break;
+        case OP_LTE: return "<="; break;
         case OP_GT: return ">"; break;
+        case OP_GTE: return ">="; break;
+        case OP_AND: return "and"; break;
+        case OP_OR: return "or"; break;
+        case OP_MODULO: return "%"; break;
         case OP_UNKNOWN: break;
     }
 

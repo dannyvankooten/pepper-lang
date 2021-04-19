@@ -27,6 +27,10 @@ void get_ident(struct token *t) {
     t->type = TOKEN_FOR;
   } else if (strcmp(t->literal, "in") == 0) {
     t->type = TOKEN_IN;
+  } else if (strcmp(t->literal, "and") == 0) {
+    t->type = TOKEN_AND;
+  } else if (strcmp(t->literal, "or") == 0) {
+    t->type = TOKEN_OR;
   } else {
     // not a keyword, so assume identifier
     t->type = TOKEN_IDENT;
@@ -35,11 +39,12 @@ void get_ident(struct token *t) {
 
 const char *token_type_to_str(const enum token_type type) {
   static const char *token_names[] = {
-      "ILLEGAL", "EOF", "IDENT",  "INT", "FUNCTION", "LET",   "TRUE",
-      "FALSE",   "IF",  "ELSE",   "FOR", "IN",       "WHILE", "RETURN",
-      "=",       "+",   "-",      "!",   "*",        "/",     "<",
-      ">",       "==",  "!=",     ",",   ";",        "(",     ")",
-      "{",       "}",   "STRING", "[",   "]",
+      "ILLEGAL", "EOF", "IDENT", "INT", "FUNCTION", "LET",    "TRUE",
+      "FALSE",   "IF",  "ELSE",  "FOR", "IN",       "WHILE",  "RETURN",
+      "=",       "+",   "-",     "!",   "*",        "/",      "%",
+      "<",       "<=",  ">",     ">=",  "==",       "!=",     ",",
+      ";",       "(",   ")",     "{",   "}",        "STRING", "[",
+      "]",       "AND", "OR",
   };
   return token_names[type];
 }
@@ -150,15 +155,27 @@ int gettoken(struct lexer *l, struct token *t) {
     break;
 
   case '<':
-    t->type = TOKEN_LT;
-    t->literal[0] = ch;
-    t->literal[1] = '\0';
+    ch_next = l->input[l->pos];
+    if (ch_next == '=') {
+      l->pos++;
+      t->type = TOKEN_LTE;
+      strcpy(t->literal, "<=");
+    } else {
+      t->type = TOKEN_LT;
+      strcpy(t->literal, "<");
+    }
     break;
 
   case '>':
-    t->type = TOKEN_GT;
-    t->literal[0] = ch;
-    t->literal[1] = '\0';
+    ch_next = l->input[l->pos];
+    if (ch_next == '=') {
+      l->pos++;
+      t->type = TOKEN_GTE;
+      strcpy(t->literal, ">=");
+    } else {
+      t->type = TOKEN_GT;
+      strcpy(t->literal, ">");
+    }
     break;
 
   case '{':
@@ -181,6 +198,12 @@ int gettoken(struct lexer *l, struct token *t) {
 
   case ']':
     t->type = TOKEN_RBRACKET;
+    t->literal[0] = ch;
+    t->literal[1] = '\0';
+    break;
+
+  case '%':
+    t->type = TOKEN_PERCENT;
     t->literal[0] = ch;
     t->literal[1] = '\0';
     break;

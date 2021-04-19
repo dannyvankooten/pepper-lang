@@ -368,6 +368,14 @@ static void operator_precedence_parsing() {
         "add(a * b[2], b[1], 2 * [1, 2][1])",
         "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
         },
+        {
+        "a >= 5 and b % 5 == 0",
+        "((a >= 5) and ((b % 5) == 0))",
+        },
+        {
+        "a >= 5 or b % 5 == 0 and true == true",
+        "(((a >= 5) or ((b % 5) == 0)) and (true == true))",
+        },
     };
 
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {

@@ -246,6 +246,14 @@ compile_expression(struct compiler *c, const struct expression *expr) {
                     compiler_emit(c, OPCODE_DIVIDE);
                 break;
 
+                case OP_MODULO: 
+                    compiler_emit(c, OPCODE_MODULO);
+                break;
+
+                case OP_GTE:
+                    compiler_emit(c, OPCODE_GREATER_THAN_OR_EQUALS);
+                break;
+
                 case OP_GT:
                     compiler_emit(c, OPCODE_GREATER_THAN);
                 break;
@@ -260,6 +268,10 @@ compile_expression(struct compiler *c, const struct expression *expr) {
 
                 case OP_LT:
                     compiler_emit(c, OPCODE_LESS_THAN);
+                break;
+
+                case OP_LTE:
+                    compiler_emit(c, OPCODE_LESS_THAN_OR_EQUALS);
                 break;
 
                 default: 

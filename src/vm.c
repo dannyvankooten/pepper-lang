@@ -149,6 +149,9 @@ vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode o
         case OPCODE_DIVIDE: 
             left->value.integer /= right->value.integer;
         break;
+        case OPCODE_MODULO:
+            left->value.integer %= right->value.integer;
+        break;
         default:
             err(VM_ERR_INVALID_INT_OPERATOR, "Invalid operator for integer operation.");
         break;
@@ -201,8 +204,16 @@ vm_do_integer_comparison(const struct vm* restrict vm, const enum opcode opcode,
             left->value.boolean = left->value.integer > right->value.integer;
             break;
 
+        case OPCODE_GREATER_THAN_OR_EQUALS: 
+            left->value.boolean = left->value.integer >= right->value.integer;
+            break;
+
         case OPCODE_LESS_THAN:
             left->value.boolean = left->value.integer < right->value.integer;
+            break;
+
+        case OPCODE_LESS_THAN_OR_EQUALS:
+            left->value.boolean = left->value.integer <= right->value.integer;
             break;
 
         default: 
@@ -438,12 +449,15 @@ vm_run(struct vm* restrict vm) {
         &&GOTO_OPCODE_SUBTRACT,
         &&GOTO_OPCODE_MULTIPLY,
         &&GOTO_OPCODE_DIVIDE,
+        &&GOTO_OPCODE_MODULO,
         &&GOTO_OPCODE_TRUE,
         &&GOTO_OPCODE_FALSE,
         &&GOTO_OPCODE_EQUAL,
         &&GOTO_OPCODE_NOT_EQUAL,
         &&GOTO_OPCODE_GREATER_THAN,
+        &&GOTO_OPCODE_GREATER_THAN_OR_EQUALS,
         &&GOTO_OPCODE_LESS_THAN,
+        &&GOTO_OPCODE_LESS_THAN_OR_EQUALS,
         &&GOTO_OPCODE_MINUS,
         &&GOTO_OPCODE_BANG,
         &&GOTO_OPCODE_JUMP,
@@ -561,7 +575,8 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_ADD:
     GOTO_OPCODE_SUBTRACT:
     GOTO_OPCODE_MULTIPLY:
-    GOTO_OPCODE_DIVIDE: {
+    GOTO_OPCODE_DIVIDE:
+    GOTO_OPCODE_MODULO: {
         vm_do_binary_operation(vm, *frame->ip++);
         DISPATCH();
     }
@@ -581,7 +596,9 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_EQUAL:
     GOTO_OPCODE_NOT_EQUAL: 
     GOTO_OPCODE_GREATER_THAN: 
-    GOTO_OPCODE_LESS_THAN: {
+    GOTO_OPCODE_GREATER_THAN_OR_EQUALS:
+    GOTO_OPCODE_LESS_THAN: 
+    GOTO_OPCODE_LESS_THAN_OR_EQUALS: {
         vm_do_comparision(vm, *frame->ip++);
         DISPATCH();
     }

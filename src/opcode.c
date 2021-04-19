@@ -8,90 +8,37 @@
 #include "opcode.h"
 
 static const struct definition definitions[] = {
-    {
-        "OpConstant", 1, {2}
-    },
-    {
-        "OpPop", 0, {0}
-    },
-    {
-        "OpAdd", 0, {0}
-    },
-    {
-        "OpSubtract", 0, {0}
-    },
-    {
-        "OpMultiply", 0, {0}
-    },
-    {
-        "OpDivide", 0, {0}
-    },
-    {
-        "OpTrue", 0, {0}
-    },
-    {
-        "OpFalse", 0, {0}
-    },
-    {
-        "OpEqual", 0, {0}
-    },
-    {
-        "OpNotEqual", 0, {0}
-    },
-    {
-        "OpGreaterThan", 0, {0}
-    },
-    {
-        "OpLessThan", 0, {0}
-    },
-    {
-        "OpMinus", 0, {0}
-    },
-    {
-        "OpBang", 0, {0}
-    },
-    {
-        "OpJump", 1, {2}
-    },
-    {
-        "OpJumpNotTrue", 1, {2}
-    },
-    {
-        "OpNull", 0, {0}
-    },
-    {
-        "OpGetGlobal", 1, {2}
-    },
-    {
-        "OpSetGlobal", 1, {2}
-    },
-    {
-        "OpCall", 1, {1},
-    },
-    {
-        "OpReturnValue", 0, {0}
-    },
-    {
-        "OpReturn", 0, {0}
-    },
-    {
-        "OpGetLocal", 1, {1}
-    },
-    {
-        "OpSetLocal", 1, {1}
-    },
-    {
-        "OpGetBuiltin", 1, {1},
-    },
-    {
-        "OpArray", 1, {2},
-    },
-    {
-        "OpIndex", 0, {0},
-    },
-    {
-        "OpHalt", 0, {0},
-    },
+    { "OpConstant", 1, {2} },
+    { "OpPop", 0, {0} },
+    { "OpAdd", 0, {0} },
+    { "OpSubtract", 0, {0} },
+    { "OpMultiply", 0, {0} },
+    { "OpDivide", 0, {0} },
+    { "OpModulo", 0, {0} },
+    { "OpTrue", 0, {0} },
+    { "OpFalse", 0, {0} },
+    { "OpEqual", 0, {0} },
+    { "OpNotEqual", 0, {0} },
+    { "OpGreaterThan", 0, {0} },
+    { "OpGreaterThanOrEquals", 0, {0} },
+    { "OpLessThan", 0, {0} },
+    { "OpLessThanOrEquals", 0, {0} },
+    { "OpMinus", 0, {0} },
+    { "OpBang", 0, {0} },
+    { "OpJump", 1, {2} },
+    { "OpJumpNotTrue", 1, {2} },
+    { "OpNull", 0, {0} },
+    { "OpGetGlobal", 1, {2} },
+    { "OpSetGlobal", 1, {2} },
+    { "OpCall", 1, {1}, },
+    { "OpReturnValue", 0, {0} },
+    { "OpReturn", 0, {0} },
+    { "OpGetLocal", 1, {1} },
+    { "OpSetLocal", 1, {1} },
+    { "OpGetBuiltin", 1, {1}, },
+    { "OpArray", 1, {2}, },
+    { "OpIndex", 0, {0}, },
+    { "OpHalt", 0, {0}, },
 };
 
 inline const 
