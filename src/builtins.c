@@ -61,11 +61,20 @@ builtin_len(const struct object_list* args) {
     }
 
     struct object arg = args->values[0];
-    if (arg.type != OBJ_STRING) {
-        return make_error_object("argument to len() not supported: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(arg.type));
+    switch (arg.type) {
+        case OBJ_STRING:
+            return make_integer_object(strlen(arg.value.ptr->value));
+        break;
+
+        case OBJ_ARRAY:
+            return make_integer_object(((struct object_list*) (arg.value.ptr->value))->size);
+        break;
+
+        default:
+            return make_error_object("argument to len() not supported: got %s", object_type_to_str(arg.type));
+        break;
     }
 
-    return make_integer_object(strlen(arg.value.ptr->value));
 }
 
 static struct object 

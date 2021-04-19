@@ -350,7 +350,7 @@ static void test_builtin_functions() {
         {"let l = len(\"a\"); puts(\"Length: \", l);", OBJ_NULL},
         {"puts(\"\", len(\"hello world\"));", OBJ_NULL},
         {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
-        {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: expected STRING, got INTEGER"}},
+        {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: got INTEGER"}},
         {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
         {"type(\"one\")", OBJ_STRING, {.error = "STRING"}},
         {"type(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
@@ -531,7 +531,6 @@ static void array_push() {
             .type = OBJ_INT,
             .value = { .integer = 2 },
         },
-       
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
