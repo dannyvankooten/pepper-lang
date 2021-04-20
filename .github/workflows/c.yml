@@ -14,7 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install libedit-dev
-      run: sudo apt-get install -y libedit-dev valgrind time
+      run: sudo apt-get install -y valgrind time
+    - name: Build
+      run: make
     - name: Run tests
       run: make check
     - name: Run Valgrind (on tests)
@@ -24,5 +26,4 @@ jobs:
     - name: Run fib35 benchmark
       run: |
         echo "Time: "
-        make
         /usr/bin/time bin/monkey examples/fib35-recursive.monkey | tail -n1
