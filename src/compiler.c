@@ -188,6 +188,11 @@ compile_block_statement(struct compiler *compiler, const struct block_statement 
 
 static int
 compile_statement(struct compiler *c, const struct statement *stmt) {
+    // empty expressions, eg in for loops
+    if (stmt->value == NULL) {
+        return 0;
+    }
+
     int err;
     switch (stmt->type) {
         case STMT_EXPR: {
@@ -461,6 +466,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
 
          case EXPR_FOR: {
             compiler_emit(c, OPCODE_NULL);
+
 
             err = compile_statement(c, &expr->for_loop.init);
             if (err) return err;

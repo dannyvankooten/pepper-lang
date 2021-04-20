@@ -163,17 +163,21 @@ static void if_statements() {
 static void while_statements() {
     struct {
         const char *input;
+        enum object_type type;
+        union values value;
         int expected;
     } tests[] = {
-        {"while (false) { 10 }; 5", 5},
-        {"let a = 2; while (1 > 3) { let a = a + 1; }; a;", 2},
-        {"let a = 0; while (a < 3) { let a = a + 1; }; a;", 3},
-        {"let a = 1; while (a < 3) { let a = a + 1; a; };", 3},
+        {"while (false) { 10 }; 5", OBJ_INT, { .integer = 5 }},
+        {"let a = 2; while (1 > 3) { let a = a + 1; }; a;",  OBJ_INT, { .integer = 2 }},
+        {"let a = 0; while (a < 3) { let a = a + 1; }; a;",  OBJ_INT, { .integer = 3 }},
+        {"let a = 1; while (a < 3) { let a = a + 1; a; };",  OBJ_INT, { .integer = 3 }},
+        {"while (false) { 10 };", OBJ_NULL},
+        {"let a = 0; while (a < 3) { a = a + 1; };",  OBJ_INT, { .integer = 3 }},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, tests[t].type, tests[t].value);
      }
 }
 
@@ -192,7 +196,6 @@ static void nulls() {
 }
 
 static void global_let_statements() {
-
     struct {
         const char *input;
         int expected;
@@ -644,6 +647,11 @@ static void var_assignment() {
             .type = OBJ_INT,
             .value = { .integer = 2 },
         },
+        {  
+            .input = "let a = 1; a = 2;", 
+            .type = OBJ_INT,
+            .value = { .integer = 2 },
+        },
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
@@ -667,6 +675,27 @@ static void for_loops() {
         {  
             .input = "for (let i=0; i > 0; i = i + 1) { i }", 
             .type = OBJ_NULL,
+        },
+        {  
+            .input = "for (let i=0; i > 0;) { i = i + 1 }", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "for (let i=0; i > 0;) { i = i + 1 }", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "let i = 0; for (; i > 0; i = i + 1) { i }", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "let i = 0; for (; i > 0;) { i }", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "let i = 0; for (; i <= 0;) { i = i + 1 }", 
+            .type = OBJ_INT,
+            .value = { .integer = 1},
         },
     };
 

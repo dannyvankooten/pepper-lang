@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "object.h"
 #include "parser.h"
 #include "lexer.h"
 #include "util.h"
@@ -91,6 +92,7 @@ static
 int next_token_is(struct parser *p, const enum token_type t) {
     return t == p->next_token.type;
 }
+
 
 static
 int expect_next_token(struct parser *p, const enum token_type t) {
@@ -432,20 +434,30 @@ struct expression *parse_for_expression(struct parser *p) {
         free(expr);
         return NULL;
     }
-
     next_token(p); // skip LPAREN
 
-    parse_statement(p, &expr->for_loop.init);
-    assert(expect_next_token(p, TOKEN_SEMICOLON));
+    if (!current_token_is(p, TOKEN_SEMICOLON)) {
+        parse_statement(p, &expr->for_loop.init);
+        assert(expect_next_token(p, TOKEN_SEMICOLON));
+    } else {
+        expr->for_loop.init.value = NULL;
+    }
     next_token(p); // skip SEMICOLON
 
-    expr->for_loop.condition = parse_expression(p, LOWEST);
-    assert(expect_next_token(p, TOKEN_SEMICOLON));
+    // if (!current_token_is(p, TOKEN_SEMICOLON)) {
+        expr->for_loop.condition = parse_expression(p, LOWEST);
+        assert(expect_next_token(p, TOKEN_SEMICOLON));
+    // }
     next_token(p); // skip SEMICOLON
     
-    parse_statement(p, &expr->for_loop.inc);
+    if (!current_token_is(p, TOKEN_RPAREN)) {
+        parse_statement(p, &expr->for_loop.inc);
+        expect_next_token(p, TOKEN_RPAREN);
+    } else {
+        expr->for_loop.inc.value = NULL;
+    }
 
-    if (!expect_next_token(p, TOKEN_RPAREN) || !expect_next_token(p, TOKEN_LBRACE)) {
+    if (!expect_next_token(p, TOKEN_LBRACE)) {
         return NULL;
     }
 
@@ -1020,7 +1032,7 @@ void free_expression(struct expression *expr) {
         break;
 
         case EXPR_FOR: 
-            free_expression(expr->for_loop.init.value);
+            free_expression(expr->for_loop.init.value);            
             free_expression(expr->for_loop.condition);
             free_expression(expr->for_loop.inc.value);
             free_block_statement(expr->for_loop.body);

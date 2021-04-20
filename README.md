@@ -15,12 +15,11 @@ Since I like uselessly optimizing for performance, it runs [quite fast](#Benchma
 let a = 5;
 let b = 25;
 
-// Redeclare existing variables
+// Reassign (previously declared) variables
 a = a * 5;
-b == a; // True
 
 // For loops
-for (let i=0; i < 10; i++) {
+for (let i = 0; i < 10; i = i + 1) {
     // i = 0 .. 9
 }
 
@@ -30,13 +29,15 @@ while (b > a) {
 }
 
 // If statements
-if (b == a) {
+if (b == a || a == b) {
     puts("b equals a!");
 }
 
 // Strings
 let c = "Hello world";
-str_split(c, " "); // Array: [ "Hello", "world" ]
+str_split(c, " "); 
+type(c); // "ARRAY"
+len(c); // 2 
 
 // Arrays
 let d = [5, true, "Monkey"];
