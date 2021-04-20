@@ -501,7 +501,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             if (err) return err;
 
             uint32_t before_pos = c->scopes[c->scope_index].instructions->size;
-            uint32_t jump_if_not_true_pos;
+            uint32_t jump_if_not_true_pos = 0;
 
             if (expr->for_loop.condition != NULL) {
                 err = compile_expression(c, expr->for_loop.condition);
