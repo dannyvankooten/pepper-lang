@@ -795,6 +795,27 @@ static void for_loops_continue_statement() {
     }
 }
 
+
+static void arrays_2d() {
+    struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {  
+            .input = "[[10, 11, 12], [20, 21,22 ]][0][0];", 
+            .type = OBJ_INT,
+            .value = { .integer = 10 },
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -824,4 +845,5 @@ int main(int argc, const char *argv[]) {
     TEST(for_loops);
     TEST(for_loops_break_statement);
     TEST(for_loops_continue_statement);
+    TEST(arrays_2d);
 }
