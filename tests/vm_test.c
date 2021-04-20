@@ -20,13 +20,13 @@ static void test_object(struct object obj, enum object_type expected_type, union
             assertf(obj.value.boolean == expected_value.boolean, "invalid boolean value: expected %d, got %d", expected_value.boolean, obj.value.boolean);
         break;
         case OBJ_NULL: 
-            // nothing to do as null objects have no further contents
+            // nothing to do as null objects have no further contents and type has already been checked
         break;
         case OBJ_STRING: 
             assertf(strcmp(expected_value.string, obj.value.ptr->value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected_value.string, obj.value.ptr->value);
         break;
         case OBJ_ERROR:
-            assertf(strcmp(obj.value.ptr->value, expected_value.error) == 0, "invalid error value: expected \"%s\", got \"%s\"", expected_value.error, obj.value.ptr->value);
+            assertf(strncmp(obj.value.ptr->value, expected_value.error, strlen(expected_value.error)) == 0, "invalid error value: expected \"%s\", got \"%s\"", expected_value.error, obj.value.ptr->value);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj.type));
@@ -465,6 +465,11 @@ static void array_indexing() {
             .type = OBJ_STRING,
             .value = { .string = "foobar" }
         },
+        {
+            .input = "let a = [1, true, \"foobar\"]; a[2]", 
+            .type = OBJ_STRING,
+            .value = { .string = "foobar" }
+        },
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
@@ -486,6 +491,10 @@ static void array_indexing_out_of_bounds() {
         },
         {   
             .input = "[0][-1]", 
+            .type = OBJ_NULL,
+        },
+        {   
+            .input = "let a = []; a[1];", 
             .type = OBJ_NULL,
         },
     };
@@ -656,6 +665,21 @@ static void var_assignment() {
             .input = "let a = 1; a = 2;", 
             .type = OBJ_INT,
             .value = { .integer = 2 },
+        },
+        {  
+            .input = "let arr = [ 1 ]; arr[0] = 2; arr[0]", 
+            .type = OBJ_INT,
+            .value = { .integer = 2 },
+        },
+        {  
+            .input = "let arr = [ 1 ]; arr[0] = 2;", 
+            .type = OBJ_INT,
+            .value = { .integer = 2 },
+        },
+        {  
+            .input = "[5][0] = 1", 
+            .type = OBJ_INT,
+            .value = { .integer = 1 },
         },
     };
 

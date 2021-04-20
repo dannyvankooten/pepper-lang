@@ -492,7 +492,8 @@ vm_run(struct vm* restrict vm) {
         &&GOTO_OPCODE_SET_LOCAL,
         &&GOTO_OPCODE_GET_BUILTIN,
         &&GOTO_OPCODE_ARRAY,
-        &&GOTO_OPCODE_INDEX,
+        &&GOTO_OPCODE_INDEX_GET,
+        &&GOTO_OPCODE_INDEX_SET,
         &&GOTO_OPCODE_HALT,
     };
     struct frame *frame = &vm_current_frame(vm);
@@ -663,7 +664,7 @@ vm_run(struct vm* restrict vm) {
         DISPATCH();
     }
 
-     GOTO_OPCODE_INDEX: {
+    GOTO_OPCODE_INDEX_GET: {
         struct object index = vm_stack_pop(vm);
         struct object array = vm_stack_pop(vm);
         assert(index.type == OBJ_INT);
@@ -673,6 +674,26 @@ vm_run(struct vm* restrict vm) {
             vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
         } else {
             struct object value = list->values[index.value.integer];
+            vm_stack_push(vm, value);
+        }
+        
+        frame->ip++;
+        DISPATCH();
+    }
+
+    GOTO_OPCODE_INDEX_SET: {
+        struct object value = vm_stack_pop(vm);
+        struct object index = vm_stack_pop(vm);
+        struct object array = vm_stack_pop(vm);
+        assert(index.type == OBJ_INT);
+        assert(array.type == OBJ_ARRAY);
+        struct object_list* list = (struct object_list*) array.value.ptr->value;
+        if (index.value.integer < 0 || index.value.integer >= list->size) {
+            // TODO: Determine what we want to do when we assign out of bounds
+        } else {
+            list->values[index.value.integer] = copy_object(&value);
+
+            // Push value on stack ???
             vm_stack_push(vm, value);
         }
         

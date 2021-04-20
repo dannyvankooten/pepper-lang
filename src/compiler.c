@@ -553,36 +553,44 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             if (err) return err;
             err = compile_expression(c, expr->index.index);
             if (err) return err;
-            compiler_emit(c, OPCODE_INDEX);
+            compiler_emit(c, OPCODE_INDEX_GET);
         break;
         }
 
         case EXPR_ASSIGN: {
-            struct symbol *s = symbol_table_resolve(c->symbol_table, expr->assign.ident.value);
-            if (s == NULL) {
-                return COMPILE_ERR_UNKNOWN_IDENT;
-            }
+            if (expr->assign.left->type == EXPR_IDENT) {
+                struct symbol *s = symbol_table_resolve(c->symbol_table, expr->assign.left->ident.value);
+                if (s == NULL) {
+                    return COMPILE_ERR_UNKNOWN_IDENT;
+                }
 
-            err = compile_expression(c, expr->assign.value);
-            if (err) return err;
+                err = compile_expression(c, expr->assign.value);
+                if (err) return err;
 
-            switch (s->scope) {
-                case SCOPE_GLOBAL:
-                    compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
-                    compiler_emit(c, OPCODE_GET_GLOBAL, s->index);
-                break;
+                switch (s->scope) {
+                    case SCOPE_GLOBAL:
+                        compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
+                        compiler_emit(c, OPCODE_GET_GLOBAL, s->index);
+                    break;
 
-                case SCOPE_LOCAL:
-                    compiler_emit(c, OPCODE_SET_LOCAL, s->index);
-                    compiler_emit(c, OPCODE_GET_LOCAL, s->index);
-                break;
-                default:
-                    exit(1);
-                    // TODO: emit error, can not redefine built-ins
-                break;
-            }
-
-            
+                    case SCOPE_LOCAL:
+                        compiler_emit(c, OPCODE_SET_LOCAL, s->index);
+                        compiler_emit(c, OPCODE_GET_LOCAL, s->index);
+                    break;
+                    default:
+                        exit(1);
+                        // TODO: emit error, can not redefine built-ins
+                    break;
+                }
+            } else {
+                err = compile_expression(c, expr->assign.left->index.left);
+                if (err) return err;
+                err = compile_expression(c, expr->assign.left->index.index);
+                if (err) return err;
+                err = compile_expression(c, expr->assign.value);
+                if (err) return err;
+                compiler_emit(c, OPCODE_INDEX_SET);    
+            }            
         }
         break;
 

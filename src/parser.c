@@ -324,17 +324,16 @@ struct expression *parse_assignment_expression(struct parser *p, struct expressi
         err(EXIT_FAILURE, "OUT OF MEMORY");
     }
 
-    if (left->type != EXPR_IDENT) {
+    if (left->type != EXPR_IDENT && left->type != EXPR_INDEX) {
         err(EXIT_FAILURE, "invalid assignment left-hand side");
     }
 
     expr->type = EXPR_ASSIGN;
     expr->token = p->current_token;
-    expr->assign.ident = left->ident;
+    expr->assign.left = left;
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
     expr->assign.value = parse_expression(p, precedence);
-    free(left);
     return expr;
 }
 

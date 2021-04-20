@@ -139,7 +139,7 @@ struct for_expression {
 };
 
 struct assignment_expression {
-    struct identifier ident;
+    struct expression *left;
     struct expression *value;
 };
 

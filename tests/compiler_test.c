@@ -1072,7 +1072,7 @@ static void array_literals() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void index_expressions() {
+static void index_get() {
     struct compiler_test_case tests[] = {
         {
             .input = "[1, 2][1]",
@@ -1086,12 +1086,11 @@ static void index_expressions() {
                 make_instruction(OPCODE_CONST, 1),     
                 make_instruction(OPCODE_ARRAY, 2),  
                 make_instruction(OPCODE_CONST, 2),   
-                make_instruction(OPCODE_INDEX),         
+                make_instruction(OPCODE_INDEX_GET),         
                 make_instruction(OPCODE_POP),       
                 make_instruction(OPCODE_HALT),              
             }, 7
         },
-        
     };
 
     run_compiler_tests(tests, ARRAY_SIZE(tests));
@@ -1120,6 +1119,32 @@ static void var_assignment() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+static void index_set() {
+     struct compiler_test_case tests[] = {
+        {
+            .input = "let arr = [1]; arr[0] = 2;",
+            .constants = {
+                make_integer_object(1),
+                make_integer_object(0),
+                make_integer_object(2),
+            }, 3,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),     
+                make_instruction(OPCODE_ARRAY, 1), 
+                make_instruction(OPCODE_SET_GLOBAL, 0), 
+                make_instruction(OPCODE_GET_GLOBAL, 0),  
+                make_instruction(OPCODE_CONST, 1), 
+                make_instruction(OPCODE_CONST, 2), 
+                make_instruction(OPCODE_INDEX_SET),         
+                make_instruction(OPCODE_POP),       
+                make_instruction(OPCODE_HALT),              
+            }, 9
+        },
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main(int argc, char *argv[]) {    
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -1135,6 +1160,7 @@ int main(int argc, char *argv[]) {
     TEST(recursive_functions);
     TEST(builtin_functions);
     TEST(array_literals);
-    TEST(index_expressions);
+    TEST(index_get);
     TEST(var_assignment);
+    TEST(index_set);
 }

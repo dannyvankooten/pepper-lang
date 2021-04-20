@@ -183,7 +183,7 @@ builtin_file_get_contents(const struct object_list *args) {
     char *filename = (char *) args->values[0].value.ptr->value;
     FILE *fd = fopen(filename, "rb");
     if (!fd) {
-        return make_error_object("error opening file");
+        return make_error_object("error opening file \"%s\"", filename);
     }
 
     char* buf = malloc(BUFSIZ);

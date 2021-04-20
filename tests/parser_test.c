@@ -629,7 +629,7 @@ static void assignment_expressions() {
     struct expression* expr = program->statements[1].value;
     
     assertf(expr->type == EXPR_ASSIGN, "invalid expression type: expected %d, got %d\n", EXPR_ASSIGN, expr->type);
-    assertf(strcmp(expr->ident.value, "a") == 0, "invalid expression ident");
+    assertf(strcmp(expr->assign.left->ident.value, "a") == 0, "invalid expression ident");
     test_expression(expr->assign.value, (union expression_value) { .int_value = 10 });
     free_program(program);
 }

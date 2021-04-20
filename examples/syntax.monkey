@@ -17,7 +17,7 @@ while (b > a) {
 }
 
 // If statements
-if (b == a) {
+if (b == a && a > 0) {
     puts("b equals a!");
 }
 
