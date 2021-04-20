@@ -19,8 +19,10 @@ jobs:
       run: make check
     - name: Run Valgrind (on tests)
       run: make memcheck
+    - name: Run examples
+      run: ./tests/run_examples.sh  
     - name: Run fib35 benchmark
       run: |
         echo "Time: "
         make
-        /usr/bin/time bin/monkey examples/fib35.monkey | tail -n1
+        /usr/bin/time bin/monkey examples/fib35-recursive.monkey | tail -n1

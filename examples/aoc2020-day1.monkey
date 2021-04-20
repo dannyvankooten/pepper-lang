@@ -1,7 +1,7 @@
 // https://adventofcode.com/2020/day/1
 
 // Read puzzle input from file
-let input = file_get_contents("01.input");
+let input = file_get_contents("examples/aoc2020-day1.input");
 input = str_split(input, "\n");
 
 // Solve part 1 and 2 simultaneously 
