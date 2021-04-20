@@ -108,4 +108,4 @@ For fun, I ran the same algorithm expressed in some other interpreted languages 
 
 ### License
 
-GPLv3 
+MIT licensed. 
