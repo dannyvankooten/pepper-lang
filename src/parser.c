@@ -20,9 +20,11 @@ enum precedence
 get_token_precedence(const struct token t) {
     switch (t.type) {
         case TOKEN_AND:
+            return LOGICAL_AND;
+            break;
         case TOKEN_OR:
-            return GROUP;
-        break;
+            return LOGICAL_OR;
+            break;
         case TOKEN_EQ:
         case TOKEN_NOT_EQ: 
             return EQUALS;
@@ -55,7 +57,7 @@ get_token_precedence(const struct token t) {
         break;
 
         case TOKEN_ASSIGN: 
-            return EQUALS;
+            return ASSIGN;
         break;
 
         default: 

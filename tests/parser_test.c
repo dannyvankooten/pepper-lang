@@ -374,7 +374,7 @@ static void operator_precedence_parsing() {
         },
         {
         "a >= 5 || b % 5 == 0 && true == true",
-        "(((a >= 5) || ((b % 5) == 0)) && (true == true))",
+        "((a >= 5) || (((b % 5) == 0) && (true == true)))",
         },
     };
 

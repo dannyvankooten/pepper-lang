@@ -79,6 +79,7 @@ static void integer_arithmetic() {
         {"1 % 5", 1},
         {"6 % 5", 1},
         {"5 + 1 % 5", 6},
+        {"-10 + -50", -60},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -151,6 +152,7 @@ static void if_statements() {
         {"if (1 <= 0) { 1 } else { 2 }", 2},
         {"if (1 < 1 || true) { 1 } else { 2 }", 1},
         {"if (1 < 1 && false) { 1 } else { 2 }", 2},
+        {"if (1 > 0 && false || true) { 1 } else { 2 }", 1},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {

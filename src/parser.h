@@ -7,7 +7,9 @@
 
 enum precedence {
     LOWEST = 1,
-    GROUP,          // && and ||
+    ASSIGN,
+    LOGICAL_OR,   
+    LOGICAL_AND,
     EQUALS,         // ==
     LESSGREATER,    // < or >
     SUM,            // - and +

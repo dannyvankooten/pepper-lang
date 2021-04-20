@@ -64,11 +64,11 @@ struct instruction *make_instruction_va(const enum opcode opcode, va_list operan
     ins->size = 1;
     ins->cap = (def.operands + 1);      
 
-     // write operands to remaining bytes
+    // write operands to remaining bytes
     for (uint8_t op_idx = 0; op_idx < def.operands; op_idx++) {
         int64_t operand = va_arg(operands, int);
         for (int8_t byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
-            ins->bytes[ins->size++] = (uint8_t) (operand >> (byte_idx * 8) & 0xff);
+            ins->bytes[ins->size++] = (uint8_t) (operand >> (byte_idx * 8));
         }
     }
 
