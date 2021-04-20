@@ -241,7 +241,7 @@ int gettoken(struct lexer *l, struct token *t) {
   default: {
     if (is_letter(ch)) {
       int32_t i = 0;
-      while (is_letter(ch) && i < MAX_IDENT_LENGTH - 1) {
+      while ((is_letter(ch) || isdigit(ch)) && i < MAX_IDENT_LENGTH - 1) {
         t->literal[i++] = ch;
         ch = l->input[l->pos++];
       }
