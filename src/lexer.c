@@ -6,7 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 
-void get_ident(struct token *t) {
+static void get_ident(struct token *t) {
   if (strcmp(t->literal, "let") == 0) {
     t->type = TOKEN_LET;
   } else if (strcmp(t->literal, "fn") == 0) {

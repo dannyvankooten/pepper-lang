@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <bits/stdint-intn.h>
+#include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,11 +69,6 @@ get_token_precedence(const struct token t) {
     return LOWEST;
 }
 
-void next_token(struct parser * p) {
-    p->current_token = p->next_token;
-    gettoken(p->lexer, &p->next_token);
-}
-
 struct parser new_parser(struct lexer *l) {
     struct parser p = {
         .lexer = l,
@@ -85,6 +81,12 @@ struct parser new_parser(struct lexer *l) {
     return p;
 }
 
+static void
+next_token(struct parser * p) {
+    p->current_token = p->next_token;
+    gettoken(p->lexer, &p->next_token);
+}
+
 static
 int current_token_is(struct parser *p, const enum token_type t) {
     return t == p->current_token.type;
@@ -95,26 +97,34 @@ int next_token_is(struct parser *p, const enum token_type t) {
     return t == p->next_token.type;
 }
 
-
 static
-int expect_next_token(struct parser *p, const enum token_type t) {
+int advance_to_next_token(struct parser *p, const enum token_type t) {
     if (next_token_is(p, t)) {
         next_token(p);
         return 1;
     }
 
-    sprintf(p->error_messages[p->errors++], "expected next token to be %s, got %s instead", token_type_to_str(t), token_type_to_str(p->next_token.type));
-    return 0;
+    err(EXIT_FAILURE, "Parsing error: expected next token to be %s, got %s instead", token_type_to_str(t), token_type_to_str(p->next_token.type));
+    return 1;
+}
+
+static 
+struct expression *make_expression(enum expression_type type, struct token tok) {
+    struct expression *expr = malloc(sizeof *expr);
+    if (!expr) {
+        err(EXIT_FAILURE, "OUT OF MEMORY");
+    }
+
+    expr->type = type;
+    expr->token = tok;
+    return expr;
 }
 
 static
 int parse_let_statement(struct parser *p, struct statement *s) {
     s->type = STMT_LET;
     s->token = p->current_token;
-
-    if (!expect_next_token(p, TOKEN_IDENT)) {
-        return -1;
-    }
+    advance_to_next_token(p, TOKEN_IDENT);
 
     // parse identifier
     struct identifier ident = {
@@ -123,9 +133,7 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     strcpy(ident.value, p->current_token.literal);   
     s->name = ident;
 
-    if (!expect_next_token(p, TOKEN_ASSIGN)) {
-        return -1;
-    }
+    advance_to_next_token(p, TOKEN_ASSIGN);
 
     // parse expression
     next_token(p);
@@ -147,13 +155,8 @@ int parse_return_statement(struct parser *p, struct statement *s) {
 
 static
 struct expression *parse_identifier_expression(const struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
-    expr->type = EXPR_IDENT;
-    expr->token = expr->ident.token = p->current_token;
+    struct expression *expr = make_expression(EXPR_IDENT, p->current_token);
+    expr->ident.token = expr->token;
     strcpy(expr->ident.value, p->current_token.literal);
     return expr;
 }
@@ -205,26 +208,18 @@ struct expression *parse_string_literal(struct parser *p) {
 
 static
 struct expression *parse_int_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
+    struct expression *expr = make_expression(EXPR_INT, p->current_token);
+    expr->integer = 0;
+    char *s = expr->token.literal;
+    while (*s != '\0') {
+        expr->integer = (expr->integer * 10) + (*s++ - '0');
     }
-
-    expr->type = EXPR_INT;
-    expr->token = p->current_token;
-    expr->integer = atoi(p->current_token.literal);
     return expr;
 }
 
 static
 struct expression *parse_prefix_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
-    expr->type = EXPR_PREFIX;
-    expr->token = p->current_token;
+    struct expression *expr = make_expression(EXPR_PREFIX, p->current_token); 
     expr->prefix.operator = parse_operator(p->current_token.type);
     next_token(p);
     expr->prefix.right = parse_expression(p, PREFIX);
@@ -265,7 +260,7 @@ struct expression_list parse_expression_list(struct parser *p, const enum token_
         }
     }
 
-    if (!expect_next_token(p, end_token)) {
+    if (!advance_to_next_token(p, end_token)) {
         free(list.values);
         return list;
     }
@@ -275,43 +270,25 @@ struct expression_list parse_expression_list(struct parser *p, const enum token_
 
 static
 struct expression *parse_array_literal(struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-    expr->type = EXPR_ARRAY;
-    expr->token = p->current_token;
+    struct expression *expr = make_expression(EXPR_ARRAY, p->current_token); 
     expr->array = parse_expression_list(p, TOKEN_RBRACKET);
     return expr;
 }
 
 static
 struct expression *parse_index_expression(struct parser *p, struct expression *left) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-    expr->type = EXPR_INDEX;
-    expr->token = p->current_token;
+    advance_to_next_token(p, TOKEN_LBRACKET);
+    struct expression *expr = make_expression(EXPR_INDEX, p->current_token);
     expr->index.left = left;
-
     next_token(p);
     expr->index.index = parse_expression(p, LOWEST);
-    if (!expect_next_token(p, TOKEN_RBRACKET)) {
-        free(expr);
-        return NULL;
-    }
+    advance_to_next_token(p, TOKEN_RBRACKET);
     return expr;
 }
 
 static
 struct expression *parse_call_expression(struct parser *p, struct expression *left) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-    expr->type = EXPR_CALL;
-    expr->token = p->current_token;
+    struct expression *expr = make_expression(EXPR_CALL, p->current_token); 
     expr->call.function = left;
     expr->call.arguments = parse_expression_list(p, TOKEN_RPAREN);
     return expr;
@@ -319,17 +296,11 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
 
 static
 struct expression *parse_assignment_expression(struct parser *p, struct expression *left) {
-    struct expression * expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
     if (left->type != EXPR_IDENT && left->type != EXPR_INDEX) {
-        err(EXIT_FAILURE, "invalid assignment left-hand side");
+        err(EXIT_FAILURE, "Parsing error: invalid assignment left-hand side");
     }
 
-    expr->type = EXPR_ASSIGN;
-    expr->token = p->current_token;
+    struct expression * expr = make_expression(EXPR_ASSIGN, p->current_token); 
     expr->assign.left = left;
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
@@ -339,13 +310,7 @@ struct expression *parse_assignment_expression(struct parser *p, struct expressi
 
 static
 struct expression *parse_infix_expression(struct parser *p, struct expression *left) {
-    struct expression * expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
-    expr->type = EXPR_INFIX;
-    expr->token = p->current_token;
+    struct expression * expr = make_expression(EXPR_INFIX, p->current_token);
     expr->infix.left = left;
     expr->infix.operator = parse_operator(p->current_token.type);
     int precedence = get_token_precedence(p->current_token);
@@ -356,13 +321,7 @@ struct expression *parse_infix_expression(struct parser *p, struct expression *l
 
 static
 struct expression *parse_boolean_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
-    expr->type = EXPR_BOOL;
-    expr->token = p->current_token;
+    struct expression *expr = make_expression(EXPR_BOOL, p->current_token);
     expr->boolean = current_token_is(p, TOKEN_TRUE);
     return expr;
 }
@@ -373,7 +332,7 @@ struct expression *parse_grouped_expression(struct parser *p) {
     
     struct expression *expr = parse_expression(p, LOWEST);
 
-    if (!expect_next_token(p, TOKEN_RPAREN)) {
+    if (!advance_to_next_token(p, TOKEN_RPAREN)) {
         free(expr);
         return NULL;
     }
@@ -417,51 +376,34 @@ struct block_statement *parse_block_statement(struct parser *p) {
 }
 
 static
-struct expression *make_expression(enum expression_type type, const struct token tok) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
-    expr->type = type;
-    expr->token = tok;
-    return expr;
-}
-
-static
 struct expression *parse_for_expression(struct parser *p) {
     struct expression *expr = make_expression(EXPR_FOR, p->current_token);
-    if (!expect_next_token(p, TOKEN_LPAREN)) {
-        free(expr);
-        return NULL;
-    }
-    next_token(p); // skip LPAREN
-
     expr->for_loop.init.value = NULL;
     expr->for_loop.init.type = STMT_EXPR;
-    if (!current_token_is(p, TOKEN_SEMICOLON)) {
-        parse_statement(p, &expr->for_loop.init);
-        assert(expect_next_token(p, TOKEN_SEMICOLON));
-    }
-    next_token(p); // skip SEMICOLON
-
-    // if (!current_token_is(p, TOKEN_SEMICOLON)) {
-        expr->for_loop.condition = parse_expression(p, LOWEST);
-        assert(expect_next_token(p, TOKEN_SEMICOLON));
-    // }
-    next_token(p); // skip SEMICOLON
-    
-
     expr->for_loop.inc.value = NULL;
     expr->for_loop.inc.type = STMT_EXPR;
-    if (!current_token_is(p, TOKEN_RPAREN)) {
-        parse_statement(p, &expr->for_loop.inc);
-        expect_next_token(p, TOKEN_RPAREN);
-    }
+    expr->for_loop.condition = NULL;
 
-    if (!expect_next_token(p, TOKEN_LBRACE)) {
-        return NULL;
+    advance_to_next_token(p, TOKEN_LPAREN);
+    
+    if (!next_token_is(p, TOKEN_SEMICOLON)) {
+        next_token(p);
+        parse_statement(p, &expr->for_loop.init);
     }
+    advance_to_next_token(p, TOKEN_SEMICOLON);
+            
+    if (!next_token_is(p, TOKEN_SEMICOLON)) {
+        next_token(p);
+        expr->for_loop.condition = parse_expression(p, LOWEST);
+    }
+    advance_to_next_token(p, TOKEN_SEMICOLON);
+    
+    if (!next_token_is(p, TOKEN_RPAREN)) {
+        next_token(p);
+        parse_statement(p, &expr->for_loop.inc);
+    }
+    advance_to_next_token(p, TOKEN_RPAREN);
+    advance_to_next_token(p, TOKEN_LBRACE);
 
     expr->for_loop.body = parse_block_statement(p);
     return expr;
@@ -469,69 +411,37 @@ struct expression *parse_for_expression(struct parser *p) {
 
 static
 struct expression *parse_while_expression(struct parser *p) {
-    struct expression *expr = make_expression(EXPR_WHILE, p->current_token);
-    if (!expect_next_token(p, TOKEN_LPAREN)) {
-        free(expr);
-        return NULL;
-    }
+    advance_to_next_token(p, TOKEN_LPAREN);
 
+    struct expression *expr = make_expression(EXPR_WHILE, p->current_token);
     next_token(p);
     expr->while_loop.condition = parse_expression(p, LOWEST);
-     if (!expect_next_token(p, TOKEN_RPAREN) || !expect_next_token(p, TOKEN_LBRACE)) {
-        free(expr->while_loop.condition);
-        free(expr);
-        return NULL;
-    }
 
+    advance_to_next_token(p, TOKEN_RPAREN);
+    advance_to_next_token(p, TOKEN_LBRACE);
     expr->while_loop.body = parse_block_statement(p);
     return expr;
 }
 
 static
 struct expression *parse_if_expression(struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
-    expr->type = EXPR_IF;
-    expr->token = p->current_token;
-
-    if (!expect_next_token(p, TOKEN_LPAREN)) {
-        free(expr);
-        return NULL;
-    }
+    struct expression *expr = make_expression(EXPR_IF, p->current_token); 
+    advance_to_next_token(p, TOKEN_LPAREN);
 
     next_token(p);
     expr->ifelse.condition = parse_expression(p, LOWEST);
 
-    if (!expect_next_token(p, TOKEN_RPAREN)) {
-        free(expr->ifelse.condition);
-        free(expr);
-        return NULL;
-    }
-
-    if (!expect_next_token(p, TOKEN_LBRACE)) {
-        free(expr->ifelse.condition);
-        free(expr);
-        return NULL;
-    }
+    advance_to_next_token(p, TOKEN_RPAREN);
+    advance_to_next_token(p, TOKEN_LBRACE);
 
     expr->ifelse.consequence = parse_block_statement(p);
+    expr->ifelse.alternative = NULL;
 
     if (next_token_is(p, TOKEN_ELSE)) {
         next_token(p);
-
-        if (!expect_next_token(p, TOKEN_LBRACE)) {
-            free(expr->ifelse.consequence);
-            free(expr->ifelse.condition);
-            free(expr);
-            return NULL;
-        }
-
+        // TODO: Add support for "else if"
+        advance_to_next_token(p, TOKEN_LBRACE);
         expr->ifelse.alternative = parse_block_statement(p);
-    } else {
-        expr->ifelse.alternative = NULL;
     }
 
     return expr;
@@ -541,16 +451,19 @@ static
 struct identifier_list parse_function_parameters(struct parser *p) {
     struct identifier_list params = {
         .size = 0,
-        .cap = 4,
+        .cap = 0,
     };
-    params.values = malloc(sizeof *params.values * params.cap);
-    if (!params.values) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
+    
+    // Return immediately if no function parameters
     if (next_token_is(p, TOKEN_RPAREN)) {
         next_token(p);
         return params;
+    }
+
+    params.cap = 4;
+    params.values = malloc(sizeof *params.values * params.cap);
+    if (!params.values) {
+        err(EXIT_FAILURE, "OUT OF MEMORY");
     }
 
     next_token(p);
@@ -560,8 +473,8 @@ struct identifier_list parse_function_parameters(struct parser *p) {
     params.values[params.size++] = i;
 
     while (next_token_is(p, TOKEN_COMMA)) {
-        next_token(p);
-        next_token(p);
+        next_token(p);  // Load ','
+        next_token(p);  // Load argument name
 
         struct identifier i;
         i.token = p->current_token;
@@ -574,35 +487,17 @@ struct identifier_list parse_function_parameters(struct parser *p) {
         }
     }
 
-    if (!expect_next_token(p, TOKEN_RPAREN)) {
-        free(params.values);
-        return params;
-    }
-
+    advance_to_next_token(p, TOKEN_RPAREN);
     return params;
 }
 
 static
 struct expression *parse_function_literal(struct parser *p) {
-    struct expression *expr = malloc(sizeof *expr);
-    if (!expr) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
-
-    expr->type = EXPR_FUNCTION;
-    expr->token = p->current_token;
-
-    if (!expect_next_token(p, TOKEN_LPAREN)) {
-        free(expr);
-        return NULL;
-    }
+    advance_to_next_token(p, TOKEN_LPAREN);
+    struct expression *expr = make_expression(EXPR_FUNCTION, p->current_token); 
     strcpy(expr->function.name, "");
     expr->function.parameters = parse_function_parameters(p);
-    if (!expect_next_token(p, TOKEN_LBRACE)) {
-        free(expr);
-        return NULL;
-    }
-
+    advance_to_next_token(p, TOKEN_LBRACE);
     expr->function.body = parse_block_statement(p);
     return expr;
 }
@@ -683,7 +578,6 @@ struct expression *parse_expression(struct parser *p, const int8_t precedence) {
             break; 
 
             case TOKEN_LBRACKET: 
-                next_token(p);
                 left = parse_index_expression(p, left);
             break;
 
@@ -713,18 +607,22 @@ int parse_loop_control_statement(struct parser *p, struct statement *s) {
 }
 
 static int 
-parse_statement(struct parser *p, struct statement *s) {
+parse_statement(struct parser *p, struct statement *s) {    
     switch (p->current_token.type) {
-        case TOKEN_LET: return parse_let_statement(p, s); break;
-        case TOKEN_RETURN: return parse_return_statement(p, s); break;
+        case TOKEN_LET: 
+            return parse_let_statement(p, s); 
+        break;
+        case TOKEN_RETURN: 
+            return parse_return_statement(p, s); 
+        break;
         case TOKEN_BREAK: 
         case TOKEN_CONTINUE:
             return parse_loop_control_statement(p, s);
-            break;
-        default: return parse_expression_statement(p, s); break;
+        break;
+        default: 
+            return parse_expression_statement(p, s); 
+        break;
     }
-  
-   return -1;
 }
 
 struct program *parse_program_str(const char *str) {

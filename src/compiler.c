@@ -497,17 +497,19 @@ compile_expression(struct compiler *c, const struct expression *expr) {
          case EXPR_FOR: {
             compiler_emit(c, OPCODE_NULL);
 
-
             err = compile_statement(c, &expr->for_loop.init);
             if (err) return err;
 
             uint32_t before_pos = c->scopes[c->scope_index].instructions->size;
+            uint32_t jump_if_not_true_pos;
 
-            err = compile_expression(c, expr->for_loop.condition);
-            if (err) return err;
-
-            /* we don't know where to jump yet, so we use 9999 as placeholder */
-            uint32_t jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
+            if (expr->for_loop.condition != NULL) {
+                err = compile_expression(c, expr->for_loop.condition);
+                if (err) return err;
+           
+                /* we don't know where to jump yet, so we use 9999 as placeholder */
+                jump_if_not_true_pos = compiler_emit(c, OPCODE_JUMP_NOT_TRUE, 9999);
+             }
 
             // pop null or last value from previous iteration
             compiler_emit(c, OPCODE_POP);
@@ -534,7 +536,9 @@ compile_expression(struct compiler *c, const struct expression *expr) {
 
             /* now we know actual position to jump to, so change operand */
             uint32_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
-            compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+            if (expr->for_loop.condition != NULL) {
+                compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+            }
             compiler_change_jump_placeholders(c, loop_start_pos, loop_end_pos, JUMP_PLACEHOLDER_BREAK, after_conseq_pos);
             compiler_change_jump_placeholders(c, loop_start_pos, loop_end_pos, JUMP_PLACEHOLDER_CONTINUE, before_inc_pos);
         }

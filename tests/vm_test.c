@@ -726,6 +726,11 @@ static void for_loops() {
             .type = OBJ_INT,
             .value = { .integer = 1},
         },
+        {  
+            .input = "for(;;) { break; }", 
+            .type = OBJ_NULL,
+            .value = { .integer = 1},
+        },
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
