@@ -10,7 +10,7 @@ Since I like uselessly optimizing for performance, it runs [quite fast](#Benchma
 
 ### Syntax example 
 
-```
+```js
 // Variable declarations
 let a = 5;
 let b = 25;
@@ -36,7 +36,7 @@ if (b == a || a == b) {
 
 // Strings
 let c = "Hello world";
-str_split(c, " "); 
+c = str_split(c, " "); 
 type(c); // "ARRAY"
 len(c); // 2 
 
