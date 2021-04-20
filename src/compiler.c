@@ -1,6 +1,8 @@
 #include <string.h> 
+#include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <sys/types.h>
 #include "compiler.h"
 #include "object.h"
 #include "opcode.h"
@@ -188,14 +190,14 @@ compile_block_statement(struct compiler *compiler, const struct block_statement 
 
 static int
 compile_statement(struct compiler *c, const struct statement *stmt) {
-    // empty expressions, eg in for loops
-    if (stmt->value == NULL) {
-        return 0;
-    }
-
     int err;
     switch (stmt->type) {
         case STMT_EXPR: {
+            // empty expressions, eg in for loops
+            if (stmt->value == NULL) {
+                return 0;
+            }
+
             err = compile_expression(c, stmt->value);
             if (err) return err;
 
@@ -217,11 +219,31 @@ compile_statement(struct compiler *c, const struct statement *stmt) {
             compiler_emit(c, OPCODE_RETURN_VALUE);
         }
         break;
+
+        case STMT_BREAK:
+            // TODO: Validate that we're inside a loop. Or is that the parser's job?
+            compiler_emit(c, OPCODE_NULL);
+            compiler_emit(c, OPCODE_JUMP, 9999);
+        break;
+
+        case STMT_CONTINUE:
+            compiler_emit(c, OPCODE_NULL);
+            compiler_emit(c, OPCODE_JUMP, 9998);
+        break;
     }
 
     return 0;
 }
 
+void compiler_change_jump_placeholders(struct compiler* c, uint32_t pos_start, uint32_t pos_end, uint32_t placeholder_value, uint32_t actual_value) {
+    for (uint32_t p=pos_start; p < pos_end; ) {
+        enum opcode op = c->scopes[c->scope_index].instructions->bytes[p];
+        if (op == OPCODE_JUMP && read_uint16(&c->scopes[c->scope_index].instructions->bytes[p+1]) == placeholder_value) {
+            compiler_change_operand(c, p, actual_value);
+        }
+        p += 1 + lookup(op).operand_widths[0];
+    }
+}
 
 static int 
 compile_expression(struct compiler *c, const struct expression *expr) {
@@ -445,14 +467,16 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             // pop null or last value from previous iteration
             compiler_emit(c, OPCODE_POP);
 
+            uint32_t loop_start_pos = c->scopes[c->scope_index].instructions->size;
             err = compile_block_statement(c, expr->while_loop.body);
             if (err) { return err; }
+            uint32_t loop_end_pos = c->scopes[c->scope_index].instructions->size;
 
             // leave last item on the stack
             if (compiler_last_instruction_is(c, OPCODE_POP)) {
                 compiler_remove_last_instruction(c);
             } else {
-                 compiler_emit(c, OPCODE_NULL);
+                compiler_emit(c, OPCODE_NULL);
             }
 
             /* jump back to beginning to re-evaluate condition */
@@ -461,6 +485,8 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             /* now we know actual position to jump to, so change operand */
             uint32_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+            compiler_change_jump_placeholders(c, loop_start_pos, loop_end_pos, 9999, after_conseq_pos);
+            compiler_change_jump_placeholders(c, loop_start_pos, loop_end_pos, 9998, before_pos);
         }
         break;
 
@@ -482,8 +508,10 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             // pop null or last value from previous iteration
             compiler_emit(c, OPCODE_POP);
 
+            uint32_t loop_start_pos = c->scopes[c->scope_index].instructions->size;
             err = compile_block_statement(c, expr->for_loop.body);
             if (err) { return err; }
+            uint32_t loop_end_pos = c->scopes[c->scope_index].instructions->size;
 
             // leave last item on the stack
             if (compiler_last_instruction_is(c, OPCODE_POP)) {
@@ -493,6 +521,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             }
 
             // run increment step
+            uint32_t before_inc_pos = c->scopes[c->scope_index].instructions->size;
             err = compile_statement(c, &expr->for_loop.inc);
             if (err) return err;
 
@@ -502,6 +531,8 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             /* now we know actual position to jump to, so change operand */
             uint32_t after_conseq_pos = c->scopes[c->scope_index].instructions->size;
             compiler_change_operand(c, jump_if_not_true_pos, after_conseq_pos);
+            compiler_change_jump_placeholders(c, loop_start_pos, loop_end_pos, 9999, after_conseq_pos);
+            compiler_change_jump_placeholders(c, loop_start_pos, loop_end_pos, 9998, before_inc_pos);
         }
         break;
 

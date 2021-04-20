@@ -154,7 +154,7 @@ char *instruction_to_str(struct instruction *ins) {
     return buffer;
 }
 
-uint32_t read_operands(uint32_t dest[], struct definition def, struct instruction *ins, uint32_t offset) {
+uint32_t read_operands(uint32_t dest[], struct definition def, const struct instruction *ins, uint32_t offset) {
     uint32_t bytes_read = 0;
 
     // skip opcode

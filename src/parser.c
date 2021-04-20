@@ -436,11 +436,11 @@ struct expression *parse_for_expression(struct parser *p) {
     }
     next_token(p); // skip LPAREN
 
+    expr->for_loop.init.value = NULL;
+    expr->for_loop.init.type = STMT_EXPR;
     if (!current_token_is(p, TOKEN_SEMICOLON)) {
         parse_statement(p, &expr->for_loop.init);
         assert(expect_next_token(p, TOKEN_SEMICOLON));
-    } else {
-        expr->for_loop.init.value = NULL;
     }
     next_token(p); // skip SEMICOLON
 
@@ -450,11 +450,12 @@ struct expression *parse_for_expression(struct parser *p) {
     // }
     next_token(p); // skip SEMICOLON
     
+
+    expr->for_loop.inc.value = NULL;
+    expr->for_loop.inc.type = STMT_EXPR;
     if (!current_token_is(p, TOKEN_RPAREN)) {
         parse_statement(p, &expr->for_loop.inc);
         expect_next_token(p, TOKEN_RPAREN);
-    } else {
-        expr->for_loop.inc.value = NULL;
     }
 
     if (!expect_next_token(p, TOKEN_LBRACE)) {
@@ -702,11 +703,23 @@ int parse_expression_statement(struct parser *p, struct statement *s) {
     return 1;
 }
 
+static
+int parse_loop_control_statement(struct parser *p, struct statement *s) {
+    s->type = p->current_token.type == TOKEN_BREAK ? STMT_BREAK : STMT_CONTINUE;
+    s->token = p->current_token;
+    s->value = NULL;
+    return 1;
+}
+
 static int 
 parse_statement(struct parser *p, struct statement *s) {
     switch (p->current_token.type) {
         case TOKEN_LET: return parse_let_statement(p, s); break;
         case TOKEN_RETURN: return parse_return_statement(p, s); break;
+        case TOKEN_BREAK: 
+        case TOKEN_CONTINUE:
+            return parse_loop_control_statement(p, s);
+            break;
         default: return parse_expression_statement(p, s); break;
     }
   
@@ -785,6 +798,12 @@ void statement_to_str(char *str, const struct statement *stmt) {
         case STMT_LET: let_statement_to_str(str, stmt); break;
         case STMT_RETURN: return_statement_to_str(str, stmt); break;
         case STMT_EXPR: expression_to_str(str, stmt->value); break;
+
+        case STMT_CONTINUE: 
+        case STMT_BREAK: 
+            strcat(str, stmt->token.literal);
+            strcat(str, ";");
+        break;
     }
 }
 
@@ -930,7 +949,7 @@ char *program_to_str(const struct program *p) {
     }
     *str = '\0';
 
-    for (int32_t i = 0; i < p->size; i++) {  
+    for (uint32_t i = 0; i < p->size; i++) {  
         statement_to_str(str, &p->statements[i]);
     }    
 

@@ -69,4 +69,4 @@ struct instruction *copy_instructions(const struct instruction *a);
 void free_instruction(struct instruction *ins);
 struct instruction *flatten_instructions_array(struct instruction *arr[], const uint32_t size);
 char *instruction_to_str(struct instruction *ins);
-uint32_t read_operands(uint32_t dest[], struct definition def, struct instruction *ins, uint32_t offset);
+uint32_t read_operands(uint32_t dest[], struct definition def, const struct instruction *ins, uint32_t offset);

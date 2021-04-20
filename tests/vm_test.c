@@ -173,6 +173,9 @@ static void while_statements() {
         {"let a = 1; while (a < 3) { let a = a + 1; a; };",  OBJ_INT, { .integer = 3 }},
         {"while (false) { 10 };", OBJ_NULL},
         {"let a = 0; while (a < 3) { a = a + 1; };",  OBJ_INT, { .integer = 3 }},
+        {"while (true) { break; }; 5", OBJ_INT, { .integer = 5 }},
+        {"while (true) { break; };", OBJ_NULL},
+        {"while (true) { 5; break; };", OBJ_NULL},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -705,6 +708,67 @@ static void for_loops() {
     }
 }
 
+static void for_loops_break_statement() {
+    struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {  
+            .input = "for (let i = 0; i < 3; i = i + 1) { break; } i;", 
+            .type = OBJ_INT,
+            .value = { .integer = 0 },
+        },
+        {  
+            .input = "for (let i = 0; i < 3; i = i + 1) { i; break; }", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; break; } };", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; break; } }; i", 
+            .type = OBJ_INT,
+            { .integer = 5 }
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
+static void for_loops_continue_statement() {
+    struct
+    {
+        const char *input;
+        enum object_type type;
+        union values value;
+    } tests[] = {
+        {  
+            .input = "for (let i = 0; i < 3; i = i + 1) { continue; };", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; continue; } }", 
+            .type = OBJ_NULL,
+        },
+        {  
+            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; continue; } }; i", 
+            .type = OBJ_INT,
+            { .integer = 6 }
+        },
+    };
+
+    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].type, tests[i].value);
+    }
+}
+
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -732,4 +796,6 @@ int main(int argc, const char *argv[]) {
     TEST(builtin_int);
     TEST(var_assignment);
     TEST(for_loops);
+    TEST(for_loops_break_statement);
+    TEST(for_loops_continue_statement);
 }

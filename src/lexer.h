@@ -43,6 +43,8 @@ enum token_type {
     TOKEN_RBRACKET,
     TOKEN_AND,
     TOKEN_OR,
+    TOKEN_BREAK,
+    TOKEN_CONTINUE,
 };
 
 struct token {

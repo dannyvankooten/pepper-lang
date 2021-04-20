@@ -38,6 +38,8 @@ enum statement_type {
     STMT_LET = 1,
     STMT_RETURN,
     STMT_EXPR,
+    STMT_BREAK,
+    STMT_CONTINUE,
 };
 
 enum operator {

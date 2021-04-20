@@ -573,7 +573,7 @@ static void index_expression_parsing() {
 }
 
 static void while_expression_parsing() {
-    char *input = "while (x < y) { x }";
+    const char *input = "while (x < y) { x }";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
     struct program *program = parse_program(&parser);
@@ -597,7 +597,7 @@ static void while_expression_parsing() {
 }
 
 static void for_expressions() {
-    char *input = "for (let i=0; i < 5; i = i + 1) { x }";
+    const char *input = "for (let i=0; i < 5; i = i + 1) { x }";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
     struct statement stmt = program->statements[0];
@@ -608,7 +608,7 @@ static void for_expressions() {
 }
 
 static void function_literal_with_name() {
-    char *input = "let myFunction = fn() {};";
+    const char *input = "let myFunction = fn() {};";
     struct lexer lexer = {input};
     struct parser parser = new_parser(&lexer);
     struct program *program = parse_program(&parser);

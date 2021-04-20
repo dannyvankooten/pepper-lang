@@ -51,7 +51,7 @@ static void run_compiler_test(struct compiler_test_case t) {
 
     char *concatted_str = instruction_to_str(concatted);
     char *bytecode_str = instruction_to_str(bytecode->instructions);
-    assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", concatted_str, bytecode_str);
+    assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: \nexpected %d\n\"%s\"\ngot %d\n\"%s\"", concatted->size, concatted_str, bytecode->instructions->size, bytecode_str);
     
     for (int i=0; i < concatted->size; i++) {
         assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, concatted->bytes[i], bytecode->instructions->bytes[i], concatted_str, bytecode_str);
@@ -882,6 +882,38 @@ static void while_expressions() {
                 make_instruction(OPCODE_HALT),
             }, 8
         },
+        {
+            .input = "while (true) { break; };",
+            .constants = {}, 0,
+            .instructions = {
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_TRUE),              
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 14),
+                make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_NULL),
+                make_instruction(OPCODE_JUMP, 14),  
+                make_instruction(OPCODE_NULL),             
+                make_instruction(OPCODE_JUMP, 1),  
+                make_instruction(OPCODE_POP),  
+                make_instruction(OPCODE_HALT),
+            }, 10
+        },
+        {
+            .input = "while (true) { continue; };",
+            .constants = {}, 0,
+            .instructions = {
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_TRUE),              
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 14),
+                make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_NULL),
+                make_instruction(OPCODE_JUMP, 1),  
+                make_instruction(OPCODE_NULL),             
+                make_instruction(OPCODE_JUMP, 1),  
+                make_instruction(OPCODE_POP),  
+                make_instruction(OPCODE_HALT),
+            }, 10
+        },
     };
 
     run_compiler_tests(tests, ARRAY_SIZE(tests));
@@ -905,8 +937,8 @@ static void for_expressions() {
                 make_instruction(OPCODE_CONST, 1),
                 make_instruction(OPCODE_LESS_THAN),
                 make_instruction(OPCODE_JUMP_NOT_TRUE, 38), 
-                make_instruction(OPCODE_POP), // pops null
-                make_instruction(OPCODE_CONST, 2), // pushes 3
+                make_instruction(OPCODE_POP), 
+                make_instruction(OPCODE_CONST, 2), 
                 make_instruction(OPCODE_GET_GLOBAL, 0),        
                 make_instruction(OPCODE_CONST, 3),          
                 make_instruction(OPCODE_ADD),  
@@ -917,6 +949,66 @@ static void for_expressions() {
                 make_instruction(OPCODE_POP),               
                 make_instruction(OPCODE_HALT),
             }, 18
+        },
+        {
+            .input = "for (let i = 0; i < 10; i = i + 1) { break; }",
+            .constants = {
+                make_integer_object(0),
+                make_integer_object(10),
+                make_integer_object(1),
+            }, 3,
+            .instructions = {
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_CONST, 0), 
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_LESS_THAN),
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 40), 
+                make_instruction(OPCODE_POP), 
+                make_instruction(OPCODE_NULL), 
+                make_instruction(OPCODE_JUMP, 40), 
+                make_instruction(OPCODE_NULL), 
+                make_instruction(OPCODE_GET_GLOBAL, 0),        
+                make_instruction(OPCODE_CONST, 2),          
+                make_instruction(OPCODE_ADD),  
+                make_instruction(OPCODE_SET_GLOBAL, 0), 
+                make_instruction(OPCODE_GET_GLOBAL, 0), 
+                make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_JUMP, 0007),            
+                make_instruction(OPCODE_POP),               
+                make_instruction(OPCODE_HALT),
+            }, 20
+        },
+        {
+            .input = "for (let i = 0; i < 10; i = i + 1) { continue; }",
+            .constants = {
+                make_integer_object(0),
+                make_integer_object(10),
+                make_integer_object(1),
+            }, 3,
+            .instructions = {
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_CONST, 0), 
+                make_instruction(OPCODE_SET_GLOBAL, 0),
+                make_instruction(OPCODE_GET_GLOBAL, 0),
+                make_instruction(OPCODE_CONST, 1),
+                make_instruction(OPCODE_LESS_THAN),
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 40), 
+                make_instruction(OPCODE_POP), 
+                make_instruction(OPCODE_NULL), 
+                make_instruction(OPCODE_JUMP, 23), 
+                make_instruction(OPCODE_NULL), 
+                make_instruction(OPCODE_GET_GLOBAL, 0),        
+                make_instruction(OPCODE_CONST, 2),          
+                make_instruction(OPCODE_ADD),  
+                make_instruction(OPCODE_SET_GLOBAL, 0), 
+                make_instruction(OPCODE_GET_GLOBAL, 0), 
+                make_instruction(OPCODE_POP),
+                make_instruction(OPCODE_JUMP, 0007),            
+                make_instruction(OPCODE_POP),               
+                make_instruction(OPCODE_HALT),
+            }, 20
         },
     };
 

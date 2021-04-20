@@ -27,6 +27,10 @@ void get_ident(struct token *t) {
     t->type = TOKEN_FOR;
   } else if (strcmp(t->literal, "in") == 0) {
     t->type = TOKEN_IN;
+  } else if (strcmp(t->literal, "break") == 0) {
+    t->type = TOKEN_BREAK;
+  } else if (strcmp(t->literal, "continue") == 0) {
+    t->type = TOKEN_CONTINUE;
   } else {
     // not a keyword, so assume identifier
     t->type = TOKEN_IDENT;
@@ -35,12 +39,12 @@ void get_ident(struct token *t) {
 
 const char *token_type_to_str(const enum token_type type) {
   static const char *token_names[] = {
-      "ILLEGAL", "EOF", "IDENT", "INT", "FUNCTION", "LET",    "TRUE",
-      "FALSE",   "IF",  "ELSE",  "FOR", "IN",       "WHILE",  "RETURN",
-      "=",       "+",   "-",     "!",   "*",        "/",      "%",
-      "<",       "<=",  ">",     ">=",  "==",       "!=",     ",",
-      ";",       "(",   ")",     "{",   "}",        "STRING", "[",
-      "]",       "&&", "||",
+      "ILLEGAL", "EOF", "IDENT", "INT",   "FUNCTION", "LET",    "TRUE",
+      "FALSE",   "IF",  "ELSE",  "FOR",   "IN",       "WHILE",  "RETURN",
+      "=",       "+",   "-",     "!",     "*",        "/",      "%",
+      "<",       "<=",  ">",     ">=",    "==",       "!=",     ",",
+      ";",       "(",   ")",     "{",     "}",        "STRING", "[",
+      "]",       "&&",  "||",    "BREAK", "CONTINUE",
   };
   return token_names[type];
 }
