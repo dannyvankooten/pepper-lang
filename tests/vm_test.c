@@ -120,10 +120,10 @@ static void boolean_expressions() {
         {"!!false", false},
         {"!!5", true},
         {"!(if (false) { 5; })", true},
-        {"true == true or false == false", true},
-        {"1 > 2 or 1 < 2", true},
-        {"1 > 2 and 1 < 2", false},
-        {"1 % 2 == 0 or true", true},
+        {"true == true || false == false", true},
+        {"1 > 2 || 1 < 2", true},
+        {"1 > 2 && 1 < 2", false},
+        {"1 % 2 == 0 || true", true},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
@@ -149,8 +149,8 @@ static void if_statements() {
         {"if (1 <= 1) { 1 } else { 2 }", 1},
         {"if (1 >= 2) { 1 } else { 2 }", 2},
         {"if (1 <= 0) { 1 } else { 2 }", 2},
-        {"if (1 < 1 or true) { 1 } else { 2 }", 1},
-        {"if (1 < 1 and false) { 1 } else { 2 }", 2},
+        {"if (1 < 1 || true) { 1 } else { 2 }", 1},
+        {"if (1 < 1 && false) { 1 } else { 2 }", 2},
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {

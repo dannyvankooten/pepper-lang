@@ -27,10 +27,6 @@ void get_ident(struct token *t) {
     t->type = TOKEN_FOR;
   } else if (strcmp(t->literal, "in") == 0) {
     t->type = TOKEN_IN;
-  } else if (strcmp(t->literal, "and") == 0) {
-    t->type = TOKEN_AND;
-  } else if (strcmp(t->literal, "or") == 0) {
-    t->type = TOKEN_OR;
   } else {
     // not a keyword, so assume identifier
     t->type = TOKEN_IDENT;
@@ -44,7 +40,7 @@ const char *token_type_to_str(const enum token_type type) {
       "=",       "+",   "-",     "!",   "*",        "/",      "%",
       "<",       "<=",  ">",     ">=",  "==",       "!=",     ",",
       ";",       "(",   ")",     "{",   "}",        "STRING", "[",
-      "]",       "AND", "OR",
+      "]",       "&&", "||",
   };
   return token_names[type];
 }
@@ -207,6 +203,24 @@ int gettoken(struct lexer *l, struct token *t) {
     t->literal[0] = ch;
     t->literal[1] = '\0';
     break;
+
+  case '|':
+    ch_next = l->input[l->pos];
+    if (ch_next == '|') {
+      t->type = TOKEN_OR;
+      strcpy(t->literal, "||");
+      l->pos++;
+    }
+  break;
+
+  case '&':
+    ch_next = l->input[l->pos];
+    if (ch_next == '&') {
+      t->type = TOKEN_AND;
+      strcpy(t->literal, "&&");
+      l->pos++;
+    }
+  break;
 
   case '"': {
     t->type = TOKEN_STRING;

@@ -973,8 +973,8 @@ char *operator_to_str(enum operator operator) {
         case OP_LTE: return "<="; break;
         case OP_GT: return ">"; break;
         case OP_GTE: return ">="; break;
-        case OP_AND: return "and"; break;
-        case OP_OR: return "or"; break;
+        case OP_AND: return "&&"; break;
+        case OP_OR: return "||"; break;
         case OP_MODULO: return "%"; break;
         case OP_UNKNOWN: break;
     }
