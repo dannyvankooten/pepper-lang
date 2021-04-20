@@ -666,16 +666,42 @@ vm_run(struct vm* restrict vm) {
 
     GOTO_OPCODE_INDEX_GET: {
         struct object index = vm_stack_pop(vm);
-        struct object array = vm_stack_pop(vm);
+        struct object left = vm_stack_pop(vm);
         assert(index.type == OBJ_INT);
-        assert(array.type == OBJ_ARRAY);
-        struct object_list* list = (struct object_list*) array.value.ptr->value;
-        if (index.value.integer < 0 || index.value.integer >= list->size) {
-            vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
-        } else {
-            struct object value = list->values[index.value.integer];
-            vm_stack_push(vm, value);
+
+        switch (left.type) {
+            case OBJ_ARRAY: {
+                struct object_list* list = (struct object_list*) left.value.ptr->value;
+                if (index.value.integer < 0 || index.value.integer >= list->size) {
+                    vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
+                } else {
+                    struct object value = list->values[index.value.integer];
+                    vm_stack_push(vm, value);
+                }
+            }
+            break;
+
+            case OBJ_STRING: {
+                const char *str = ((const char*) left.value.ptr->value);
+                if (index.value.integer < 0 || index.value.integer >= strlen(str)) {
+                     vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
+                } else {
+                    char buf[2];
+                    buf[0] = (char) str[index.value.integer];
+                    buf[1] = '\0';
+
+                    struct object obj = make_string_object(buf, NULL);
+                    vm->heap->values[vm->heap->size++] = obj;
+                    vm_stack_push(vm, obj);
+                }   
+            }
+            break;
+
+            default:
+                return VM_ERR_INVALID_INDEX_SOURCE;
+            break;
         }
+        
         
         frame->ip++;
         DISPATCH();

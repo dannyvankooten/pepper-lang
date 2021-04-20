@@ -17,6 +17,7 @@ enum result {
     VM_ERR_OUT_OF_BOUNDS,
     VM_ERR_STACK_OVERFLOW,
     VM_ERR_INVALID_FUNCTION_CALL,
+    VM_ERR_INVALID_INDEX_SOURCE,
 };
 
 struct frame {

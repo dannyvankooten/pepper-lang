@@ -1009,6 +1009,9 @@ void free_statements(struct statement *stmts, const uint32_t size) {
 }
 
 void free_block_statement(struct block_statement *b) {
+    if (b == NULL) {
+        return;
+    }
     free_statements(b->statements, b->size);
     free(b);
 }
@@ -1034,16 +1037,14 @@ void free_expression(struct expression *expr) {
         break;
 
         case EXPR_ASSIGN:
+            free_expression(expr->assign.left);
             free_expression(expr->assign.value);
         break;
 
         case EXPR_IF:
             free_expression(expr->ifelse.condition);
             free_block_statement(expr->ifelse.consequence);
-
-            if (expr->ifelse.alternative) {
-                free_block_statement(expr->ifelse.alternative);
-            }
+            free_block_statement(expr->ifelse.alternative);
         break;
 
         case EXPR_WHILE: 
