@@ -72,6 +72,7 @@ print_debug_info(struct vm *vm) {
 #endif 
 
 static void gc(struct vm* vm);
+static void gc_add(struct vm* vm, struct object obj);
 static struct object_list *_builtin_args_list;
 
 struct vm *vm_new(struct bytecode *bc) {
@@ -163,12 +164,7 @@ static void
 vm_do_binary_string_operation(struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     struct object o = make_string_object(left->value.ptr->value, right->value.ptr->value); 
     vm_stack_cur(vm) = o;
-
-    // register in heap
-    vm->heap->values[vm->heap->size++] = o;
-
-    // run garbage collector
-    gc(vm);
+    gc_add(vm, o);   
 }
 
 static void 
@@ -335,9 +331,8 @@ vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct objec
     args->size = 0;
 
     // register result object in heap for GC
-    if(obj.type > OBJ_INT) {
-        vm->heap->values[vm->heap->size++] = obj;
-        gc(vm);
+    if(obj.type > OBJ_BUILTIN) {
+        gc_add(vm, obj);
     }
 }
 
@@ -377,10 +372,20 @@ vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_
         list->values[list->size++] = copy_object(&vm->stack[i]);
     }
     struct object o = make_array_object(list);
-
-    // register array in heap for GC 
-    vm->heap->values[vm->heap->size++] = o;
+    gc_add(vm, o);
     return o;
+}
+
+static void gc_add(struct vm* vm, struct object obj) {
+    if (obj.type <= OBJ_BUILTIN) {
+        return;
+    }
+
+    gc(vm);
+
+    vm->heap = append_to_object_list(vm->heap, obj);
+
+    // TODO: Grow heap as needed
 }
 
 static void 
@@ -401,19 +406,19 @@ gc(struct vm* restrict vm)
 
     // traverse VM constants, stack and globals and mark every object that is reachable
     for (uint32_t i=0; i < vm->stack_pointer; i++) {
-        if (vm->stack[i].type <= OBJ_INT) { 
+        if (vm->stack[i].type <= OBJ_BUILTIN) { 
             continue;
         }
         vm->stack[i].value.ptr->marked = true;
     }
     for (uint32_t i=0; i < vm->nconstants; i++) {
-        if (vm->constants[i].type <= OBJ_INT) { 
+        if (vm->constants[i].type <= OBJ_BUILTIN) { 
             continue;
         }
         vm->constants[i].value.ptr->marked = true;
     }
     for (uint32_t i=0; i < GLOBALS_SIZE && vm->globals[i].type != OBJ_NULL; i++) {
-        if (vm->globals[i].type <= OBJ_INT) { 
+        if (vm->globals[i].type <= OBJ_BUILTIN) { 
             continue;
         }
         vm->globals[i].value.ptr->marked = true;
@@ -429,7 +434,6 @@ gc(struct vm* restrict vm)
 
         // free object
         free_object(&vm->heap->values[i]);
-
 
         // remove from heap (swap with last value)
         vm->heap[i] = vm->heap[--vm->heap->size];       
@@ -714,7 +718,7 @@ vm_run(struct vm* restrict vm) {
                     buf[1] = '\0';
 
                     struct object obj = make_string_object(buf, NULL);
-                    vm->heap->values[vm->heap->size++] = obj;
+                    gc_add(vm, obj);
                     vm_stack_push(vm, obj);
                 }   
             }

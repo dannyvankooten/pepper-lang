@@ -55,7 +55,7 @@ struct object make_string_object(const char *str1, const char *str2)
     obj.value.ptr = malloc(sizeof(*obj.value.ptr) + len);
     assert(obj.value.ptr != NULL);
     obj.value.ptr->marked = false;
-    obj.value.ptr->value = obj.value.ptr + 1;
+    obj.value.ptr->value = (char*) (obj.value.ptr + 1);
     assert(obj.value.ptr->value != NULL);
 
     strcpy(obj.value.ptr->value, str1);
@@ -77,7 +77,7 @@ struct object make_error_object(const char *format, ...)
     obj.value.ptr = malloc(sizeof(*obj.value.ptr) + len);
     assert(obj.value.ptr != NULL);
     obj.value.ptr->marked = false;
-    obj.value.ptr->value = obj.value.ptr + 1;
+    obj.value.ptr->value = (char*) (obj.value.ptr + 1);
     assert(obj.value.ptr->value != NULL);
     va_start(args, format);  
     vsnprintf(obj.value.ptr->value, len + 64, format, args);

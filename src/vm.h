@@ -1,12 +1,11 @@
 #pragma once
 
-#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include "opcode.h"
 #include "object.h"
 
 #define FRAMES_SIZE 64
-#define GLOBALS_SIZE 32
+#define GLOBALS_SIZE 64
 #define STACK_SIZE 256
 
 enum result {

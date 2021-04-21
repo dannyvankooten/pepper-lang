@@ -89,12 +89,16 @@ static struct object
 builtin_puts(const struct object_list* args) {
     char str[BUFSIZ];
     for (uint32_t i=0; i < args->size; i++) {
-        *str = '\0';
-        object_to_str(str, args->values[i]);
-        printf("%s", str);
+        if (args->values[i].type == OBJ_STRING) {
+            printf("%s", (char *) args->values[i].value.ptr->value);
+        } else {
+            *str = '\0';
+            object_to_str(str, args->values[i]);
+            printf("%s", str);
+        }
     }
-    printf("\n");
 
+    printf("\n");
     return (struct object) {
         .type = OBJ_NULL,
     };
@@ -186,22 +190,14 @@ builtin_file_get_contents(const struct object_list *args) {
         return make_error_object("error opening file \"%s\"", filename);
     }
 
-    char* buf = malloc(BUFSIZ);
+    fseek(fd, 0, SEEK_END);
+    size_t fsize = ftell(fd);
+    fseek(fd, 0, SEEK_SET); 
+    char* buf = malloc(fsize + 1);
     assert(buf != NULL);
-    size_t size = 0;
-    size_t read = 0;
-    while ((read = fread(buf, sizeof(char), BUFSIZ, fd)) > 0) {
-        size += read;
-
-        if (read >= BUFSIZ) {
-            buf = realloc(buf, size + BUFSIZ);
-            assert(buf != NULL);
-        }
-    }
-    buf[size] = '\0';
-   
+    fread(buf, 1, fsize, fd);
+    buf[fsize] = '\0';
     struct object obj = make_string_object(buf, NULL);
-
     free(buf);
     fclose(fd);
     return obj;
