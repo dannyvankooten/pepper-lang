@@ -304,14 +304,14 @@ static void if_expressions() {
                 make_integer_object(3333),
             }, 2,
             .instructions = {
-                make_instruction(OPCODE_TRUE),              // 0000
-                make_instruction(OPCODE_JUMP_NOT_TRUE, 10),  // 0001
-                make_instruction(OPCODE_CONST, 0),          // 0004
-                make_instruction(OPCODE_JUMP, 11),          // 0007
-                make_instruction(OPCODE_NULL),              // 0010
-                make_instruction(OPCODE_POP),               // 0011
-                make_instruction(OPCODE_CONST, 1),          // 0012
-                make_instruction(OPCODE_POP),               // 0015
+                make_instruction(OPCODE_TRUE),              
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 10),  
+                make_instruction(OPCODE_CONST, 0),          
+                make_instruction(OPCODE_JUMP, 11),          
+                make_instruction(OPCODE_NULL),              
+                make_instruction(OPCODE_POP),               
+                make_instruction(OPCODE_CONST, 1),          
+                make_instruction(OPCODE_POP),               
                 make_instruction(OPCODE_HALT),
             }, 9
         },
@@ -323,16 +323,36 @@ static void if_expressions() {
                 make_integer_object(3333),
             }, 3,
             .instructions = {
-                make_instruction(OPCODE_TRUE),              // 0000
-                make_instruction(OPCODE_JUMP_NOT_TRUE, 10), // 0001
-                make_instruction(OPCODE_CONST, 0),          // 0004
-                make_instruction(OPCODE_JUMP, 13),          // 0007
-                make_instruction(OPCODE_CONST, 1),          // 0010
-                make_instruction(OPCODE_POP),               // 0013
-                make_instruction(OPCODE_CONST, 2),          // 0014
-                make_instruction(OPCODE_POP),               // 0017
+                make_instruction(OPCODE_TRUE),              
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 10), 
+                make_instruction(OPCODE_CONST, 0),          
+                make_instruction(OPCODE_JUMP, 13),          
+                make_instruction(OPCODE_CONST, 1),          
+                make_instruction(OPCODE_POP),               
+                make_instruction(OPCODE_CONST, 2),          
+                make_instruction(OPCODE_POP),               
                 make_instruction(OPCODE_HALT),
             }, 9
+        },
+        {
+            .input = "if (true) { 10; } else if (true) { 20; };",
+            .constants = {
+                make_integer_object(10),
+                make_integer_object(20),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_TRUE),              
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 10), 
+                make_instruction(OPCODE_CONST, 0),          
+                make_instruction(OPCODE_JUMP, 21),          
+                make_instruction(OPCODE_TRUE),  
+                make_instruction(OPCODE_JUMP_NOT_TRUE, 20),    
+                make_instruction(OPCODE_CONST, 1),   
+                make_instruction(OPCODE_JUMP, 21),  
+                make_instruction(OPCODE_NULL),    
+                make_instruction(OPCODE_POP),                           
+                make_instruction(OPCODE_HALT),
+            }, 11
         },
     };
     run_compiler_tests(tests, ARRAY_SIZE(tests));
@@ -830,7 +850,7 @@ static void builtin_functions() {
                 make_string_object("monkey", NULL),
             }, 2,
             .instructions = {
-                make_instruction(OPCODE_GET_BUILTIN, 0), // 0 = index of puts builtin
+                make_instruction(OPCODE_GET_BUILTIN, 0), 
                 make_instruction(OPCODE_CONST, 0),
                 make_instruction(OPCODE_GET_BUILTIN, 1), 
                 make_instruction(OPCODE_CONST, 1),

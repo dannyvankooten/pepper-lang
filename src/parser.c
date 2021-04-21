@@ -347,28 +347,37 @@ struct expression *parse_grouped_expression(struct parser *p) {
     return expr;
 }
 
-static
-struct block_statement *parse_block_statement(struct parser *p) {
-    const uint32_t cap = 16;
-    struct block_statement *b = (struct block_statement *) malloc(sizeof *b + cap * sizeof (struct statement));
-    if (!b) {
-        err(EXIT_FAILURE, "OUT OF MEMORY");
-    }
+static struct block_statement* 
+create_block_statement(uint32_t cap) {
+    struct block_statement *b = (struct block_statement *) malloc(sizeof *b);
+    assert(b != NULL);
     b->cap = cap;
     b->size = 0;
-    b->statements = (struct statement*) (b + 1);
+    b->statements = malloc(b->cap * sizeof (*b->statements));
+    assert(b->statements != NULL);
+    return b;
+}
 
-    next_token(p);
+static void
+add_statement_to_block(struct block_statement *b, struct statement* s) {
+    if (b->size + 1 == b->cap) {
+        b->cap *= 2;
+        b->statements = realloc(b->statements, b->cap * sizeof *b->statements);
+        assert(b->statements != NULL);
+    }
+
+    b->statements[b->size++] = *s;
+}
+
+static
+struct block_statement *parse_block_statement(struct parser *p) {
+    struct block_statement *b = create_block_statement(4);
+    next_token(p); // LBRACE
+
     while (!current_token_is(p, TOKEN_RBRACE) && !current_token_is(p, TOKEN_EOF)) {
         struct statement s;
         if (parse_statement(p, &s) > -1) {
-            if (b->size == b->cap) {
-                b->cap *= 2;
-                b->statements = realloc(b->statements, b->cap * sizeof *b->statements);
-                assert(b->statements != NULL);
-            }
-
-            b->statements[b->size++] = s;
+            add_statement_to_block(b, &s); 
         }
 
         // optional semicolon after every statement
@@ -446,7 +455,17 @@ struct expression *parse_if_expression(struct parser *p) {
 
     if (next_token_is(p, TOKEN_ELSE)) {
         next_token(p);
-        // TODO: Add support for "else if"
+        
+        // if this is an "else if" statement, put the if inside a block statement
+        if (next_token_is(p, TOKEN_IF)) {
+            next_token(p);
+
+            struct block_statement *b = create_block_statement(1);
+            parse_statement(p, &b->statements[b->size++]);
+            expr->ifelse.alternative = b;
+            return expr;
+        }
+
         advance_to_next_token(p, TOKEN_LBRACE);
         expr->ifelse.alternative = parse_block_statement(p);
     }
@@ -918,6 +937,7 @@ void free_block_statement(struct block_statement *b) {
         return;
     }
     free_statements(b->statements, b->size);
+    free(b->statements);
     free(b);
 }
 

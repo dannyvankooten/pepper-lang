@@ -444,6 +444,36 @@ static void if_else_expression_parsing() {
     free_program(program);
 }
 
+static void if_elseif() {
+    char *input = "if (x < y) { x } else if (true) { 5 }";
+    struct lexer lexer = {input, 0};
+    struct parser parser = new_parser(&lexer);
+    struct program *program = parse_program(&parser);
+    assert_parser_errors(&parser);
+    assert_program_size(program, 1);
+
+    struct statement stmt = program->statements[0];
+    struct expression *expr = stmt.value;
+    assertf(expr->type == EXPR_IF, "invalid statement type: expected %d, got %d\n", EXPR_IF, stmt.type);
+
+    union expression_value left = {.str_value = "x"};
+    union expression_value right = {.str_value = "y"};
+    test_infix_expression(expr->ifelse.condition, left, OP_LT, right);
+
+    struct block_statement *consequence = expr->ifelse.consequence;
+    assertf(!!consequence, "expected consequence block statement, got NULL\n");
+    assertf(consequence->size == 1, "invalid consequence size: expected %d, got %d\n", 1, consequence->size);
+    assertf(consequence->statements[0].type == STMT_EXPR, "statements[0] is not a statement expression, got %d", consequence->statements[0].type);
+    test_identifier_expression(consequence->statements[0].value, "x");
+
+    struct block_statement *alternative = expr->ifelse.alternative;
+    assertf(alternative != NULL, "expected alternative, got NULL");
+    assertf(alternative->size == 1, "invalid alternative size: expected %d, got %d\n", 1, alternative->size);
+    assertf(alternative->statements[0].type == STMT_EXPR, "statements[0] is not an if statement, got %d", alternative->statements[0].type);
+    assertf(alternative->statements[0].value->type == EXPR_IF, "statements[0] is not an if statement, got %d", alternative->statements[0].value->type );
+    free_program(program);
+}
+
 static void function_literal_parsing() {
     char *input = "fn(x, y) { x + y; }";
     struct lexer lexer = {input, 0};
@@ -655,4 +685,5 @@ int main(int argc, char *argv[]) {
     TEST(for_expressions);
     TEST(function_literal_with_name);
     TEST(assignment_expressions);
+    TEST(if_elseif);
 }

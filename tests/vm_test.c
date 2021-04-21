@@ -133,36 +133,42 @@ static void boolean_expressions() {
      }
 }
 
-static void if_statements() {
+static void if_expressions() {
     struct {
         const char *input;
-        int expected;
+        enum object_type type;
+        union values value;
     } tests[] = {
-        {"if (true) { 10 }", 10},
-        {"if (true) { 10 } else { 20 }", 10},
-        {"if (false) { 10 } else { 20 } ", 20},
-        {"if (1) { 10 }", 10},
-        {"if (1 < 2) { 10 }", 10},
-        {"if (1 < 2) { 10 } else { 20 }", 10},
-        {"if (1 > 2) { 10 } else { 20 }", 20},
-        {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
-        {"if (1 >= 1) { 1 } else { 2 }", 1},
-        {"if (1 <= 1) { 1 } else { 2 }", 1},
-        {"if (1 >= 2) { 1 } else { 2 }", 2},
-        {"if (1 <= 0) { 1 } else { 2 }", 2},
-        {"if (1 < 1 || true) { 1 } else { 2 }", 1},
-        {"if (1 < 1 && false) { 1 } else { 2 }", 2},
-        {"if (1 > 0 && false || true) { 1 } else { 2 }", 1},
+        {"if (true) { 10 }", OBJ_INT, { .integer = 10 } },
+        {"if (true) { 10 } else { 20 }", OBJ_INT, { .integer = 10 } },
+        {"if (false) { 10 } else { 20 } ", OBJ_INT, { .integer = 20 } },
+        {"if (1) { 10 }", OBJ_INT, { .integer = 10 } },
+        {"if (1 < 2) { 10 }", OBJ_INT, { .integer = 10 } },
+        {"if (1 < 2) { 10 } else { 20 }", OBJ_INT, { .integer = 10 } },
+        {"if (1 > 2) { 10 } else { 20 }", OBJ_INT, { .integer = 20 } },
+        {"if ((if (false) { 10 })) { 10 } else { 20 }", OBJ_INT, { .integer = 20 } },
+        {"if (1 >= 1) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
+        {"if (1 <= 1) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
+        {"if (1 >= 2) { 1 } else { 2 }", OBJ_INT, { .integer = 2 } },
+        {"if (1 <= 0) { 1 } else { 2 }", OBJ_INT, { .integer = 2 } },
+        {"if (1 < 1 || true) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
+        {"if (1 < 1 && false) { 1 } else { 2 }", OBJ_INT, { .integer = 2 } },
+        {"if (1 > 0 && false || true) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
+        {"if (0 > 1) { 1 } else if (1 > 0) { 2 }", OBJ_INT, { .integer = 2 } },
+        {"if (0 > 1) { 1 } else if (1 > 2) { 2 }", OBJ_NULL },
+        {"if (0 > 1) { 1 } else if (1 > 2) { 2 } else if (2 > 3) { 3 }", OBJ_NULL },
+        {"if (0 > 1) { 1 } else if (1 > 2) { 2 } else if (3 > 2) { 3 }", OBJ_INT, { .integer = 3 } },
+        {"if (0 > 1) { 1 } else { if (1 > 2) { 2 } }", OBJ_NULL },
     };
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, tests[t].type, tests[t].value);
      }
 }
 
 
-static void while_statements() {
+static void while_expressions() {
     struct {
         const char *input;
         enum object_type type;
@@ -851,10 +857,10 @@ static void string_indexing() {
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
-    TEST(if_statements);
+    TEST(if_expressions);
     TEST(nulls);
     TEST(global_let_statements);
-    TEST(while_statements);
+    TEST(while_expressions);
     TEST(string_expressions);
     TEST(function_calls);
     TEST(functions_without_return_value);

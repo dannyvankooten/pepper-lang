@@ -4,15 +4,11 @@ for (let i=0; i <= 100; i=i+1) {
     
     if (div3 && div5) {
         puts("FizzBuzz");
-        continue;
-    }
-    if (div3) {
+    } else if (div3) {
         puts("Fizz");
-        continue;
-    }
-    if (div5) {
+    } else if (div5) {
         puts("Buzz");
-        continue;
+    } else {
+        puts(i);
     }
-    puts(i);
 }
