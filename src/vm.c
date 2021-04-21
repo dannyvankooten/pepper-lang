@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "parser.h"
 #include "util.h"
 #include "object.h"
 #include "opcode.h"
@@ -259,6 +260,24 @@ vm_do_bool_comparison(const struct vm* restrict vm, const enum opcode opcode, st
     }    
 }
 
+static void
+vm_do_string_comparison(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
+    left->type = OBJ_BOOL;
+    switch (opcode) {
+        case OPCODE_EQUAL: 
+            left->value.boolean = strcmp(left->value.ptr->value, right->value.ptr->value) == 0;
+        break;
+
+        case OPCODE_NOT_EQUAL: 
+            left->value.boolean = strcmp(left->value.ptr->value, right->value.ptr->value) != 0;
+        break;
+
+        default: 
+            err(VM_ERR_INVALID_OP_TYPE, "Invalid operator %s for string comparison.", opcode_to_str(opcode));
+        break;
+    }    
+}
+
 static void 
 vm_do_comparision(struct vm* restrict vm, const enum opcode opcode) {
     const struct object* right = &vm_stack_pop(vm);
@@ -272,6 +291,10 @@ vm_do_comparision(struct vm* restrict vm, const enum opcode opcode) {
 
         case OBJ_BOOL:
             return vm_do_bool_comparison(vm, opcode, left, right);
+        break;
+
+        case OBJ_STRING:
+            return vm_do_string_comparison(vm, opcode, left, right);
         break;
 
         default:

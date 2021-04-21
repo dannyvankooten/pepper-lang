@@ -1,16 +1,53 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include "test_helpers.h"
 #include "../src/vm.h"
 #include "../src/compiler.h"
 
-union values {
+typedef enum object_type object_type;
+typedef union {
     bool boolean;
-    int integer;
+    int64_t integer;
     char *string;
     char *error;
-};
+} object_value;
 
-static void test_object(struct object obj, enum object_type expected_type, union values expected_value) {
+typedef struct {
+    object_type type;
+    object_value value;
+} test_object_t;
+
+typedef struct {
+    const char *input;
+    test_object_t expected_value;
+} test_case_t;
+
+#define EXPECT_BOOL(v) (test_object_t) { .type = OBJ_BOOL, { .boolean = v } }
+#define EXPECT_INT(v) (test_object_t) { .type = OBJ_INT, { .integer = v } }
+#define EXPECT_STRING(v) (test_object_t) { .type = OBJ_STRING, { .string = v } }
+#define EXPECT_ERROR(v) (test_object_t) { .type = OBJ_ERROR, { .error = v } }
+#define EXPECT_NULL() (test_object_t) { .type = OBJ_NULL }
+
+static struct object 
+run_vm_test(const char *program_str) {
+    struct program *p = parse_program_str(program_str);
+    struct compiler *c = compiler_new();
+    int err = compile_program(c, p);
+    assertf(err == 0, "compiler error: %s", compiler_error_str(err));
+    struct bytecode *bc = get_bytecode(c);
+    struct vm *vm = vm_new(bc);
+    err = vm_run(vm);
+    assertf(err == 0, "vm error: %d", err);
+    struct object obj = vm_stack_last_popped(vm);
+    obj = copy_object(&obj);
+    free(bc);
+    free_program(p);
+    compiler_free(c);
+    vm_free(vm);
+    return obj;;
+}
+
+static void test_object(struct object obj, object_type expected_type, object_value expected_value) {
     assertf(obj.type == expected_type, "invalid object type: expected \"%s\", got \"%s\"", object_type_to_str(expected_type), object_type_to_str(obj.type));
     switch (expected_type) {
         case OBJ_INT:
@@ -36,29 +73,17 @@ static void test_object(struct object obj, enum object_type expected_type, union
     free_object(&obj);
 }
 
-struct object 
-run_vm_test(const char *program_str) {
-    struct program *p = parse_program_str(program_str);
-    struct compiler *c = compiler_new();
-    int err = compile_program(c, p);
-    assertf(err == 0, "compiler error: %s", compiler_error_str(err));
-    struct bytecode *bc = get_bytecode(c);
-    struct vm *vm = vm_new(bc);
-    err = vm_run(vm);
-    assertf(err == 0, "vm error: %d", err);
-    struct object obj = vm_stack_last_popped(vm);
-    obj = copy_object(&obj);
-    free(bc);
-    free_program(p);
-    compiler_free(c);
-    vm_free(vm);
-    return obj;;
+static void run_tests(test_case_t* tests, int ntests) {
+    for (int i = 0; i < ntests; i++) {
+        struct object obj = run_vm_test(tests[i].input);
+        test_object(obj, tests[i].expected_value.type, tests[i].expected_value.value);
+    }
 }
 
 static void integer_arithmetic() {
     struct {
         const char *input;
-        int expected;
+        int64_t expected;
     } tests[] = {
         {"1", 1},
         {"2", 2},
@@ -84,13 +109,11 @@ static void integer_arithmetic() {
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
 static void boolean_expressions() {
-
-
     struct {
         const char *input;
         bool expected;
@@ -129,67 +152,51 @@ static void boolean_expressions() {
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_BOOL, (union values) { .boolean = tests[t].expected });
+        test_object(obj, OBJ_BOOL, (object_value) { .boolean = tests[t].expected });
      }
 }
 
 static void if_expressions() {
-    struct {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
-        {"if (true) { 10 }", OBJ_INT, { .integer = 10 } },
-        {"if (true) { 10 } else { 20 }", OBJ_INT, { .integer = 10 } },
-        {"if (false) { 10 } else { 20 } ", OBJ_INT, { .integer = 20 } },
-        {"if (1) { 10 }", OBJ_INT, { .integer = 10 } },
-        {"if (1 < 2) { 10 }", OBJ_INT, { .integer = 10 } },
-        {"if (1 < 2) { 10 } else { 20 }", OBJ_INT, { .integer = 10 } },
-        {"if (1 > 2) { 10 } else { 20 }", OBJ_INT, { .integer = 20 } },
-        {"if ((if (false) { 10 })) { 10 } else { 20 }", OBJ_INT, { .integer = 20 } },
-        {"if (1 >= 1) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
-        {"if (1 <= 1) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
-        {"if (1 >= 2) { 1 } else { 2 }", OBJ_INT, { .integer = 2 } },
-        {"if (1 <= 0) { 1 } else { 2 }", OBJ_INT, { .integer = 2 } },
-        {"if (1 < 1 || true) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
-        {"if (1 < 1 && false) { 1 } else { 2 }", OBJ_INT, { .integer = 2 } },
-        {"if (1 > 0 && false || true) { 1 } else { 2 }", OBJ_INT, { .integer = 1 } },
-        {"if (0 > 1) { 1 } else if (1 > 0) { 2 }", OBJ_INT, { .integer = 2 } },
-        {"if (0 > 1) { 1 } else if (1 > 2) { 2 }", OBJ_NULL },
-        {"if (0 > 1) { 1 } else if (1 > 2) { 2 } else if (2 > 3) { 3 }", OBJ_NULL },
-        {"if (0 > 1) { 1 } else if (1 > 2) { 2 } else if (3 > 2) { 3 }", OBJ_INT, { .integer = 3 } },
-        {"if (0 > 1) { 1 } else { if (1 > 2) { 2 } }", OBJ_NULL },
+   test_case_t tests[] = {
+        {"if (true) { 10 }", EXPECT_INT(10) },
+        {"if (true) { 10 } else { 20 }", EXPECT_INT(10) },
+        {"if (false) { 10 } else { 20 } ", EXPECT_INT(20) },
+        {"if (1) { 10 }", EXPECT_INT(10) },
+        {"if (1 < 2) { 10 }", EXPECT_INT(10) },
+        {"if (1 < 2) { 10 } else { 20 }", EXPECT_INT(10) },
+        {"if (1 > 2) { 10 } else { 20 }", EXPECT_INT(20) },
+        {"if ((if (false) { 10 })) { 10 } else { 20 }", EXPECT_INT(20) },
+        {"if (1 >= 1) { 1 } else { 2 }", EXPECT_INT(1) },
+        {"if (1 <= 1) { 1 } else { 2 }", EXPECT_INT(1) },
+        {"if (1 >= 2) { 1 } else { 2 }", EXPECT_INT(2) },
+        {"if (1 <= 0) { 1 } else { 2 }", EXPECT_INT(2) },
+        {"if (1 < 1 || true) { 1 } else { 2 }", EXPECT_INT(1) },
+        {"if (1 < 1 && false) { 1 } else { 2 }", EXPECT_INT(2) },
+        {"if (1 > 0 && false || true) { 1 } else { 2 }", EXPECT_INT(1) },
+        {"if (0 > 1) { 1 } else if (1 > 0) { 2 }", EXPECT_INT(2) },
+        {"if (0 > 1) { 1 } else if (1 > 2) { 2 }", EXPECT_NULL() },
+        {"if (0 > 1) { 1 } else if (1 > 2) { 2 } else if (2 > 3) { 3 }", EXPECT_NULL() },
+        {"if (0 > 1) { 1 } else if (1 > 2) { 2 } else if (3 > 2) { 3 }", EXPECT_INT(3) },
+        {"if (0 > 1) { 1 } else { if (1 > 2) { 2 } }", EXPECT_NULL() },
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, tests[t].type, tests[t].value);
-     }
+    run_tests(tests, ARRAY_SIZE(tests));
 }
 
 
 static void while_expressions() {
-    struct {
-        const char *input;
-        enum object_type type;
-        union values value;
-        int expected;
-    } tests[] = {
-        {"while (false) { 10 }; 5", OBJ_INT, { .integer = 5 }},
-        {"let a = 2; while (1 > 3) { let a = a + 1; }; a;",  OBJ_INT, { .integer = 2 }},
-        {"let a = 0; while (a < 3) { let a = a + 1; }; a;",  OBJ_INT, { .integer = 3 }},
-        {"let a = 1; while (a < 3) { let a = a + 1; a; };",  OBJ_INT, { .integer = 3 }},
-        {"while (false) { 10 };", OBJ_NULL},
-        {"let a = 0; while (a < 3) { a = a + 1; };",  OBJ_INT, { .integer = 3 }},
-        {"while (true) { break; }; 5", OBJ_INT, { .integer = 5 }},
-        {"while (true) { break; };", OBJ_NULL},
-        {"while (true) { 5; break; };", OBJ_NULL},
+    test_case_t tests[] = {
+        {"while (false) { 10 }; 5", EXPECT_INT(5)},
+        {"let a = 2; while (1 > 3) { let a = a + 1; }; a;",  EXPECT_INT(2)},
+        {"let a = 0; while (a < 3) { let a = a + 1; }; a;",  EXPECT_INT(3)},
+        {"let a = 1; while (a < 3) { let a = a + 1; a; };",  EXPECT_INT(3)},
+        {"while (false) { 10 };", EXPECT_NULL()},
+        {"let a = 0; while (a < 3) { a = a + 1; };",  EXPECT_INT(3)},
+        {"while (true) { break; }; 5", EXPECT_INT(5)},
+        {"while (true) { break; };", EXPECT_NULL()},
+        {"while (true) { 5; break; };", EXPECT_NULL()},
     };
-
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, tests[t].type, tests[t].value);
-     }
+    run_tests(tests, ARRAY_SIZE(tests));
 }
 
 static void nulls() {
@@ -219,12 +226,11 @@ static void global_let_statements() {
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
 static void function_calls() {
-
     struct {
         const char *input;
         int expected;
@@ -238,13 +244,11 @@ static void function_calls() {
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
 static void functions_without_return_value() {
-
-
    const char *tests[] = {
         "let noReturn = fn() { }; noReturn();",
         "let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();"
@@ -252,7 +256,7 @@ static void functions_without_return_value() {
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t]);
-        test_object(obj, OBJ_NULL, (union values) {});
+        test_object(obj, OBJ_NULL, (object_value) {});
      }
 }
 
@@ -267,12 +271,11 @@ static void first_class_functions() {
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
 static void function_calls_with_bindings() {
-
     struct {
         const char *input;
         int expected;
@@ -286,7 +289,7 @@ static void function_calls_with_bindings() {
 
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
@@ -315,10 +318,9 @@ static void function_calls_with_args_and_bindings() {
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
-
 
 static void fib() {
     const char *input = "              \
@@ -331,7 +333,7 @@ static void fib() {
         fibonacci(6)";
     int expected = 8;
     struct object obj = run_vm_test(input);
-    test_object(obj, OBJ_INT, (union values) { .integer = expected });    
+    test_object(obj, OBJ_INT, (object_value) { .integer = expected });    
 }
 
 static void recursive_functions() {
@@ -346,7 +348,7 @@ static void recursive_functions() {
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[t].expected });
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
@@ -362,34 +364,25 @@ static void string_expressions() {
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_STRING, (union values) { .string = tests[t].expected });
+        test_object(obj, OBJ_STRING, (object_value) { .string = tests[t].expected });
      }
 }
 
 static void builtin_functions() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
-        {"len(\"\")", OBJ_INT, {.integer = 0}},
-        {"let l = len(\"a\"); puts(\"Length: \", l);", OBJ_NULL},
-        {"puts(\"\", len(\"hello world\"));", OBJ_NULL},
-        {"len(\"hello world\")", OBJ_INT, {.integer = 11}},
-        {"len(1)", OBJ_ERROR, {.error = "argument to len() not supported: got INTEGER"}},
-        {"len(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
-        {"type(\"one\")", OBJ_STRING, {.error = "STRING"}},
-        {"type(\"one\", \"two\")", OBJ_ERROR, {.error = "wrong number of arguments: expected 1, got 2"}},
-        {"puts(\"one\", \"two\")", OBJ_NULL, {}},
-        {"let s = \"\"; len(s); len(s);", OBJ_INT, {.integer = 0}},
+    test_case_t tests[] = {
+        {"len(\"\")", EXPECT_INT(0)},
+        {"let l = len(\"a\"); puts(\"Length: \", l);", EXPECT_NULL()},
+        {"puts(\"\", len(\"hello world\"));", EXPECT_NULL()},
+        {"len(\"hello world\")", EXPECT_INT(11)},
+        {"len(1)", EXPECT_ERROR("argument to len() not supported: got INTEGER")},
+        {"len(\"one\", \"two\")",EXPECT_ERROR("wrong number of arguments: expected 1, got 2")},
+        {"type(\"one\")", EXPECT_STRING("STRING")},
+        {"type(\"one\", \"two\")",EXPECT_ERROR("wrong number of arguments: expected 1, got 2")},
+        {"puts(\"one\", \"two\")", EXPECT_NULL()},
+        {"let s = \"\"; len(s); len(s);", EXPECT_INT(0)},
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++)
-    {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void array_literals() {
@@ -424,8 +417,8 @@ static void mixed_arrays() {
     struct
     {
         const char *input;
-        enum object_type types[4];
-        union values values[4];
+        object_type types[4];
+        object_value values[4];
     } tests[] = {
         {
             .input = "[ \"hello\", true, 0, 5 + 3]", 
@@ -450,154 +443,102 @@ static void mixed_arrays() {
 }
 
 static void array_indexing() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {
-            .input = "[1, 2, 3][1]", 
-            .type = OBJ_INT,
-            .value = { .integer = 2 }
+            "[1, 2, 3][1]", 
+            EXPECT_INT(2),
         },
         {
-            .input = "[1][0]", 
-            .type = OBJ_INT,
-            .value = { .integer = 1 }
+            "[1][0]", 
+            EXPECT_INT(1)
         },
         {
-            .input = "[1, true, \"foobar\"][2]", 
-            .type = OBJ_STRING,
-            .value = { .string = "foobar" }
+            "[1, true, \"foobar\"][2]", 
+            EXPECT_STRING("foobar"),
         },
         {
-            .input = "let a = [1, true, \"foobar\"]; a[2]", 
-            .type = OBJ_STRING,
-            .value = { .string = "foobar" }
+            "let a = [1, true, \"foobar\"]; a[2]", 
+            EXPECT_STRING("foobar"),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void array_indexing_out_of_bounds() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "[0][1]", 
-            .type = OBJ_NULL,
+            "[0][1]", 
+            EXPECT_NULL(),
         },
         {   
-            .input = "[0][-1]", 
-            .type = OBJ_NULL,
+            "[0][-1]", 
+            EXPECT_NULL(),
         },
         {   
-            .input = "let a = []; a[1];", 
-            .type = OBJ_NULL,
+            "let a = []; a[1];", 
+            EXPECT_NULL(),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void array_pop() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "array_pop([])", 
-            .type = OBJ_NULL,
+            "array_pop([])", 
+            EXPECT_NULL(),
         },
         {   
-            .input = "array_pop([1])", 
-            .type = OBJ_INT,
-            .value = { .integer = 1 },
+            "array_pop([1])", 
+            EXPECT_INT(1),
         },
         {   
-            .input = "array_pop([2, 1])", 
-            .type = OBJ_INT,
-            .value = { .integer = 1 },
+            "array_pop([2, 1])", 
+            EXPECT_INT(1),
         },
         {   
-            .input = "let a = [1, 2, 3]; array_pop(a);", 
-            .type = OBJ_INT,
-            .value = { .integer = 3 },
+            "let a = [1, 2, 3]; array_pop(a);", 
+            EXPECT_INT(3),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void array_push() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "array_push([], 1)", 
-            .type = OBJ_INT,
-            .value = { .integer = 1 },
+            "array_push([], 1)", 
+            EXPECT_INT(1),
         },
         {  
-            .input = "array_push([1], 1)", 
-            .type = OBJ_INT,
-            .value = { .integer = 2 },
+            "array_push([1], 1)", 
+            EXPECT_INT(2),
         },
         {  
-            .input = "let a = [1]; array_push(a, 2); a[1]", 
-            .type = OBJ_INT,
-            .value = { .integer = 2 },
+            "let a = [1]; array_push(a, 2); a[1]", 
+            EXPECT_INT(2),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+   run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void file_get_contents() {
-     struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "file_get_contents(\"tests/file.txt\")", 
-            .type = OBJ_STRING,
-            .value = { .string = "hello from file.txt" },
+            "file_get_contents(\"tests/file.txt\")", 
+            EXPECT_STRING("hello from file.txt"),
         },
         {  
-            .input = "file_get_contents(\"tests/unexisting-file.txt\")", 
-            .type = OBJ_ERROR,
-            .value = { .error = "error opening file" },
+            "file_get_contents(\"tests/unexisting-file.txt\")", 
+            EXPECT_ERROR("error opening file"),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void str_split() {
@@ -631,227 +572,174 @@ static void builtin_int() {
         const char* input;
         int expected;
     } tests[] = {
-        {  
-            "int(5)", 
-            5,
-        },
-        {  
-            "int(\"5\")", 
-            5,
-        },
-        {  
-            "int(true)", 
-            1,
-        },
-        {  
-            "int(false)", 
-            0,
-        },
+        { "int(5)", 5 },
+        { "int(\"5\")", 5 },
+        { "int(true)", 1 },
+        { "int(false)", 0 },
     };
 
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
         struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, OBJ_INT, (union values) { .integer = tests[i].expected } );
+        test_object(obj, OBJ_INT, (object_value) { .integer = tests[i].expected } );
     }
 }
 
 static void var_assignment() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "let a = 1; a = 2; a", 
-            .type = OBJ_INT,
-            .value = { .integer = 2 },
+            "let a = 1; a = 2; a", 
+            EXPECT_INT(2),
         },
         {  
-            .input = "let a = 1; a = 2;", 
-            .type = OBJ_INT,
-            .value = { .integer = 2 },
+            "let a = 1; a = 2;", 
+            EXPECT_INT(2),
         },
         {  
-            .input = "let arr = [ 1 ]; arr[0] = 2; arr[0]", 
-            .type = OBJ_INT,
-            .value = { .integer = 2 },
+            "let arr = [ 1 ]; arr[0] = 2; arr[0]", 
+            EXPECT_INT(2),
         },
         {  
-            .input = "let arr = [ 1 ]; arr[0] = 2;", 
-            .type = OBJ_INT,
-            .value = { .integer = 2 },
+            "let arr = [ 1 ]; arr[0] = 2;", 
+            EXPECT_INT(2),
         },
         {  
-            .input = "[5][0] = 1", 
-            .type = OBJ_INT,
-            .value = { .integer = 1 },
+            "[5][0] = 1", 
+            EXPECT_INT(1),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void for_loops() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "for (let i=0; i < 10; i = i + 1) { i }", 
-            .type = OBJ_INT,
-            .value = { .integer = 9 },
+            "for (let i=0; i < 10; i = i + 1) { i }", 
+            EXPECT_INT(9),
         },
         {  
-            .input = "for (let i=0; i > 0; i = i + 1) { i }", 
-            .type = OBJ_NULL,
+            "for (let i=0; i > 0; i = i + 1) { i }", 
+            EXPECT_NULL()
         },
         {  
-            .input = "for (let i=0; i > 0;) { i = i + 1 }", 
-            .type = OBJ_NULL,
+            "for (let i=0; i > 0;) { i = i + 1 }", 
+            EXPECT_NULL()
         },
         {  
-            .input = "for (let i=0; i > 0;) { i = i + 1 }", 
-            .type = OBJ_NULL,
+            "for (let i=0; i > 0;) { i = i + 1 }", 
+            EXPECT_NULL()
         },
         {  
-            .input = "let i = 0; for (; i > 0; i = i + 1) { i }", 
-            .type = OBJ_NULL,
+            "let i = 0; for (; i > 0; i = i + 1) { i }", 
+            EXPECT_NULL()
         },
         {  
-            .input = "let i = 0; for (; i > 0;) { i }", 
-            .type = OBJ_NULL,
+            "let i = 0; for (; i > 0;) { i }", 
+            EXPECT_NULL()
         },
         {  
-            .input = "let i = 0; for (; i <= 0;) { i = i + 1 }", 
-            .type = OBJ_INT,
-            .value = { .integer = 1},
+            "let i = 0; for (; i <= 0;) { i = i + 1 }", 
+            EXPECT_INT(1),
         },
         {  
-            .input = "for(;;) { break; }", 
-            .type = OBJ_NULL,
-            .value = { .integer = 1},
+            "for(;;) { break; }", 
+            EXPECT_NULL()
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void for_loops_break_statement() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "for (let i = 0; i < 3; i = i + 1) { break; } i;", 
-            .type = OBJ_INT,
-            .value = { .integer = 0 },
+            "for (let i = 0; i < 3; i = i + 1) { break; } i;", 
+            EXPECT_INT(0),
         },
         {  
-            .input = "for (let i = 0; i < 3; i = i + 1) { i; break; }", 
-            .type = OBJ_NULL,
+            "for (let i = 0; i < 3; i = i + 1) { i; break; }", 
+            EXPECT_NULL()
         },
         {  
-            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; break; } };", 
-            .type = OBJ_NULL,
+            "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; break; } };", 
+            EXPECT_NULL()
         },
         {  
-            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; break; } }; i", 
-            .type = OBJ_INT,
-            { .integer = 5 }
+            "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; break; } }; i", 
+            EXPECT_INT(5),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void for_loops_continue_statement() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "for (let i = 0; i < 3; i = i + 1) { continue; };", 
-            .type = OBJ_NULL,
+            "for (let i = 0; i < 3; i = i + 1) { continue; };", 
+            EXPECT_NULL()
         },
         {  
-            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; continue; } }", 
-            .type = OBJ_NULL,
+            "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; continue; } }", 
+            EXPECT_NULL()
         },
         {  
-            .input = "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; continue; } }; i", 
-            .type = OBJ_INT,
-            { .integer = 6 }
+            "for (let i = 0; i < 3; i = i + 1) { if (i == 0) { i = i + 5; continue; } }; i", 
+            EXPECT_INT(6),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void arrays_2d() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "[[10, 11, 12], [20, 21,22 ]][0][0];", 
-            .type = OBJ_INT,
-            .value = { .integer = 10 },
+            "[[10, 11, 12], [20, 21,22 ]][0][0];", 
+            EXPECT_INT(10),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
 static void string_indexing() {
-    struct
-    {
-        const char *input;
-        enum object_type type;
-        union values value;
-    } tests[] = {
+    test_case_t tests[] = {
         {  
-            .input = "let s = \"hello\"; s[1]", 
-            .type = OBJ_STRING,
-            .value = { .string = "e" },
+            "let s = \"hello\"; s[1]", 
+            EXPECT_STRING("e"),
         },
         {  
-            .input = "let s = \"hello\"; s[-1]", 
-            .type = OBJ_NULL,
+            "let s = \"hello\"; s[-1]", 
+            EXPECT_NULL(),
         },
         {  
-            .input = "let s = \"hello\"; s[100]", 
-            .type = OBJ_NULL,
+            "let s = \"hello\"; s[100]", 
+            EXPECT_NULL(),
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
-        struct object obj = run_vm_test(tests[i].input);
-        test_object(obj, tests[i].type, tests[i].value);
-    }
+    run_tests(tests, ARRAY_SIZE(tests)); 
+}
+
+
+static void string_comparison() {
+    test_case_t tests[] = {
+        {  
+            "\"foo\" == \"bar\"", 
+            EXPECT_BOOL(false),
+        },
+        {  
+            "\"foo\" == \"foo\"", 
+            EXPECT_BOOL(true),
+        },
+        {  
+            "\"FOO\" == \"foo\"", 
+            EXPECT_BOOL(false),
+        },
+    };
+
+    run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
 int main(int argc, const char *argv[]) {
@@ -885,4 +773,5 @@ int main(int argc, const char *argv[]) {
     TEST(for_loops_continue_statement);
     TEST(arrays_2d);
     TEST(string_indexing);
+    TEST(string_comparison);
 }
