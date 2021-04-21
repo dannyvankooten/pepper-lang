@@ -12,12 +12,12 @@ ifeq "$(CC)" "gcc"
     CFLAGS+=  -fno-gcse
 endif
 
-all: bin/monkey 
+all: bin/pepper 
 
 bin/:
 	mkdir -p bin/
 
-bin/monkey: monkey.c $(VM_SRC) monkey.c | bin/
+bin/pepper: pepper.c $(VM_SRC) pepper.c | bin/
 	$(CC) $(CFLAGS) $^ -Ofast -march=native -o $@ 
 
 # tests
@@ -45,5 +45,5 @@ clean:
 	rm -r bin
 
 .PHONY: install
-install: bin/monkey
-	cp bin/monkey /usr/local/bin/monkey
+install: bin/pepper
+	cp bin/pepper /usr/local/bin/pepper

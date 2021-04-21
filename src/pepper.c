@@ -41,7 +41,7 @@ char *read_file(const char *filename);
 
 static
 void print_version() {
-	printf("Monkey-C %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+	printf("Pepper v%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
 
 static 

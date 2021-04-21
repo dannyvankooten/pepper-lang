@@ -26,4 +26,4 @@ jobs:
     - name: Run fib35 benchmark
       run: |
         echo "Time: "
-        /usr/bin/time bin/monkey examples/fib35-recursive.monkey | tail -n1
+        /usr/bin/time bin/pepper examples/fib35-recursive.pr | tail -n1

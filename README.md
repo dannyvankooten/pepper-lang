@@ -1,12 +1,12 @@
-## C implementation of the Monkey programming language.
+# Pepper Programming Language
 
-<img src="https://monkeylang.org/images/logo.png" width="120" height="120" align="right" />
+<img src="https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/logo.png" width="120" height="120" align="right" />
 
-Bytecode compiler and virtual machine for the [Monkey programming language](https://monkeylang.org), written in C.
+Pepper is an experimental interpreted programming language with a focus on simplicity and verbosity. It is dynamically typed and comes with built-in garbage collection. 
 
-This is the result of going through the wonderful books [Writing An Interpreter In Go](https://interpreterbook.com/) and [Writing A Compiler In Go](https://compilerbook.com/), but using a different language instead to squeeze more learning opportunities out of it and force myself to really understand what's going on.
+It's also [quite fast](#Benchmarks) for an interpreted language that does not (yet) rely on JIT compilation.
 
-Since I like uselessly optimizing for performance, it runs [quite fast](#Benchmarks) for something that doesn't do JIT compilation.
+Pepper is implemented in standard C11 with no external dependencies, so it can run on a wide variety of systems.
 
 ### Syntax example 
 
@@ -41,7 +41,7 @@ type(c); // "ARRAY"
 len(c); // 2 
 
 // Arrays
-let d = [5, true, "Monkey"];
+let d = [5, true, "Pepper"];
 d[0]; // 5
 array_push(d, 10);
 array_pop(d); // 10
@@ -63,23 +63,23 @@ puts("Integer value of true = ", int(true));
 
 ```
 
-More examples can be found in the [examples](https://github.com/dannyvankooten/monkey-c-monkey-do/tree/master/examples) directory.
+More examples can be found in the [examples](https://github.com/dannyvankooten/pepper-lang/tree/master/examples) directory.
 
 ### Usage
 
-Build Monkey interpreter (and REPL)
+Build Pepper interpreter (and REPL)
 ```
 make 
 ```
 
 Launch the REPL
 ```
-./bin/monkey
+bin/pepper
 ```
 
-Interpret a Monkey script: 
+Interpret a Pepper script: 
 ```
-./bin/monkey examples/fib35.monkey
+bin/pepper examples/arithmetic.pr
 ```
 
 Build & run tests
@@ -87,20 +87,25 @@ Build & run tests
 make check
 ```
 
+Install Pepper in your system's binaries
+```
+sudo make install
+```
+
 ### Benchmarks
 
-A benchmark to calculate the [35th fibonacci number](https://github.com/dannyvankooten/monkey-c-monkey-do/blob/master/examples/fib35.monkey) using a recursive function is run on every commit through [this](https://github.com/dannyvankooten/monkey-c-monkey-do/actions/workflows/c.yml) Github action workflow.
+A benchmark to calculate the [35th fibonacci number](https://github.com/dannyvankooten/pepper-lang/blob/master/examples/fib35.monkey) using a recursive function is run on every commit through [this](https://github.com/dannyvankooten/pepper-lang/actions/workflows/c.yml) Github action workflow.
 
-![Fibonacci 35 benchmark](https://raw.githubusercontent.com/dannyvankooten/monkey-c-monkey-do/master/misc/benchmarks.jpg)
+![Fibonacci 35 benchmark](https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/benchmarks.jpg)
 
-For fun, I ran the same algorithm expressed in some other interpreted languages on the same hardware (my laptop). This is how Monkey-C compares:
+For fun, I ran the same algorithm expressed in some other interpreted languages on the same hardware (my laptop). This is how Pepper compares:
 
 | Language 	                | Time (s)	|
 |--------------------	    |------	|
 | Node 15            	    | 0.21 	|
 | Pypy 7.3				    | 0.24  |
 | PHP 8.0            	    | 0.48 	|
-| **Monkey-C-Monkey-Do**    | **0.72**	|
+| **Pepper**    | **0.72**	|
 | Lua 5.4            	    | 0.72 	|
 | Ruby 2.7           	    | 0.80 	|
 | Python 3.9         	    | 1.91 	|

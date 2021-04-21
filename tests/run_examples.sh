@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for FILE in examples/*.monkey; do
+for FILE in examples/*.pr; do
     printf "%-36s" "$FILE"
 
     # Extract expected output from first line: 
@@ -11,7 +11,7 @@ for FILE in examples/*.monkey; do
 
     # Run command and keep track of elapsed time
     START_TIME="$(date -u +%s.%N)"
-    ACTUAL_OUTPUT=$(bin/monkey $FILE 2>&1)
+    ACTUAL_OUTPUT=$(bin/pepper $FILE 2>&1)
     END_TIME="$(date -u +%s.%N)"
     ELAPSED="$(bc <<<"scale=2; $END_TIME-$START_TIME")"
 

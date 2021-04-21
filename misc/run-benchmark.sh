@@ -8,7 +8,7 @@ CC=clang make
 
 # capture runtime while discarding rest of output
 exec 3>&1 4>&2
-TIME=$(TIMEFORMAT="%R"; { time bin/monkey examples/fib35.monkey 1>&3 2>&4; } 2>&1)
+TIME=$(TIMEFORMAT="%R"; { time bin/pepper examples/fib35-recursive.pr 1>&3 2>&4; } 2>&1)
 exec 3>&- 4>&-
 
 # write results to stdout and benchmarks CSV
