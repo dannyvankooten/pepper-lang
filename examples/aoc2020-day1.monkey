@@ -1,3 +1,4 @@
+// Output: Part 2: 157667328\nPart 1: 437931
 // https://adventofcode.com/2020/day/1
 
 // Read puzzle input from file
@@ -20,6 +21,7 @@ for (let i=0; i < len(input); i = i + 1) {
 
             if (a + b + c == 2020) {
                 puts("Part 2: ", a * b * c);
+                break;
             }
         }
     }

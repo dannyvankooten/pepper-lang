@@ -215,7 +215,7 @@ struct object_list *copy_object_list(const struct object_list *original) {
 
 void object_to_str(char *str, const struct object obj)
 {
-    char tmp[128] = {0};
+    char tmp[256] = { '\0' };
 
     switch (obj.type)
     {

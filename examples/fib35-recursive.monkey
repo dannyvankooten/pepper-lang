@@ -1,3 +1,5 @@
+// Output: 35th fibonacci number is: 9227465
+
 let fibonacci = fn(x) {
     if (x < 2) {
         return x;

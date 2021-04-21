@@ -5,20 +5,6 @@
 #include <stdint.h>
 #include "lexer.h"
 
-enum precedence {
-    LOWEST = 1,
-    ASSIGN,
-    LOGICAL_OR,   
-    LOGICAL_AND,
-    EQUALS,         // ==
-    LESSGREATER,    // < or >
-    SUM,            // - and +
-    PRODUCT,        // * and /
-    PREFIX,         // - or !x
-    CALL,           // fn()
-    INDEX,          // array[i]
-};
-
 enum expression_type {
     EXPR_INFIX = 1,
     EXPR_PREFIX,

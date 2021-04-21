@@ -16,57 +16,64 @@ static void expression_to_str(char *str, const struct expression *expr);
 static void free_expression(struct expression *expr);
 static enum operator parse_operator(const enum token_type t);
 
+
+enum precedence {
+    LOWEST = 1,
+    ASSIGN,
+    LOGICAL_OR,   
+    LOGICAL_AND,
+    EQUALS,         // ==
+    LESSGREATER,    // < or >
+    SUM,            // - and +
+    PRODUCT,        // * and /
+    PREFIX,         // - or !x
+    CALL,           // fn()
+    INDEX,          // array[i]
+};
+
+
 static 
 enum precedence 
 get_token_precedence(const struct token t) {
     switch (t.type) {
-        case TOKEN_AND:
-            return LOGICAL_AND;
-            break;
+        default: 
+            return LOWEST;
+        break;
+        case TOKEN_ASSIGN: 
+            return ASSIGN;
+        break;
         case TOKEN_OR:
             return LOGICAL_OR;
+            break;
+        case TOKEN_AND:
+            return LOGICAL_AND;
             break;
         case TOKEN_EQ:
         case TOKEN_NOT_EQ: 
             return EQUALS;
         break;
-
         case TOKEN_LTE:
         case TOKEN_LT:
         case TOKEN_GT:
         case TOKEN_GTE:
             return LESSGREATER;
         break;
-
         case TOKEN_PLUS: 
         case TOKEN_MINUS: 
             return SUM;
         break;
-
         case TOKEN_PERCENT:
         case TOKEN_SLASH:
         case TOKEN_ASTERISK: 
             return PRODUCT;
         break;
-
         case TOKEN_LPAREN: 
             return CALL;
         break;
-
         case TOKEN_LBRACKET: 
             return INDEX;
         break;
-
-        case TOKEN_ASSIGN: 
-            return ASSIGN;
-        break;
-
-        default: 
-            return LOWEST;
-        break;
     }
-
-    return LOWEST;
 }
 
 struct parser new_parser(struct lexer *l) {

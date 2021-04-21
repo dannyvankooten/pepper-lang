@@ -1,3 +1,4 @@
+// Output: 35th fibonacci number is: 9227465
 let fibonacci = fn(n) {
     let a = 0;
     let b = 1;
@@ -5,13 +6,13 @@ let fibonacci = fn(n) {
     let i = 2;
 
     while (i < n) {
-        let i = i + 1;
-        let a = b;
-        let b = c;
-        let c = a + b;
+        i = i + 1;
+        a = b;
+        b = c;
+        c = a + b;
     }
 
     return c;
 }
 
-puts("Fibonacci #35 is ", fibonacci(35));
+puts("35th fibonacci number is: ", fibonacci(35));

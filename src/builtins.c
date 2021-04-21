@@ -180,7 +180,7 @@ builtin_file_get_contents(const struct object_list *args) {
         return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
     }
 
-    char *filename = (char *) args->values[0].value.ptr->value;
+    const char *filename = (char *) args->values[0].value.ptr->value;
     FILE *fd = fopen(filename, "rb");
     if (!fd) {
         return make_error_object("error opening file \"%s\"", filename);
@@ -227,7 +227,7 @@ str_split(const struct object_list *args) {
     char *dest = buf;
     while (*src != '\0') {
         if (strncmp(delim, src, delim_length) == 0) {
-            *dest = '\0';
+            *dest++ = '\0';
             list = append_to_object_list(list, make_string_object(buf, NULL));
             dest = buf;
             src += delim_length; // skip delim
@@ -236,6 +236,7 @@ str_split(const struct object_list *args) {
         }
     }
 
+    *dest = '\0';
     list = append_to_object_list(list, make_string_object(buf, NULL));
     return make_array_object(list);
 }
