@@ -43,3 +43,7 @@ memcheck: $(TESTS)
 .PHONY: clean
 clean:
 	rm -r bin
+
+.PHONY: install
+install: bin/monkey
+	cp bin/monkey /usr/local/bin/monkey

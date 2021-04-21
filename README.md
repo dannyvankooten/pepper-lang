@@ -1,6 +1,6 @@
-# C implementation of the Monkey programming language.
+## C implementation of the Monkey programming language.
 
-<img src="https://monkeylang.org/images/logo.png" width="120" height="120"/>
+<img src="https://monkeylang.org/images/logo.png" width="120" height="120" align="right" />
 
 Bytecode compiler and virtual machine for the [Monkey programming language](https://monkeylang.org), written in C.
 
