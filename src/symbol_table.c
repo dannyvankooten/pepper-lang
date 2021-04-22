@@ -98,8 +98,8 @@ struct symbol_table *symbol_table_new_enclosed(struct symbol_table *outer) {
 struct symbol *symbol_table_define(struct symbol_table *t, const char *name) {
     struct symbol *s;
 
-    // check for conflicting names here
-    s = symbol_table_resolve(t, name);
+    // resolve symbol, but only in the current scope (don't traverse t->outer)
+    s = (struct symbol*) hashmap_get(t->store, name);
     if (s != NULL) {
         return s;
     }

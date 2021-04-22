@@ -308,6 +308,8 @@ static void function_calls_with_args_and_bindings() {
                 sum(1, 2) + sum(3, 4) + globalNum;\
             };\
             outer() + globalNum;", 50},
+        {"let a = 5; let add = fn() { let a = 1; let b = 2; a + b }; add();", 3},
+        {"let a = 5; let add = fn(a, b) { a + b }; add(1, 2);", 3}
     };
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {
