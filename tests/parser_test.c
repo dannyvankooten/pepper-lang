@@ -12,17 +12,44 @@ union expression_value {
     char *str_value;
 };
 
-static void test_expression(struct expression *e, union expression_value expected);
+static void test_identifier_expression(struct expression *e, char *expected) {
+    assertf(e->type == EXPR_IDENT, "wrong expression type: expected %d, got %d\n", EXPR_IDENT, e->type);
+    assertf(strcmp(e->ident.token.literal, expected) == 0, "wrong token literal: expected \"%s\", got \"%s\"\n", expected, e->ident.token.literal);
+    assertf(strcmp(e->ident.value, expected) == 0, "wrong expression value: expected \"%s\", got \"%s\"\n", expected, e->ident.value);
+}
 
-static void assert_parser_errors(struct parser *p) {
-    if (p->errors > 0) {
-        printf("parser has %d errors: \n", p->errors);
-        for (int i = 0; i < p->errors; i++) {
-            printf("  - %s\n", p->error_messages[i]);
-        }
+static void test_integer_expression(struct expression *expr, int expected) {
+    assertf(expr->type == EXPR_INT, "wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
+    assertf(expr->integer == expected, "wrong integer value: expected %d, got %d\n", expected, expr->integer);
 
-        exit(1);
+    char expected_str[8];
+    sprintf(expected_str, "%d", expected);
+    assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
+}
+
+static void test_boolean_expression(struct expression * expr, char expected) {
+    assertf(expr->type == EXPR_BOOL, "wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
+    assertf(expr->boolean == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->boolean);
+    
+    char *expected_str = expected ? "true" : "false";
+    assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
+}
+
+static void test_expression(struct expression *e, union expression_value expected) {
+    assertf(e != NULL, "expected expression, got NULL");
+    switch (e->type) {
+        case EXPR_BOOL: test_boolean_expression(e, expected.bool_value); break;
+        case EXPR_INT: test_integer_expression(e, expected.int_value); break;
+        case EXPR_IDENT: test_identifier_expression(e, expected.str_value); break;
+        default: break;
     }
+}
+
+static void test_infix_expression(struct expression *expr, union expression_value left_value, enum operator operator, union expression_value right_value) {
+    assertf(expr->type == EXPR_INFIX, "wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
+    test_expression(expr->infix.left, left_value);
+    assertf(expr->infix.operator == operator, "wrong operator: expected %d, got %d\n", operator, expr->infix.operator);
+    test_expression(expr->infix.right, right_value);
 }
 
 static void assert_program_size(struct program *p, uint32_t expected_size) {
@@ -30,7 +57,7 @@ static void assert_program_size(struct program *p, uint32_t expected_size) {
 }
 
 static void let_statements() {
-    char *input = ""
+    const char *input = ""
         "let x = 5;\n"
         "let y = true;\n"
         "let foo = y;\n";
@@ -39,8 +66,8 @@ static void let_statements() {
     assert_program_size(program, 3);    
 
     struct test {
-        char *literal;
-        char *name;
+        const char *literal;
+        const char *name;
         union expression_value value;
     } tests[3] = {
         {"let", "x", {.int_value = 5}},
@@ -59,9 +86,18 @@ static void let_statements() {
     free_program(program);
 }
 
+static void let_statements_without_assignment() {
+    const char *input = "let foo;";
+    struct program *program = parse_program_str(input);
+    assert_program_size(program, 1);    
+    struct statement stmt = program->statements[0];
+    assertf(strcmp(stmt.name.value, "foo") == 0, "wrong identifier. expected %s, got %s\n", "foo", stmt.token.literal);
+    assertf(stmt.value == NULL, "Expected null, got expression.\n");
+    free_program(program);
+}
 
 static void return_statements() {
-    char *input = ""
+    const char *input = ""
         "return 5;\n"
         "return true;\n"
         "return x;\n";
@@ -164,13 +200,6 @@ static void program_string() {
     free(str);
 }
 
-static void test_identifier_expression(struct expression *e, char *expected) {
-    assertf(e->type == EXPR_IDENT, "wrong expression type: expected %d, got %d\n", EXPR_IDENT, e->type);
-    assertf(strcmp(e->ident.token.literal, expected) == 0, "wrong token literal: expected \"%s\", got \"%s\"\n", expected, e->ident.token.literal);
-    assertf(strcmp(e->ident.value, expected) == 0, "wrong expression value: expected \"%s\", got \"%s\"\n", expected, e->ident.value);
-}
-
-
 static void identifier_expression_parsing() {
     const char *input = "foobar;";
     struct program *program = parse_program_str(input);
@@ -182,17 +211,6 @@ static void identifier_expression_parsing() {
     test_identifier_expression(stmt.value, "foobar");
     free_program(program);
 }
-
-
-static void test_integer_expression(struct expression *expr, int expected) {
-    assertf(expr->type == EXPR_INT, "wrong expression type: expected %d, got %d\n", EXPR_INT, expr->type);
-    assertf(expr->integer == expected, "wrong integer value: expected %d, got %d\n", expected, expr->integer);
-
-    char expected_str[8];
-    sprintf(expected_str, "%d", expected);
-    assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
-}
-
 
 static void integer_expression_parsing() {
     const char *input = "5;";
@@ -206,18 +224,9 @@ static void integer_expression_parsing() {
     free_program(program);
 }
 
-
-static void test_boolean_expression(struct expression * expr, char expected) {
-    assertf(expr->type == EXPR_BOOL, "wrong expression type: expected %d, got %d\n", EXPR_BOOL, expr->type);
-    assertf(expr->boolean == expected, "wrong boolean value: expected %d, got %d\n", expected, expr->boolean);
-    
-    char *expected_str = expected ? "true" : "false";
-    assertf(strcmp(expr->token.literal, expected_str) == 0, "wrong token literal: expected %s, got %s\n", expected_str, expr->token.literal);
-}
-
 static void boolean_expression_parsing() {
     struct test {
-        char * input;
+        const char* input;
         char expected;
     } tests[] = {
       {"true;", 1},
@@ -234,25 +243,9 @@ static void boolean_expression_parsing() {
     }
 }
 
-static void test_expression(struct expression *e, union expression_value expected) {
-    switch (e->type) {
-        case EXPR_BOOL: test_boolean_expression(e, expected.bool_value); break;
-        case EXPR_INT: test_integer_expression(e, expected.int_value); break;
-        case EXPR_IDENT: test_identifier_expression(e, expected.str_value); break;
-        default: break;
-    }
-}
-
-static void test_infix_expression(struct expression *expr, union expression_value left_value, enum operator operator, union expression_value right_value) {
-    assertf(expr->type == EXPR_INFIX, "wrong expression type. expected %d, got %d\n", EXPR_INFIX, expr->type);
-    test_expression(expr->infix.left, left_value);
-    assertf(expr->infix.operator == operator, "wrong operator: expected %d, got %d\n", operator, expr->infix.operator);
-    test_expression(expr->infix.right, right_value);
-}
-
 static void infix_expression_parsing() {
     struct test{
-        char *input;
+        const char *input;
         union expression_value left_value;
         enum operator operator;
         union expression_value right_value;        
@@ -283,7 +276,7 @@ static void infix_expression_parsing() {
 
 static void prefix_expression_parsing() {
     typedef struct test {
-        char *input;
+        const char *input;
         enum operator operator;
         union expression_value value;
     } test;
@@ -297,11 +290,8 @@ static void prefix_expression_parsing() {
     test t;
     for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
         t = tests[i];
-        struct lexer l = {tests[i].input, 0};
-        struct parser parser = new_parser(&l);
-        struct program *program = parse_program(&parser);
-
-        assert_parser_errors(&parser);
+       
+        struct program *program = parse_program_str(tests[i].input);
         assert_program_size(program, 1);
         struct statement stmt = program->statements[0];
 
@@ -314,8 +304,8 @@ static void prefix_expression_parsing() {
 
 static void operator_precedence_parsing() {
     struct test {
-        char *input;
-        char *expected;
+        const char *input;
+        const char *expected;
     } tests[] = {
        {"-a * b", "((-a) * b)"},
        {"!-a", "(!(-a))"},
@@ -501,7 +491,6 @@ static void call_expression_parsing() {
     free_program(program);
 }
 
-
 static void test_string_literal(struct expression *expr, char *expected) {
     assertf(expr->type == EXPR_STRING, "wrong expression type: expected EXPR_STRING, got %s", expr->type);
     assertf(strcmp(expr->string, expected) == 0, "wrong expression value: expected \"%s\", got %s", expected, expr->string);
@@ -611,6 +600,7 @@ static void assignment_expressions() {
 
 int main(int argc, char *argv[]) {
     TEST(let_statements);
+    TEST(let_statements_without_assignment);
     TEST(return_statements);
     TEST(program_string);
     TEST(identifier_expression_parsing);
