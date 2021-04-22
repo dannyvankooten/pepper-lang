@@ -1,4 +1,4 @@
- let str = "The god of love,
+str = [[The god of love,
 That sits above,
 And knows me, and knows me,
 How pitiful I deserve,--
@@ -16,18 +16,19 @@ endings: no, I was not born under a rhyming planet,
 nor I cannot woo in festival terms.
 
 Enter BEATRICE
-Sweet Beatrice, wouldst thou come when I called thee?"
+Sweet Beatrice, wouldst thou come when I called thee?]]
 
-for (let i=0; i < 8; i = i+1) {
-    str = str + str;
-}
+for i=0, 7, 1
+do
+    str = str .. str;
+end
 
-let count = 0;
+local count = 0
 
-for (let i=0; i < len(str); i = i+1) {
-    if (str[i] == " ") {
-        count = count + 1;
-    }
-}
-
-puts(count);
+for i = 0, #str do
+    local c = str:sub(i,i)
+    if c == " " then 
+        count = count + 1
+    end
+end
+print(count)

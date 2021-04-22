@@ -102,11 +102,11 @@ For fun, I ran the same algorithm expressed in some other interpreted languages 
 
 | Language   	| fib-35   	| string-concat-count 	|
 |------------	|----------	|---------------------	|
-| Node 15    	| 0.21     	| 0.06                	|
+| Node 15    	| 0.21     	| 0.058                	|
 | Pypy 7.3   	| 0.24     	| 0.154               	|
 | PHP 8.0    	| 0.48     	| 0.036               	|
-| **Pepper** 	| **0.72** 	| **0.039**           	|
-| Lua 5.4    	| 0.72     	|                     	|
+| **Pepper** 	| **0.72** 	| **0.024**           	|
+| Lua 5.4    	| 0.83     	| 0.030                 |
 | Ruby 3.0   	| 0.80     	| 0.102               	|
 | Python 3.9 	| 1.91     	| 0.060               	|
 | PHP 5.6    	| 2.72     	|                     	|

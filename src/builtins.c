@@ -71,7 +71,7 @@ builtin_len(const struct object_list* args) {
     struct object arg = args->values[0];
     switch (arg.type) {
         case OBJ_STRING:
-            return make_integer_object(strlen(arg.value.ptr->value));
+            return make_integer_object(arg.value.ptr->string.length);
         break;
 
         case OBJ_ARRAY:
