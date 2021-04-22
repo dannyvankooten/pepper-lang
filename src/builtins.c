@@ -195,7 +195,8 @@ builtin_file_get_contents(const struct object_list *args) {
     fseek(fd, 0, SEEK_SET); 
     char* buf = malloc(fsize + 1);
     assert(buf != NULL);
-    fread(buf, 1, fsize, fd);
+    size_t bytes_read = fread(buf, 1, fsize, fd);
+    assert(bytes_read >= 0);
     buf[fsize] = '\0';
     struct object obj = make_string_object(buf, NULL);
     free(buf);
