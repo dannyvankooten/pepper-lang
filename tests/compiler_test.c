@@ -801,7 +801,7 @@ static void string_expressions() {
         {
             .input = "\"monkey\"",
             .constants = {
-                make_string_object("monkey", NULL),
+                make_string_object("monkey"),
             }, 1,
             .instructions = {
                 make_instruction(OPCODE_CONST, 0),
@@ -812,8 +812,8 @@ static void string_expressions() {
         {
             .input = "\"mon\" + \"key\"",
             .constants = {
-               make_string_object("mon", NULL),
-               make_string_object("key", NULL),
+               make_string_object("mon"),
+               make_string_object("key"),
             }, 2,
             .instructions = {
                 make_instruction(OPCODE_CONST, 0),
@@ -833,7 +833,7 @@ static void builtin_functions() {
         {
             .input = "len(\"monkey\")",
             .constants = {
-                make_string_object("monkey", NULL),
+                make_string_object("monkey"),
             }, 1,
             .instructions = {
                 make_instruction(OPCODE_GET_BUILTIN, 1),
@@ -846,8 +846,8 @@ static void builtin_functions() {
         {
             .input = "puts(\"length = \", len(\"monkey\"))",
             .constants = {
-                make_string_object("length = ", NULL),
-                make_string_object("monkey", NULL),
+                make_string_object("length = "),
+                make_string_object("monkey"),
             }, 2,
             .instructions = {
                 make_instruction(OPCODE_GET_BUILTIN, 0), 

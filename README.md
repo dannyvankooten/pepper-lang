@@ -94,22 +94,22 @@ sudo make install
 
 ### Benchmarks
 
-A benchmark to calculate the [35th fibonacci number](https://github.com/dannyvankooten/pepper-lang/blob/master/examples/fib35.monkey) using a recursive function is run on every commit through [this](https://github.com/dannyvankooten/pepper-lang/actions/workflows/c.yml) Github action workflow.
+A benchmark to calculate the [35th fibonacci number](https://github.com/dannyvankooten/pepper-lang/blob/master/examples/fib35-recursive.pr) using a recursive function is run on every commit through [this](https://github.com/dannyvankooten/pepper-lang/actions/workflows/c.yml) Github action workflow.
 
-![Fibonacci 35 benchmark](https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/benchmarks.jpg)
+![Fibonacci 35 benchmark](https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/benchmarks/chart.jpg)
 
 For fun, I ran the same algorithm expressed in some other interpreted languages on the same hardware (my laptop). This is how Pepper compares:
 
-| Language 	                | Time (s)	|
-|--------------------	    |------	|
-| Node 15            	    | 0.21 	|
-| Pypy 7.3				    | 0.24  |
-| PHP 8.0            	    | 0.48 	|
-| **Pepper**    | **0.72**	|
-| Lua 5.4            	    | 0.72 	|
-| Ruby 2.7           	    | 0.80 	|
-| Python 3.9         	    | 1.91 	|
-| PHP 5.6				    | 2.72  |
+| Language   	| fib-35   	| string-concat-count 	|
+|------------	|----------	|---------------------	|
+| Node 15    	| 0.21     	| 0.06                	|
+| Pypy 7.3   	| 0.24     	| 0.154               	|
+| PHP 8.0    	| 0.48     	| 0.036               	|
+| **Pepper** 	| **0.72** 	| **0.039**           	|
+| Lua 5.4    	| 0.72     	|                     	|
+| Ruby 3.0   	| 0.80     	| 0.102               	|
+| Python 3.9 	| 1.91     	| 0.060               	|
+| PHP 5.6    	| 2.72     	|                     	|
 
 
 ### License

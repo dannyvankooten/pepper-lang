@@ -60,7 +60,7 @@ static void test_object(struct object obj, object_type expected_type, object_val
             // nothing to do as null objects have no further contents and type has already been checked
         break;
         case OBJ_STRING: 
-            assertf(strcmp(expected_value.string, obj.value.ptr->value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected_value.string, obj.value.ptr->value);
+            assertf(strcmp(expected_value.string, obj.value.ptr->string.value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected_value.string, obj.value.ptr->string.value);
         break;
         case OBJ_ERROR:
             assertf(strncmp(obj.value.ptr->value, expected_value.error, strlen(expected_value.error)) == 0, "invalid error value: expected \"%s\", got \"%s\"", expected_value.error, obj.value.ptr->value);
@@ -360,6 +360,10 @@ static void string_expressions() {
         {"\"monkey\"", "monkey"},
         {"\"mon\" + \"key\"", "monkey"},
         {"\"mon\" + \"key\" + \"banana\"", "monkeybanana"},
+        {"let a = \"foo\"; let b = a; b = \"bar\"; a;", "foo"},
+        {"let a = \"foo\"; let b = \"bar\"; let c = a + b; a", "foo"},
+        {"let a = \"foo\"; let b = \"bar\"; let c = a + b; b", "bar"},
+        {"let a = \"foo\"; let b = \"bar\"; let c = a + b; c", "foobar"},
     };
     
     for (int t=0; t < ARRAY_SIZE(tests); t++) {

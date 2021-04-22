@@ -45,24 +45,33 @@ struct object make_array_object(struct object_list *elements)
     return obj;
 }
 
-struct object make_string_object(const char *str1, const char *str2)
+struct object make_string_object(const char *str)
 {
     struct object obj;
     obj.type = OBJ_STRING;
-
-    const uint32_t len = strlen(str1) + (str2 ? strlen(str2) : 0) + 1;
-
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + len);
+    size_t length = strlen(str);
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + length + 1);
     assert(obj.value.ptr != NULL);
     obj.value.ptr->marked = false;
-    obj.value.ptr->value = (char*) (obj.value.ptr + 1);
-    assert(obj.value.ptr->value != NULL);
+    obj.value.ptr->string.value = (char*) (obj.value.ptr + 1);
+    strcpy(obj.value.ptr->string.value, str);
+    obj.value.ptr->string.length = length;
+    return obj;
+}
 
-    strcpy(obj.value.ptr->value, str1);
-    if (str2) {
-        strcat(obj.value.ptr->value, str2);
-    }
-
+struct object concat_string_objects(struct string left, struct string right)
+{
+    struct object obj;
+    obj.type = OBJ_STRING;
+    size_t length = left.length + right.length;
+    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + length + 1);
+    assert(obj.value.ptr != NULL);
+    obj.value.ptr->marked = false;
+    obj.value.ptr->string.value = (char*) (obj.value.ptr + 1);
+    obj.value.ptr->string.length = length;
+    strcpy(obj.value.ptr->string.value, left.value);
+    strcpy(obj.value.ptr->string.value + left.length, right.value);
+    obj.value.ptr->string.value[length] = '\0';
     return obj;
 }
 
@@ -115,7 +124,7 @@ struct object copy_object(const struct object* restrict obj) {
             break;
         
         case OBJ_STRING:
-            return make_string_object(obj->value.ptr->value, NULL);
+            return make_string_object(obj->value.ptr->value);
             break;
 
         case OBJ_ARRAY: {

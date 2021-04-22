@@ -155,16 +155,25 @@ vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode o
             left->value.integer %= right->value.integer;
         break;
         default:
-            err(VM_ERR_INVALID_INT_OPERATOR, "Invalid operator for integer operation.");
+            err(VM_ERR_INVALID_OPERATOR, "Invalid operator %s for integer operation.", opcode_to_str(opcode));
         break;
     }
 }
 
 static void 
-vm_do_binary_string_operation(struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
-    struct object o = make_string_object(left->value.ptr->value, right->value.ptr->value); 
-    vm_stack_cur(vm) = o;
-    gc_add(vm, o);   
+vm_do_binary_string_operation(struct vm* restrict vm, enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
+    switch (opcode) {
+        case OPCODE_ADD: {            
+            struct object o = concat_string_objects(left->value.ptr->string, right->value.ptr->string);
+            vm_stack_cur(vm) = o;
+            gc_add(vm, o);   
+        }
+        break;
+
+        default:
+            err(VM_ERR_INVALID_OPERATOR, "Invalid operator %s for integer operation.", opcode_to_str(opcode));
+        break;
+    }
 }
 
 static void 
@@ -177,7 +186,7 @@ vm_do_binary_boolean_operation(const struct vm* restrict vm, const enum opcode o
             left->value.boolean = left->value.boolean || right->value.boolean;
         break;
         default:
-            err(VM_ERR_INVALID_BOOL_OPERATOR, "Invalid operator for boolean operation.");
+            err(VM_ERR_INVALID_OPERATOR, "Invalid operator for boolean operation.");
         break;
     }
 }
@@ -199,7 +208,7 @@ vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
             return vm_do_binary_boolean_operation(vm, opcode, left, right);
         break;
         default: 
-            err(VM_ERR_INVALID_OP_TYPE, "Invalid type for binary operation.");
+            err(VM_ERR_INVALID_OP_TYPE, "Invalid type %s for binary operation.", object_type_to_str(left->type));
         break;
     }
 }
@@ -261,11 +270,11 @@ vm_do_string_comparison(const struct vm* restrict vm, const enum opcode opcode, 
     left->type = OBJ_BOOL;
     switch (opcode) {
         case OPCODE_EQUAL: 
-            left->value.boolean = strcmp(left->value.ptr->value, right->value.ptr->value) == 0;
+            left->value.boolean = strcmp(left->value.ptr->string.value, right->value.ptr->string.value) == 0;
         break;
 
         case OPCODE_NOT_EQUAL: 
-            left->value.boolean = strcmp(left->value.ptr->value, right->value.ptr->value) != 0;
+            left->value.boolean = strcmp(left->value.ptr->string.value, right->value.ptr->string.value) != 0;
         break;
 
         default: 
@@ -388,8 +397,8 @@ gc(struct vm* restrict vm)
 {
     // we want to run the garbage collector pretty much all the time when in debug mode
     // so this code gets properly exercised
-    #ifdef TEST_MODE 
-    if (vm->heap->size > (vm->heap->cap / 2)) {
+    #ifndef TEST_MODE 
+    if (vm->heap->size < (vm->heap->cap * 0.8)) {
         return;
     }
     #endif 
@@ -705,15 +714,15 @@ vm_run(struct vm* restrict vm) {
             break;
 
             case OBJ_STRING: {
-                const char *str = ((const char*) left.value.ptr->value);
-                if (index.value.integer < 0 || index.value.integer >= strlen(str)) {
+                const char *str = ((const char*) left.value.ptr->string.value);
+                if (index.value.integer < 0 || index.value.integer >= left.value.ptr->string.length) {
                      vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
                 } else {
                     char buf[2];
                     buf[0] = (char) str[index.value.integer];
                     buf[1] = '\0';
 
-                    struct object obj = make_string_object(buf, NULL);
+                    struct object obj = make_string_object(buf);
                     vm_stack_push(vm, obj);
                     gc_add(vm, obj);
                 }   

@@ -393,7 +393,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
         break;
 
         case EXPR_STRING: {
-            struct object obj = make_string_object(expr->string, NULL);
+            struct object obj = make_string_object(expr->string);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
         }
         break;

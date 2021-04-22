@@ -109,7 +109,7 @@ builtin_type(const struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
-    return make_string_object(object_type_to_str(args->values[0].type), NULL);
+    return make_string_object(object_type_to_str(args->values[0].type));
 }
 
 static struct object 
@@ -198,7 +198,7 @@ builtin_file_get_contents(const struct object_list *args) {
     size_t bytes_read = fread(buf, 1, fsize, fd);
     assert(bytes_read >= 0);
     buf[fsize] = '\0';
-    struct object obj = make_string_object(buf, NULL);
+    struct object obj = make_string_object(buf);
     free(buf);
     fclose(fd);
     return obj;
@@ -225,7 +225,7 @@ str_split(const struct object_list *args) {
     while (*src != '\0') {
         if (strncmp(delim, src, delim_length) == 0) {
             *dest++ = '\0';
-            list = append_to_object_list(list, make_string_object(buf, NULL));
+            list = append_to_object_list(list, make_string_object(buf));
             dest = buf;
             src += delim_length; // skip delim
         } else {
@@ -234,6 +234,6 @@ str_split(const struct object_list *args) {
     }
 
     *dest = '\0';
-    list = append_to_object_list(list, make_string_object(buf, NULL));
+    list = append_to_object_list(list, make_string_object(buf));
     return make_array_object(list);
 }
