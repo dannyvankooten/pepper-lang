@@ -218,6 +218,11 @@ compile_statement(struct compiler *c, const struct statement *stmt) {
         break;
 
         case STMT_RETURN: {
+            // return statements have an optional value expression
+            if (stmt->value == NULL) {
+                return 0;
+            }
+
             err = compile_expression(c, stmt->value);
             if (err) return err;
             compiler_emit(c, OPCODE_RETURN_VALUE);
