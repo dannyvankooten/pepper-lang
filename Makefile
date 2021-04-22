@@ -18,7 +18,7 @@ bin/:
 	mkdir -p bin/
 
 bin/pepper: pepper.c $(VM_SRC) pepper.c | bin/
-	$(CC) $(CFLAGS) $^ -Ofast -march=native -o $@ 
+	$(CC) $(CFLAGS) $^ -Ofast -o $@ 
 
 # tests
 bin/lexer_test: tests/lexer_test.c $(LEXER_SRC) | bin/
@@ -38,6 +38,7 @@ check: CFLAGS += -DTEST_MODE
 check: $(TESTS)
 	for test in $^; do $$test || exit 1; done
 
+memcheck: CFLAGS += -DTEST_MODE
 memcheck: $(TESTS)
 	for test in $^; do valgrind $$test || exit 1; done
 
