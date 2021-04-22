@@ -211,8 +211,12 @@ compile_statement(struct compiler *c, const struct statement *stmt) {
 
         case STMT_LET: {
             struct symbol *s = symbol_table_define(c->symbol_table, stmt->name.value);
-            err = compile_expression(c, stmt->value);
-            if (err) return err;
+            if (stmt->value != NULL) {
+                err = compile_expression(c, stmt->value);
+                if (err) return err;
+            } else {
+                compiler_emit(c, OPCODE_NULL);
+            }
             compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_SET_GLOBAL : OPCODE_SET_LOCAL, s->index);
         }
         break;

@@ -160,9 +160,10 @@ struct expression *make_expression(enum expression_type type, struct token tok) 
 }
 
 static bool
-parse_let_statement(struct parser *p, struct statement *s) {
-    s->type = STMT_LET;
-    s->token = p->current_token;
+parse_let_statement(struct parser *p, struct statement *stmt) {
+    stmt->type = STMT_LET;
+    stmt->token = p->current_token;
+    stmt->value = NULL;
 
     if (!advance_to_next_token(p, TOKEN_IDENT)) {
         return false;
@@ -173,17 +174,21 @@ parse_let_statement(struct parser *p, struct statement *s) {
         .token = p->current_token,
     };
     strcpy(ident.value, p->current_token.literal);   
-    s->name = ident;
+    stmt->name = ident;
+    
 
-    if (!advance_to_next_token(p, TOKEN_ASSIGN)) {
-        return false;
+    // Optional assignment
+    // Test: let foo;
+    if (!next_token_is(p, TOKEN_ASSIGN)) {
+        return true;
     }
 
     // parse expression
+    next_token(p); // Skip TOKEN_ASSIGN
     next_token(p);
-    s->value = parse_expression(p, LOWEST);
-    if (s->value && s->value->type == EXPR_FUNCTION) {
-        strcpy(s->value->function.name, s->name.value);
+    stmt->value = parse_expression(p, LOWEST);
+    if (stmt->value && stmt->value->type == EXPR_FUNCTION) {
+        strcpy(stmt->value->function.name, stmt->name.value);
     } 
     return true;
 }

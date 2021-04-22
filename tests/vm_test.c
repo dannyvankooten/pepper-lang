@@ -214,20 +214,14 @@ static void nulls() {
 }
 
 static void global_let_statements() {
-    struct {
-        const char *input;
-        int expected;
-    } tests[] = {
-        {"let one = 1; one", 1},
-        {"let one = 1; let two = 2; one + two", 3},
-        {"let one = 1; let two = one + one; one + two", 3},
-        {"let one = 1; let one = one + 1;", 2},
+    test_case_t tests[] = {
+        {"let one = 1; one", EXPECT_INT(1)},
+        {"let one = 1; let two = 2; one + two", EXPECT_INT(3)},
+        {"let one = 1; let two = one + one; one + two", EXPECT_INT(3)},
+        {"let one = 1; let one = one + 1;", EXPECT_INT(2)},
+        {"let foo; foo", EXPECT_NULL()},
     };
-
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
-     }
+    run_tests(tests, ARRAY_SIZE(tests));
 }
 
 static void function_calls() {
@@ -609,7 +603,7 @@ static void var_assignment() {
         {  
             "[5][0] = 1", 
             EXPECT_INT(1),
-        },
+        }
     };
 
     run_tests(tests, ARRAY_SIZE(tests)); 
