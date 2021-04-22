@@ -162,7 +162,7 @@ struct parser {
     struct token next_token;
 
     uint32_t errors;
-    char error_messages[4][64];
+    char** error_messages;
 };
 
 struct parser new_parser(struct lexer *l);

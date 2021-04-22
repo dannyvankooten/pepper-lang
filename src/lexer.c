@@ -55,19 +55,26 @@ static bool is_letter(const char ch) {
 
 int gettoken(struct lexer *l, struct token *t) {
   char ch = l->input[l->pos++];
+  l->cur_linepos++;
 
-  t->literal[0] = '\0';
+  memset(t->literal, '\0', 64);
 
   // skip whitespace
   while (isspace(ch)) {
     if (ch == '\n') {
       l->cur_lineno++;
+      l->cur_linepos = 0;
     }
 
     ch = l->input[l->pos++];
+    l->cur_linepos++;
   }
 
   char ch_next;
+
+  // store line and position on token for better parser errors
+  t->line = l->cur_lineno;
+  t->pos = l->cur_linepos;
 
   switch (ch) {
   case '=':
@@ -76,6 +83,7 @@ int gettoken(struct lexer *l, struct token *t) {
       t->type = TOKEN_EQ;
       strcpy(t->literal, "==");
       l->pos++;
+      l->cur_linepos++;
     } else {
       t->type = TOKEN_ASSIGN;
       t->literal[0] = ch;
@@ -125,6 +133,7 @@ int gettoken(struct lexer *l, struct token *t) {
       t->type = TOKEN_NOT_EQ;
       strcpy(t->literal, "!=");
       l->pos++;
+      l->cur_linepos++;
     } else {
       t->type = TOKEN_BANG;
       t->literal[0] = ch;
@@ -140,6 +149,7 @@ int gettoken(struct lexer *l, struct token *t) {
     if (ch_next == '/') {
       while (l->input[l->pos] != '\n' && l->input[l->pos] != '\0') {
         l->pos++;
+        l->cur_linepos++;
       }
       return gettoken(l, t);
     }
@@ -158,6 +168,7 @@ int gettoken(struct lexer *l, struct token *t) {
     ch_next = l->input[l->pos];
     if (ch_next == '=') {
       l->pos++;
+      l->cur_linepos++;
       t->type = TOKEN_LTE;
       strcpy(t->literal, "<=");
     } else {
@@ -170,6 +181,7 @@ int gettoken(struct lexer *l, struct token *t) {
     ch_next = l->input[l->pos];
     if (ch_next == '=') {
       l->pos++;
+      l->cur_linepos++;
       t->type = TOKEN_GTE;
       strcpy(t->literal, ">=");
     } else {
@@ -214,6 +226,7 @@ int gettoken(struct lexer *l, struct token *t) {
       t->type = TOKEN_OR;
       strcpy(t->literal, "||");
       l->pos++;
+      l->cur_linepos++;
     }
   break;
 
@@ -223,6 +236,7 @@ int gettoken(struct lexer *l, struct token *t) {
       t->type = TOKEN_AND;
       strcpy(t->literal, "&&");
       l->pos++;
+      l->cur_linepos++;
     }
   break;
 
@@ -231,6 +245,7 @@ int gettoken(struct lexer *l, struct token *t) {
     t->start = &l->input[l->pos];
     while (1) {
       ch = l->input[l->pos++];
+      l->cur_linepos++;
       if (ch == '\0' || (ch == '"' && l->input[l->pos - 2] != '\\')) {
         break;
       }
@@ -244,26 +259,31 @@ int gettoken(struct lexer *l, struct token *t) {
       while ((is_letter(ch) || isdigit(ch)) && i < MAX_IDENT_LENGTH - 1) {
         t->literal[i++] = ch;
         ch = l->input[l->pos++];
+        l->cur_linepos++;
       }
       t->literal[i] = '\0';
       get_ident(t);
 
       // return last character to input
       l->pos--;
+      l->cur_linepos--;
     } else if (isdigit(ch)) {
       int32_t i = 0;
       while (isdigit(ch) && i < MAX_IDENT_LENGTH - 1) {
         t->literal[i++] = ch;
         ch = l->input[l->pos++];
+        l->cur_linepos++;
       }
       t->literal[i++] = '\0';
       t->type = TOKEN_INT;
 
       // return last character to input
       l->pos--;
+      l->cur_linepos--;
     } else {
       t->type = TOKEN_ILLEGAL;
       t->literal[0] = ch;
+      t->literal[1] = '\0';
     }
     break;
   }
@@ -271,7 +291,6 @@ int gettoken(struct lexer *l, struct token *t) {
   case '\0':
     t->type = TOKEN_EOF;
     t->literal[0] = '\0';
-    return -1; // signal DONE
     break;
   }
 
@@ -283,5 +302,6 @@ struct lexer new_lexer(const char *input) {
       .input = input,
       .pos = 0,
       .cur_lineno = 1,
+      .cur_linepos = 0,
   };
 }

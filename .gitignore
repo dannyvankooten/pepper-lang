@@ -4,3 +4,4 @@ vgcore.*
 *.out
 prof_*
 .ipynb_checkpoints/
+syntax-test.pr

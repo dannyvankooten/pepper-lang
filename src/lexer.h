@@ -52,12 +52,22 @@ struct token {
     char literal[MAX_IDENT_LENGTH];
     const char *start;
     const char *end;
+
+    uint32_t line;
+    uint32_t pos;
 };
 
 struct lexer {
     const char *input;
+
+    /* pos in file */
     uint32_t pos;
-    uint32_t cur_lineno;    
+
+    /* line number */
+    uint32_t cur_lineno;
+    
+    /* position in line */
+    uint32_t cur_linepos;
 };
 
 int gettoken(struct lexer *l, struct token *t);

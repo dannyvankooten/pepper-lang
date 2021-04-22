@@ -10,12 +10,12 @@
 #include "lexer.h"
 #include "util.h"
 
-static struct expression *parse_expression(struct parser *p, const int8_t precedence);
+static struct expression *parse_expression(struct parser *p, int8_t precedence);
 static int parse_statement(struct parser *p, struct statement *s);
 static void expression_to_str(char *str, const struct expression *expr);
 static void free_expression(struct expression *expr);
-static enum operator parse_operator(const enum token_type t);
-
+static enum operator parse_operator(enum token_type t);
+void free_parser(struct parser* p);
 
 enum precedence {
     LOWEST = 1,
@@ -30,7 +30,6 @@ enum precedence {
     CALL,           // fn()
     INDEX,          // array[i]
 };
-
 
 static 
 enum precedence 
@@ -81,11 +80,35 @@ struct parser new_parser(struct lexer *l) {
         .lexer = l,
         .errors = 0,
     };
+    p.error_messages = malloc(0);
+    assert(p.error_messages != NULL);
 
     // read two tokens so that both current_token and next_token are set
     gettoken(p.lexer, &p.current_token);
     gettoken(p.lexer, &p.next_token);
     return p;
+}
+
+
+static void 
+add_parsing_error(struct parser *p, const char *_format, ...) 
+{
+    va_list args;
+
+    // create format string with filename, line # & line pos prepended
+    char format[256];
+    sprintf(format, "%d:%d: %s", p->current_token.line, p->current_token.pos, _format);
+
+    // alocate space for error message
+    p->error_messages = realloc(p->error_messages, (p->errors + 1) * sizeof(char*));
+    assert(p->error_messages != NULL);
+    uint32_t cap = (strlen(format) + 64) * 2;
+    p->error_messages[p->errors] = malloc(cap);
+    char *msg = p->error_messages[p->errors++];
+
+    va_start(args, _format);  
+    vsnprintf(msg, cap, format, args);
+    va_end(args);
 }
 
 static void
@@ -94,25 +117,31 @@ next_token(struct parser * p) {
     gettoken(p->lexer, &p->next_token);
 }
 
-static
-int current_token_is(struct parser *p, const enum token_type t) {
+static bool 
+current_token_is(struct parser *p, enum token_type t) {
     return t == p->current_token.type;
 }
 
-static
-int next_token_is(struct parser *p, const enum token_type t) {
+static bool 
+next_token_is(struct parser *p, enum token_type t) {
     return t == p->next_token.type;
 }
 
-static
-int advance_to_next_token(struct parser *p, const enum token_type t) {
+static bool 
+advance_to_next_token(struct parser *p, enum token_type t) {
     if (next_token_is(p, t)) {
         next_token(p);
-        return 1;
+        return true;
     }
 
-    err(EXIT_FAILURE, "Parsing error: expected next token to be %s, got %s instead", token_type_to_str(t), token_type_to_str(p->next_token.type));
-    return 1;
+    add_parsing_error(p, "Expected \"%s\", got \"%s\" instead", token_type_to_str(t), p->next_token.literal);
+    
+    // skip forward to next semicolon
+    while (!next_token_is(p, TOKEN_SEMICOLON) && !next_token_is(p, TOKEN_EOF)) {
+        next_token(p);
+    }
+
+    return false;
 }
 
 static 
@@ -127,11 +156,14 @@ struct expression *make_expression(enum expression_type type, struct token tok) 
     return expr;
 }
 
-static
-int parse_let_statement(struct parser *p, struct statement *s) {
+static bool
+parse_let_statement(struct parser *p, struct statement *s) {
     s->type = STMT_LET;
     s->token = p->current_token;
-    advance_to_next_token(p, TOKEN_IDENT);
+
+    if (!advance_to_next_token(p, TOKEN_IDENT)) {
+        return false;
+    }
 
     // parse identifier
     struct identifier ident = {
@@ -140,15 +172,17 @@ int parse_let_statement(struct parser *p, struct statement *s) {
     strcpy(ident.value, p->current_token.literal);   
     s->name = ident;
 
-    advance_to_next_token(p, TOKEN_ASSIGN);
+    if (!advance_to_next_token(p, TOKEN_ASSIGN)) {
+        return false;
+    }
 
     // parse expression
     next_token(p);
     s->value = parse_expression(p, LOWEST);
-    if (s->value->type == EXPR_FUNCTION) {
+    if (s->value && s->value->type == EXPR_FUNCTION) {
         strcpy(s->value->function.name, s->name.value);
     } 
-    return 1;
+    return true;
 }
 
 static
@@ -240,6 +274,7 @@ struct expression_list parse_expression_list(struct parser *p, const enum token_
         .cap = 0,
     };
 
+    // return empty list if next token is already end token
     if (next_token_is(p, end_token)) {
         next_token(p);
         return list;
@@ -284,12 +319,17 @@ struct expression *parse_array_literal(struct parser *p) {
 
 static
 struct expression *parse_index_expression(struct parser *p, struct expression *left) {
-    advance_to_next_token(p, TOKEN_LBRACKET);
+    if (!advance_to_next_token(p, TOKEN_LBRACKET)) {
+        return NULL;
+    }
     struct expression *expr = make_expression(EXPR_INDEX, p->current_token);
     expr->index.left = left;
     next_token(p);
     expr->index.index = parse_expression(p, LOWEST);
-    advance_to_next_token(p, TOKEN_RBRACKET);
+    if (!advance_to_next_token(p, TOKEN_RBRACKET)) {
+        free_expression(expr);
+        return NULL;
+    }
     return expr;
 }
 
@@ -304,6 +344,7 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
 static
 struct expression *parse_assignment_expression(struct parser *p, struct expression *left) {
     if (left->type != EXPR_IDENT && left->type != EXPR_INDEX) {
+        // TODO: Convert to parser error
         err(EXIT_FAILURE, "Parsing error: invalid assignment left-hand side");
     }
 
@@ -338,9 +379,10 @@ struct expression *parse_grouped_expression(struct parser *p) {
     next_token(p);
     
     struct expression *expr = parse_expression(p, LOWEST);
-
+    if (expr == NULL) {
+        return NULL;
+    }
     if (!advance_to_next_token(p, TOKEN_RPAREN)) {
-        free(expr);
         return NULL;
     }
 
@@ -400,26 +442,41 @@ struct expression *parse_for_expression(struct parser *p) {
     expr->for_loop.inc.type = STMT_EXPR;
     expr->for_loop.condition = NULL;
 
-    advance_to_next_token(p, TOKEN_LPAREN);
+    if (!advance_to_next_token(p, TOKEN_LPAREN)) {
+        free_expression(expr);
+        return NULL;
+    }
     
     if (!next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
         parse_statement(p, &expr->for_loop.init);
     }
-    advance_to_next_token(p, TOKEN_SEMICOLON);
+    if (!advance_to_next_token(p, TOKEN_SEMICOLON)) {
+        free_expression(expr);
+        return NULL;
+    }
             
     if (!next_token_is(p, TOKEN_SEMICOLON)) {
         next_token(p);
         expr->for_loop.condition = parse_expression(p, LOWEST);
     }
-    advance_to_next_token(p, TOKEN_SEMICOLON);
+    if (!advance_to_next_token(p, TOKEN_SEMICOLON)) {
+        free_expression(expr);
+        return NULL;
+    }
     
     if (!next_token_is(p, TOKEN_RPAREN)) {
         next_token(p);
         parse_statement(p, &expr->for_loop.inc);
     }
-    advance_to_next_token(p, TOKEN_RPAREN);
-    advance_to_next_token(p, TOKEN_LBRACE);
+    if (!advance_to_next_token(p, TOKEN_RPAREN)) {
+        free_expression(expr);
+        return NULL;
+    }
+    if (!advance_to_next_token(p, TOKEN_LBRACE)) {
+        free_expression(expr);
+        return NULL;
+    }
 
     expr->for_loop.body = parse_block_statement(p);
     return expr;
@@ -427,14 +484,23 @@ struct expression *parse_for_expression(struct parser *p) {
 
 static
 struct expression *parse_while_expression(struct parser *p) {
-    advance_to_next_token(p, TOKEN_LPAREN);
-
     struct expression *expr = make_expression(EXPR_WHILE, p->current_token);
+    if (!advance_to_next_token(p, TOKEN_LPAREN)) {
+        free_expression(expr);
+        return NULL;
+    }
+
     next_token(p);
     expr->while_loop.condition = parse_expression(p, LOWEST);
 
-    advance_to_next_token(p, TOKEN_RPAREN);
-    advance_to_next_token(p, TOKEN_LBRACE);
+    if (!advance_to_next_token(p, TOKEN_RPAREN)) {
+        free_expression(expr);
+        return NULL;
+    }
+    if (!advance_to_next_token(p, TOKEN_LBRACE)) {
+        free_expression(expr);
+        return NULL;
+    }
     expr->while_loop.body = parse_block_statement(p);
     return expr;
 }
@@ -442,13 +508,22 @@ struct expression *parse_while_expression(struct parser *p) {
 static
 struct expression *parse_if_expression(struct parser *p) {
     struct expression *expr = make_expression(EXPR_IF, p->current_token); 
-    advance_to_next_token(p, TOKEN_LPAREN);
+    if (!advance_to_next_token(p, TOKEN_LPAREN)) {
+        free_expression(expr);
+        return NULL;
+    }
 
     next_token(p);
     expr->ifelse.condition = parse_expression(p, LOWEST);
 
-    advance_to_next_token(p, TOKEN_RPAREN);
-    advance_to_next_token(p, TOKEN_LBRACE);
+    if (!advance_to_next_token(p, TOKEN_RPAREN)) {
+        free_expression(expr);
+        return NULL;
+    }
+    if (!advance_to_next_token(p, TOKEN_LBRACE)) {
+        free_expression(expr);
+        return NULL;
+    }
 
     expr->ifelse.consequence = parse_block_statement(p);
     expr->ifelse.alternative = NULL;
@@ -466,7 +541,10 @@ struct expression *parse_if_expression(struct parser *p) {
             return expr;
         }
 
-        advance_to_next_token(p, TOKEN_LBRACE);
+        if (!advance_to_next_token(p, TOKEN_LBRACE)) {
+            free_expression(expr);
+            return NULL;
+        }
         expr->ifelse.alternative = parse_block_statement(p);
     }
 
@@ -513,23 +591,32 @@ struct identifier_list parse_function_parameters(struct parser *p) {
         }
     }
 
-    advance_to_next_token(p, TOKEN_RPAREN);
+    if (!advance_to_next_token(p, TOKEN_RPAREN)) {
+        // TODO: Signal error
+    }
     return params;
 }
 
 static
 struct expression *parse_function_literal(struct parser *p) {
-    advance_to_next_token(p, TOKEN_LPAREN);
     struct expression *expr = make_expression(EXPR_FUNCTION, p->current_token); 
+    expr->function.body = NULL;
+    if (!advance_to_next_token(p, TOKEN_LPAREN)) {
+        free_expression(expr);
+        return NULL;
+    }
     strcpy(expr->function.name, "");
     expr->function.parameters = parse_function_parameters(p);
-    advance_to_next_token(p, TOKEN_LBRACE);
+    if (!advance_to_next_token(p, TOKEN_LBRACE)) {
+        free_expression(expr);
+        return NULL;
+    }
     expr->function.body = parse_block_statement(p);
     return expr;
 }
 
-static
-struct expression *parse_expression(struct parser *p, const int8_t precedence) {
+static struct expression *
+parse_expression(struct parser *p, const int8_t precedence) {
     struct expression *left;
     switch (p->current_token.type) {
         case TOKEN_IDENT: 
@@ -567,8 +654,12 @@ struct expression *parse_expression(struct parser *p, const int8_t precedence) {
         case TOKEN_LBRACKET: 
             left = parse_array_literal(p);
         break;
+        // Semicolon is just an empty expression, we can safely ignore it
+        case TOKEN_SEMICOLON:
+            return NULL;
+        break;
         default: 
-            err(EXIT_FAILURE, "Syntax error: unexpected token '%s' at line %d\n", p->current_token.literal, p->lexer->cur_lineno);
+            add_parsing_error(p, "Unexpected token \"%s\"", p->current_token.literal);
             return NULL;
         break;
     }
@@ -621,6 +712,9 @@ int parse_expression_statement(struct parser *p, struct statement *s) {
     s->type = STMT_EXPR;
     s->token = p->current_token;
     s->value = parse_expression(p, LOWEST);
+    if (s->value == NULL) {
+        return -1;
+    }
     return 1;
 }
 
@@ -656,6 +750,7 @@ struct program *parse_program_str(const char *str) {
     struct parser parser = new_parser(&lexer);
     struct program *program = parse_program(&parser);
     // TODO: Do something with parser errors?
+    free_parser(&parser);
     return program;
 }
 
@@ -683,6 +778,7 @@ struct program *parse_program(struct parser *parser) {
             continue;
         }
 
+        // semicolon is optional after each statement
         if (next_token_is(parser, TOKEN_SEMICOLON)) {
             next_token(parser);
         }
@@ -897,11 +993,10 @@ enum operator parse_operator(const enum token_type t) {
         case TOKEN_AND: return OP_AND; break;
         case TOKEN_OR: return OP_OR; break;
         case TOKEN_PERCENT: return OP_MODULO; break;
-        default: 
-        break;
+        default: return OP_UNKNOWN; break;
     }
 
-    return OP_UNKNOWN;
+    
 }
 
 char *operator_to_str(enum operator operator) {
@@ -920,10 +1015,9 @@ char *operator_to_str(enum operator operator) {
         case OP_AND: return "&&"; break;
         case OP_OR: return "||"; break;
         case OP_MODULO: return "%"; break;
-        case OP_UNKNOWN: break;
+        case OP_UNKNOWN:
+        default: return "???"; break;
     }
-
-    return "???";
 }
 
 void free_statements(struct statement *stmts, const uint32_t size) {
@@ -1015,6 +1109,13 @@ void free_expression(struct expression *expr) {
     }
 
     free(expr);
+}
+
+void free_parser(struct parser* p) {
+    for (int i=0; i < p->errors; i++) {
+        free(p->error_messages[i]);
+    }
+    free(p->error_messages);
 }
 
 void free_program(struct program *p) {
