@@ -127,6 +127,13 @@ next_token_is(struct parser *p, enum token_type t) {
     return t == p->next_token.type;
 }
 
+static void skip_forward(struct parser *p) {
+    // skip forward to next semicolon
+    while (!current_token_is(p, TOKEN_SEMICOLON) && !current_token_is(p, TOKEN_EOF)) {
+        next_token(p);
+    }
+}
+
 static bool 
 advance_to_next_token(struct parser *p, enum token_type t) {
     if (next_token_is(p, t)) {
@@ -135,11 +142,7 @@ advance_to_next_token(struct parser *p, enum token_type t) {
     }
 
     add_parsing_error(p, "Expected \"%s\", got \"%s\" instead", token_type_to_str(t), p->next_token.literal);
-    
-    // skip forward to next semicolon
-    while (!next_token_is(p, TOKEN_SEMICOLON) && !next_token_is(p, TOKEN_EOF)) {
-        next_token(p);
-    }
+    skip_forward(p);
 
     return false;
 }
@@ -326,6 +329,10 @@ struct expression *parse_index_expression(struct parser *p, struct expression *l
     expr->index.left = left;
     next_token(p);
     expr->index.index = parse_expression(p, LOWEST);
+    if (expr->index.index == NULL) {
+        free_expression(expr);
+        return NULL;
+    }
     if (!advance_to_next_token(p, TOKEN_RBRACKET)) {
         free_expression(expr);
         return NULL;
@@ -659,7 +666,8 @@ parse_expression(struct parser *p, const int8_t precedence) {
             return NULL;
         break;
         default: 
-            add_parsing_error(p, "Unexpected token \"%s\"", p->current_token.literal);
+            add_parsing_error(p, "Expected expression, got \"%s\".", p->current_token.literal);
+            skip_forward(p);
             return NULL;
         break;
     }
