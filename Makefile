@@ -34,6 +34,7 @@ bin/vm_test: tests/vm_test.c $(VM_SRC) compiler.c | bin/
 bin/symbol_table_test: tests/symbol_table_test.c symbol_table.c | bin/
 	$(CC) $(CFLAGS) $^ -o $@ 
 
+check: CFLAGS += -DTEST_MODE
 check: $(TESTS)
 	for test in $^; do $$test || exit 1; done
 

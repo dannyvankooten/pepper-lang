@@ -371,9 +371,7 @@ vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_
     for (int32_t i = start_index; i < end_index; i++) {
         list->values[list->size++] = copy_object(&vm->stack[i]);
     }
-    struct object o = make_array_object(list);
-    gc_add(vm, o);
-    return o;
+    return make_array_object(list);
 }
 
 static void gc_add(struct vm* vm, struct object obj) {
@@ -382,10 +380,7 @@ static void gc_add(struct vm* vm, struct object obj) {
     }
 
     gc(vm);
-
     vm->heap = append_to_object_list(vm->heap, obj);
-
-    // TODO: Grow heap as needed
 }
 
 static void 
@@ -393,13 +388,13 @@ gc(struct vm* restrict vm)
 {
     // we want to run the garbage collector pretty much all the time when in debug mode
     // so this code gets properly exercised
-    #ifndef DEBUG 
-    if (vm->heap->size < 100) {
+    #ifdef TEST_MODE 
+    if (vm->heap->size > (vm->heap->cap / 2)) {
         return;
     }
     #endif 
 
-    #ifdef DEBUG
+    #ifdef DEBUG_GC
     printf("GARBAGE COLLECTION START\n");
     printf("Heap size (before): %d\n", vm->heap->size);
     #endif
@@ -435,11 +430,11 @@ gc(struct vm* restrict vm)
         // free object
         free_object(&vm->heap->values[i]);
 
-        // remove from heap (swap with last value)
-        vm->heap[i] = vm->heap[--vm->heap->size];       
+        // remove from heap (swap with last value)  
+        vm->heap->values[i] = vm->heap->values[--vm->heap->size];
     }
 
-    #ifdef DEBUG
+    #ifdef DEBUG_GC
     printf("Heap size (after): %d\n", vm->heap->size);
     printf("GARBAGE COLLECTION DONE\n");
     #endif
@@ -688,6 +683,7 @@ vm_run(struct vm* restrict vm) {
         struct object array = vm_build_array(vm, vm->stack_pointer - num_elements, vm->stack_pointer);
         vm->stack_pointer -= num_elements;
         vm_stack_push(vm, array);
+        gc_add(vm, array);
         DISPATCH();
     }
 
@@ -718,8 +714,8 @@ vm_run(struct vm* restrict vm) {
                     buf[1] = '\0';
 
                     struct object obj = make_string_object(buf, NULL);
-                    gc_add(vm, obj);
                     vm_stack_push(vm, obj);
+                    gc_add(vm, obj);
                 }   
             }
             break;

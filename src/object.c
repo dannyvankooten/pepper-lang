@@ -191,8 +191,9 @@ void free_object_list(struct object_list *list) {
 struct object_list*
 append_to_object_list(struct object_list* list, struct object obj) {
     if (list->size == list->cap) {
-        list->cap = list->cap > 0 ? list->cap * 2 : 1;
+        list->cap = (list->cap > 0) ? list->cap * 2 : 1;
         list = (struct object_list*) realloc(list, sizeof(struct object_list) + list->cap * sizeof(struct object));
+        assert(list != NULL);
         list->values = (struct object*) (list + 1);
     }
 
