@@ -1,1 +1,5 @@
-misc/benchmarks/programs/* linguist-vendored
+misc/benchmarks/programs/node/* linguist-vendored
+misc/benchmarks/programs/lua/* linguist-vendored
+misc/benchmarks/programs/python/* linguist-vendored
+misc/benchmarks/programs/php/* linguist-vendored
+misc/benchmarks/programs/ruby/* linguist-vendored
