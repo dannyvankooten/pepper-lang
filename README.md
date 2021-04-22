@@ -100,17 +100,16 @@ A benchmark to calculate the [35th fibonacci number](https://github.com/dannyvan
 
 For fun, I ran the same algorithm expressed in some other interpreted languages on the same hardware (my laptop). This is how Pepper compares:
 
-| Language   	| fib-35   	| string-concat-count 	|
-|------------	|----------	|---------------------	|
-| **Pepper** 	| **0.720** 	| **0.024**           	|
-| Lua 5.4    	| 0.830     	| 0.030                 |
-| Node 15    	| 0.210     	| 0.058                	|
-| PHP 8.0    	| 0.480     	| 0.036               	|
-| PHP 5.6    	| 2.720     	|                     	|
-| Pypy 7.3   	| 0.240     	| 0.154               	|
-| Python 3.9 	| 1.910     	| 0.060               	|
-| Ruby 3.0   	| 0.800     	| 0.102               	|
-
+| Language   	| fib-35    	| string-concat-count 	| selection-sort 	|
+|------------	|-----------	|---------------------	|----------------	|
+| **Pepper** 	| **0.720** 	| **0.024**           	| **0.349**      	|
+| Lua 5.4    	| 0.830     	| 0.030               	| 0.156          	|
+| Node 15    	| 0.210     	| 0.058               	| 0.071          	|
+| PHP 8.0    	| 0.480     	| 0.036               	| 0.595          	|
+| PHP 5.6    	| 2.720     	|                     	|                	|
+| Pypy 7.3   	| 0.240     	| 0.154               	| 0.192          	|
+| Python 3.9 	| 1.910     	| 0.060               	| 1.009          	|
+| Ruby 3.0   	| 0.800     	| 0.102               	| 0.877          	|
 
 ### License
 

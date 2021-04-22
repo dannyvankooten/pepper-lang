@@ -707,8 +707,7 @@ vm_run(struct vm* restrict vm) {
                 if (index.value.integer < 0 || index.value.integer >= list->size) {
                     vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
                 } else {
-                    struct object value = list->values[index.value.integer];
-                    vm_stack_push(vm, value);
+                    vm_stack_push(vm, list->values[index.value.integer]);
                 }
             }
             break;
@@ -734,10 +733,11 @@ vm_run(struct vm* restrict vm) {
             break;
         }
         
-        
         frame->ip++;
         DISPATCH();
     }
+
+    #define copy(v) (v.type <= OBJ_BUILTIN ? v : copy_object(&v))
 
     GOTO_OPCODE_INDEX_SET: {
         struct object value = vm_stack_pop(vm);
@@ -749,7 +749,7 @@ vm_run(struct vm* restrict vm) {
         if (index.value.integer < 0 || index.value.integer >= list->size) {
             // TODO: Determine what we want to do when we assign out of bounds
         } else {
-            list->values[index.value.integer] = copy_object(&value);
+            list->values[index.value.integer] = copy(value);
 
             // Push value on stack ???
             vm_stack_push(vm, value);

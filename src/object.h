@@ -69,6 +69,7 @@ struct object_list {
 const char *object_type_to_str(const enum object_type t);
 struct object make_integer_object(const int64_t value);
 struct object make_string_object(const char *str1);
+struct object make_string_object_with_length(const char *str, size_t length);
 struct object make_error_object(const char *format, ...);
 struct object make_array_object(struct object_list *elements);
 struct object make_compiled_function_object(struct instruction *ins, const uint32_t num_locals);
@@ -76,7 +77,7 @@ struct object concat_string_objects(struct string left, struct string right);
 struct object copy_object(const struct object* obj);
 void free_object(struct object* obj);
 void object_to_str(char *str, struct object obj);
-
+void print_object(struct object obj);
 struct object_list *make_object_list(uint32_t cap);
 struct object_list *append_to_object_list(struct object_list* list, struct object obj);
 struct object_list *copy_object_list(const struct object_list *original);

@@ -47,13 +47,12 @@ void print_version() {
 static 
 int repl() {
 	print_version();
-	printf("press CTRL+c to exit\n\n");
+	printf("Press CTRL+c to exit\n\n");
 	struct program *program;
 	struct symbol_table *symbol_table = symbol_table_new();
 	struct object_list *constants = make_object_list(64);
 	struct object globals[GLOBALS_SIZE];
 	char input[BUFSIZ] = { '\0' };
-	char output[BUFSIZ] = { '\0' };
 	while (1)
 	{
 		printf("> ");
@@ -92,12 +91,9 @@ int repl() {
 		struct object obj = vm_stack_last_popped(machine);
 		obj = copy_object(&obj);
 		if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_COMPILED_FUNCTION && obj.type != OBJ_BUILTIN) {
-			object_to_str(output, obj);
-			printf("%s\n", output);
+			print_object(obj);
+			puts("");
 		}
-
-		// clear output buffer
-		output[0] = '\0';
 
 		// copy globals out of VM so we can re-use them in next iteration
 		for (int32_t i=0; i < GLOBALS_SIZE; i++) {

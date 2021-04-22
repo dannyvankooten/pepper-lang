@@ -87,15 +87,8 @@ builtin_len(const struct object_list* args) {
 
 static struct object 
 builtin_puts(const struct object_list* args) {
-    char str[BUFSIZ];
     for (uint32_t i=0; i < args->size; i++) {
-        if (args->values[i].type == OBJ_STRING) {
-            printf("%s", (char *) args->values[i].value.ptr->value);
-        } else {
-            *str = '\0';
-            object_to_str(str, args->values[i]);
-            printf("%s", str);
-        }
+        print_object(args->values[i]);
     }
 
     printf("\n");
@@ -125,7 +118,7 @@ builtin_int(const struct object_list *args) {
         break;
 
         case OBJ_STRING:
-            return make_integer_object(atoi(obj->value.ptr->value));
+            return make_integer_object(atoi(obj->value.ptr->string.value));
         break;
 
         case OBJ_BOOL:
@@ -193,13 +186,11 @@ builtin_file_get_contents(const struct object_list *args) {
     fseek(fd, 0, SEEK_END);
     size_t fsize = ftell(fd);
     fseek(fd, 0, SEEK_SET); 
-    char* buf = malloc(fsize + 1);
-    assert(buf != NULL);
-    size_t bytes_read = fread(buf, 1, fsize, fd);
+
+    struct object obj = make_string_object_with_length("", fsize);
+    size_t bytes_read = fread(obj.value.ptr->string.value, 1, fsize, fd);
     assert(bytes_read >= 0);
-    buf[fsize] = '\0';
-    struct object obj = make_string_object(buf);
-    free(buf);
+    obj.value.ptr->string.value[fsize] = '\0';
     fclose(fd);
     return obj;
 }
@@ -214,26 +205,24 @@ str_split(const struct object_list *args) {
         return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
     }
 
-    char* str = (char*) args->values[0].value.ptr->value;
+    const char* str = (char*) args->values[0].value.ptr->value;
     const char* delim = (char*) args->values[1].value.ptr->value;
     const int delim_length = strlen(delim);
-    struct object_list *list = make_object_list(2);
+    struct object_list *list = make_object_list(8);
 
     char buf[BUFSIZ];
-    char *src = str;
-    char *dest = buf;
-    while (*src != '\0') {
-        if (strncmp(delim, src, delim_length) == 0) {
-            *dest++ = '\0';
-            list = append_to_object_list(list, make_string_object(buf));
-            dest = buf;
-            src += delim_length; // skip delim
-        } else {
-            *dest++ = *src++;
-        }
-    }
+    char *p;
 
-    *dest = '\0';
+    while ((p = strstr(str, delim)) != NULL) {
+        size_t len = p - str;
+        memcpy(buf, str, len);
+        buf[len] = '\0';
+        list = append_to_object_list(list, make_string_object_with_length(buf, len));
+        str = p + delim_length;
+    }
+    
+    // remainder (after last delimiter)
+    strcpy(buf, str);
     list = append_to_object_list(list, make_string_object(buf));
     return make_array_object(list);
 }

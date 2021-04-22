@@ -1,0 +1,35 @@
+let sort = fn(arr) {
+    let length = len(arr);
+    let min = 0;
+    let tmp = 0;
+    let i = 0;
+    let j = 0;
+
+    for (i=0; i < length; i=i+1) {
+        min = i;
+
+        // find minimum value
+        for (j=i+1; j < length; j=j+1) {
+            if (arr[j] < arr[min]) {
+                min = j;
+            }
+        }
+
+        // swap
+        tmp = arr[i];
+        arr[i] = arr[min];
+        arr[min] = tmp;
+    }
+    return arr;
+};
+
+let arr = file_get_contents("numbers.txt");
+arr = str_split(arr, ",");
+let length = len(arr);
+for (let i=0; i < length; i=i+1) {
+    arr[i] = int(arr[i]);
+}
+
+arr = sort(arr);
+
+puts(arr[0], " - ", arr[4999]);

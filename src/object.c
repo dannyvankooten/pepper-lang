@@ -45,11 +45,10 @@ struct object make_array_object(struct object_list *elements)
     return obj;
 }
 
-struct object make_string_object(const char *str)
+struct object make_string_object_with_length(const char *str, size_t length)
 {
     struct object obj;
     obj.type = OBJ_STRING;
-    size_t length = strlen(str);
     obj.value.ptr = malloc(sizeof(*obj.value.ptr) + length + 1);
     assert(obj.value.ptr != NULL);
     obj.value.ptr->marked = false;
@@ -57,6 +56,11 @@ struct object make_string_object(const char *str)
     strcpy(obj.value.ptr->string.value, str);
     obj.value.ptr->string.length = length;
     return obj;
+}
+
+struct object make_string_object(const char *str)
+{
+    return make_string_object_with_length(str, strlen(str));
 }
 
 struct object concat_string_objects(struct string left, struct string right)
@@ -223,9 +227,65 @@ struct object_list *copy_object_list(const struct object_list *original) {
     return new;
 }
 
+void print_object(struct object obj) 
+{
+    switch (obj.type)
+    {
+        case OBJ_NULL:
+            printf("null");
+            break;
+            
+        case OBJ_INT:
+            printf("%ld", obj.value.integer);
+            break;
+            
+        case OBJ_BOOL:
+            printf("%s", obj.value.boolean ? "true" : "false");
+            break;
+            
+        case OBJ_ERROR: 
+            printf("%s", (const char *) obj.value.ptr->value);
+            break;  
+
+        case OBJ_STRING: 
+            #ifdef DEBUG
+                printf("\"%s\"", (const char *) obj.value.ptr->string.value);
+            #else
+                printf("%s", (const char *) obj.value.ptr->string.value);  
+            #endif
+            break;
+
+        case OBJ_BUILTIN: 
+            printf("builtin_function");
+            break;    
+
+        case OBJ_ARRAY: {
+            printf("[");
+            struct object_list* arr = (struct object_list*) obj.value.ptr->value;
+            for (uint32_t i=0; i < arr->size; i++) {
+                if (i > 0) {
+                    printf(", ");
+                }
+                print_object(arr->values[i]);
+            }
+            printf("]");
+            break;
+        }
+
+        case OBJ_COMPILED_FUNCTION: {
+            struct compiled_function* f = (struct compiled_function*) obj.value.ptr->value;
+            char *instruction_str = instruction_to_str(&f->instructions);
+            printf("%s", instruction_str);
+            free(instruction_str);
+            break;
+        }
+    }
+}
+
+// TODO: Fix this function for strings and arrays larger than BUFSIZ
 void object_to_str(char *str, const struct object obj)
 {
-    char tmp[256] = { '\0' };
+    char tmp[BUFSIZ] = { '\0' };
 
     switch (obj.type)
     {
