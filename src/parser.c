@@ -13,7 +13,6 @@
 static struct expression *parse_expression(struct parser *p, int8_t precedence);
 static int parse_statement(struct parser *p, struct statement *s);
 static void expression_to_str(char *str, const struct expression *expr);
-const char* expression_type_to_str(enum expression_type);
 static void free_expression(struct expression *expr);
 static enum operator parse_operator(enum token_type t);
 void free_parser(struct parser* p);
@@ -327,10 +326,28 @@ struct expression *parse_array_literal(struct parser *p) {
 }
 
 static
+struct expression *parse_slice_expression(struct parser *p, struct expression *expr) {
+    expr->type = EXPR_SLICE;
+    expr->slice.start = expr->index.index;
+    
+    next_token(p); // Skip :
+    next_token(p);
+    expr->slice.end = parse_expression(p, LOWEST);
+
+    if (!advance_to_next_token(p, TOKEN_RBRACKET)) {
+        free_expression(expr);
+        return NULL;
+    }
+
+    return expr;
+}
+
+static
 struct expression *parse_index_expression(struct parser *p, struct expression *left) {
     if (!advance_to_next_token(p, TOKEN_LBRACKET)) {
         return NULL;
     }
+
     struct expression *expr = make_expression(EXPR_INDEX, p->current_token);
     expr->index.left = left;
     next_token(p);
@@ -339,6 +356,11 @@ struct expression *parse_index_expression(struct parser *p, struct expression *l
         free_expression(expr);
         return NULL;
     }
+
+    if (next_token_is(p, TOKEN_COLON)) {
+        return parse_slice_expression(p, expr);
+    }
+
     if (!advance_to_next_token(p, TOKEN_RBRACKET)) {
         free_expression(expr);
         return NULL;
@@ -995,6 +1017,16 @@ void expression_to_str(char *str, const struct expression *expr) {
             expression_to_str(str, expr->index.index);
             strcat(str, "])");
         break;
+
+        case EXPR_SLICE: 
+            strcat(str, "(");
+            expression_to_str(str, expr->slice.left);
+            strcat(str, "[");
+            expression_to_str(str, expr->slice.start);
+            strcat(str, ":");
+            expression_to_str(str, expr->slice.end);
+            strcat(str, "])");
+        break;
     }
 
 }
@@ -1069,6 +1101,7 @@ expression_type_to_str(enum expression_type t) {
         "STRING",
         "ARRAY",
         "INDEX",
+        "SLICE",
         "FOR",
         "WHILE",
         "ASSIGN",
@@ -1159,6 +1192,12 @@ void free_expression(struct expression *expr) {
        case EXPR_INDEX: 
             free_expression(expr->index.left);
             free_expression(expr->index.index);
+       break;
+
+        case EXPR_SLICE: 
+            free_expression(expr->slice.left);
+            free_expression(expr->slice.start);
+            free_expression(expr->slice.end);
        break;
     
        case EXPR_INT: 

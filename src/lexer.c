@@ -44,7 +44,7 @@ const char *token_type_to_str(const enum token_type type) {
       "=",       "+",   "-",     "!",     "*",        "/",      "%",
       "<",       "<=",  ">",     ">=",    "==",       "!=",     ",",
       ";",       "(",   ")",     "{",     "}",        "STRING", "[",
-      "]",       "&&",  "||",    "BREAK", "CONTINUE",
+      "]",       "&&",  "||",    "BREAK", "CONTINUE", ":",
   };
   return token_names[type];
 }
@@ -93,6 +93,12 @@ int gettoken(struct lexer *l, struct token *t) {
 
   case ';':
     t->type = TOKEN_SEMICOLON;
+    t->literal[0] = ch;
+    t->literal[1] = '\0';
+    break;
+
+  case ':':
+    t->type = TOKEN_COLON;
     t->literal[0] = ch;
     t->literal[1] = '\0';
     break;

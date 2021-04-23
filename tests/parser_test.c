@@ -462,7 +462,7 @@ static void function_literal_parsing() {
     assertf(stmt.type == STMT_EXPR, "invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
 
     struct expression *expr = stmt.value;
-    assertf(expr->type == EXPR_FUNCTION, "invalid expression type: expected EXPR_FUNCTION, got %d\n", expr->type);
+    assertf(expr->type == EXPR_FUNCTION, "invalid expression type: expected EXPR_FUNCTION, got %s\n", expression_type_to_str(expr->type));
     
     assertf(expr->function.parameters.size == 2, "invalid param size: expected %d, got %d\n", 2, expr->function.parameters.size);
     assertf(strcmp(expr->function.parameters.values[0].value, "x") == 0, "invalid parameter[0]: expected %s, got %s\n", "x", expr->function.parameters.values[0].value);
@@ -485,7 +485,7 @@ static void call_expression_parsing() {
     assertf(stmt.type == STMT_EXPR, "invalid statement type. expected STMT_EXPR, got %d\n", stmt.type);
 
     struct expression *expr = stmt.value;
-    assertf(expr->type == EXPR_CALL, "invalid expression type: expected EXPR_CALL, got %d\n", expr->type);
+    assertf(expr->type == EXPR_CALL, "invalid expression type: expected EXPR_CALL, got %s\n", expression_type_to_str(expr->type));
     test_identifier_expression(expr->call.function, "add");
     assertf(expr->call.arguments.size == 3, "expected 3 arguments, got %d\n", expr->call.arguments.size);
 
@@ -524,7 +524,7 @@ static void string_expression_parsing() {
     assert_program_size(program, 1);
 
     struct statement stmt = program->statements[0];
-    assertf(stmt.token.type == TOKEN_STRING, "wroken token type: expected %s, got %s", token_type_to_str(TOKEN_STRING), stmt.token.type);
+    assertf(stmt.token.type == TOKEN_STRING, "wroken token type: expected %s, got %s", token_type_to_str(TOKEN_STRING), token_type_to_str(stmt.token.type));
     test_string_literal(stmt.value, "hello world");
     free_program(program);
 }
@@ -535,7 +535,7 @@ static void array_literal_parsing() {
     assert_program_size(program, 1);
 
     struct statement stmt = program->statements[0];
-    assertf(stmt.value->type == EXPR_ARRAY, "wrong expression type: expected EXPR_ARRAY, got %s", stmt.value->type);
+    assertf(stmt.value->type == EXPR_ARRAY, "wrong expression type: expected EXPR_ARRAY, got %s", expression_type_to_str(stmt.value->type));
 
     struct expression_list array = stmt.value->array;
     assertf(array.size == 4, "wrong array size: expected 4, got %d", array.size);
@@ -550,17 +550,27 @@ static void index_expression_parsing() {
     const char *input = "myArray[1+2];";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
-
     struct statement stmt = program->statements[0];
-    assertf(stmt.value->type == EXPR_INDEX, "wrong expression type: expected EXPR_INDEX, got %s", stmt.value->type);
-
+    assertf(stmt.value->type == EXPR_INDEX, "wrong expression type: expected EXPR_INDEX, got %s", expression_type_to_str(stmt.value->type));
     struct index_expression expr = stmt.value->index;
     test_identifier_expression(expr.left, "myArray");
-
     union expression_value left = {.int_value = 1};
     union expression_value right = {.int_value = 2};
-
     test_infix_expression(expr.index, left, OP_ADD, right);
+    free_program(program);
+}
+
+static void slice_expression_parsing() {
+    const char *input = "myArray[1:2+2];";
+    struct program *program = parse_program_str(input);
+    assert_program_size(program, 1);
+    struct statement stmt = program->statements[0];
+    assertf(stmt.value != NULL, "expected expression, got NULL");
+    assertf(stmt.value->type == EXPR_SLICE, "wrong expression type: expected EXPR_SLICE, got %s", expression_type_to_str(stmt.value->type));
+    struct slice_expression expr = stmt.value->slice;
+    test_identifier_expression(expr.left, "myArray");
+    test_expression(expr.start, (union expression_value) {.int_value = 1});
+    test_expression(expr.end, (union expression_value) {.int_value = 4});
     free_program(program);
 }
 
@@ -591,7 +601,7 @@ static void for_expressions() {
     assert_program_size(program, 1);
     struct statement stmt = program->statements[0];
     struct expression *expr = stmt.value;
-    assertf (expr->type == EXPR_FOR, "invalid statement type: expected %d, got %d\n", EXPR_WHILE, stmt.type);
+    assertf (expr->type == EXPR_FOR, "invalid statement type: expected %d, got %s\n", EXPR_WHILE, expression_type_to_str(expr->type));
    
     free_program(program);
 }
@@ -603,7 +613,7 @@ static void function_literal_with_name() {
 
     struct statement stmt = program->statements[0];
     struct expression *expr = stmt.value;
-    assertf(expr->type == EXPR_FUNCTION, "invalid expression type: expected %d, got %d\n", EXPR_FUNCTION, expr->type);
+    assertf(expr->type == EXPR_FUNCTION, "invalid expression type: expected %d, got %s\n", EXPR_FUNCTION, expression_type_to_str(expr->type));
     assertf(strcmp(expr->function.name, "myFunction") == 0, "wrong function name: expected myFunction, got %s", expr->function.name);
     free_program(program);
 }
@@ -614,7 +624,7 @@ static void assignment_expressions() {
     assert_program_size(program, 2);
     struct expression* expr = program->statements[1].value;
     
-    assertf(expr->type == EXPR_ASSIGN, "invalid expression type: expected %d, got %d\n", EXPR_ASSIGN, expr->type);
+    assertf(expr->type == EXPR_ASSIGN, "invalid expression type: expected %d, got %s\n", EXPR_ASSIGN, expression_type_to_str(expr->type));
     assertf(strcmp(expr->assign.left->ident.value, "a") == 0, "invalid expression ident");
     test_expression(expr->assign.value, (union expression_value) { .int_value = 10 });
     free_program(program);
@@ -639,6 +649,7 @@ int main(int argc, char *argv[]) {
     TEST(string_expression_parsing);
     TEST(array_literal_parsing);
     TEST(index_expression_parsing);
+    TEST(slice_expression_parsing);
     TEST(while_expression_parsing);
     TEST(for_expressions);
     TEST(function_literal_with_name);

@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/logo.png" width="120" height="120" align="right" />
 
-Pepper is an experimental interpreted programming language with a focus on simplicity and verbosity. It is dynamically typed and comes with built-in garbage collection. 
+Pepper is an experimental interpreted programming language with a focus on simplicity and verbosity. It is dynamically typed and comes with built-in garbage collection. It's like a weird hybrid resembling C and Python.
 
 It's also [quite fast](#Benchmarks) for an interpreted language that does not (yet) rely on JIT compilation.
 
