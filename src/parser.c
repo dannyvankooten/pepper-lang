@@ -326,13 +326,18 @@ struct expression *parse_array_literal(struct parser *p) {
 }
 
 static
-struct expression *parse_slice_expression(struct parser *p, struct expression *expr) {
+struct expression *parse_slice_expression(struct parser *p, struct expression* expr) {
     expr->type = EXPR_SLICE;
+    expr->slice.left = expr->index.left;
     expr->slice.start = expr->index.index;
+    expr->slice.end = NULL;
     
     next_token(p); // Skip :
-    next_token(p);
-    expr->slice.end = parse_expression(p, LOWEST);
+
+    if (! next_token_is(p, TOKEN_RBRACKET)) {
+        next_token(p);
+        expr->slice.end = parse_expression(p, LOWEST);
+    }
 
     if (!advance_to_next_token(p, TOKEN_RBRACKET)) {
         free_expression(expr);
@@ -350,16 +355,26 @@ struct expression *parse_index_expression(struct parser *p, struct expression *l
 
     struct expression *expr = make_expression(EXPR_INDEX, p->current_token);
     expr->index.left = left;
-    next_token(p);
-    expr->index.index = parse_expression(p, LOWEST);
-    if (expr->index.index == NULL) {
-        free_expression(expr);
-        return NULL;
-    }
+    expr->index.index = NULL;
 
+    // Test: [:1]
     if (next_token_is(p, TOKEN_COLON)) {
         return parse_slice_expression(p, expr);
     }
+    
+    next_token(p);
+    expr->index.index = parse_expression(p, LOWEST);
+
+    // Test: [0:1]
+    if (next_token_is(p, TOKEN_COLON)) {
+        return parse_slice_expression(p, expr);
+    }
+
+    // For index expressions, index can not be NULL
+    if (expr->index.index == NULL) {
+        free_expression(expr);
+        return NULL;
+    }    
 
     if (!advance_to_next_token(p, TOKEN_RBRACKET)) {
         free_expression(expr);

@@ -599,11 +599,21 @@ compile_expression(struct compiler *c, const struct expression *expr) {
         case EXPR_SLICE: {
             err = compile_expression(c, expr->slice.left); 
             if (err) return err;
-            // TODO: Add support for omitting start or end expression
-            err = compile_expression(c, expr->slice.start); 
-            if (err) return err;
-            err = compile_expression(c, expr->slice.end); 
-            if (err) return err;
+            
+            if (expr->slice.start != NULL) {
+                err = compile_expression(c, expr->slice.start); 
+                if (err) return err;
+            } else {
+                compiler_emit(c, OPCODE_NULL);
+            }
+
+            if (expr->slice.end != NULL) {
+                err = compile_expression(c, expr->slice.end); 
+                if (err) return err;
+            } else {
+                compiler_emit(c, OPCODE_NULL);
+            }
+            
             compiler_emit(c, OPCODE_SLICE);
         }
         break;

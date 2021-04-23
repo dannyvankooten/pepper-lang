@@ -775,7 +775,10 @@ static void array_slices() {
         { "[0, 1, 2][0:1][0]", EXPECT_INT(0) },
         { "[0, 1, 2][1:2][0]", EXPECT_INT(1) },
         { "[0, 1, 2][1:3][1]", EXPECT_INT(2) },
-        
+        { "[0, 1, 2][:3][1]", EXPECT_INT(1) },
+        { "[0, 1, 2][:][1]", EXPECT_INT(1) },
+        { "[0, 1, 2][-1:][0]", EXPECT_INT(2) },
+        { "[0, 1, 2][-100:-200][0]", EXPECT_ERROR("Array index out of bounds") },
     };
 
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    

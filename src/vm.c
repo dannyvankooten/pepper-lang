@@ -385,7 +385,7 @@ vm_do_call(struct vm* restrict vm, uint8_t num_args) {
     }
 }
 
-struct object 
+static struct object 
 vm_build_array(struct vm* restrict vm, uint16_t start_index, uint16_t end_index) {
     struct object_list* list = make_object_list(end_index - start_index);
     for (int32_t i = start_index; i < end_index; i++) {
@@ -393,6 +393,31 @@ vm_build_array(struct vm* restrict vm, uint16_t start_index, uint16_t end_index)
     }
     return make_array_object(list);
 }
+
+static struct object 
+build_slice(struct object left, struct object obj_start, struct object obj_end) {
+    if ((obj_end.type != OBJ_NULL && obj_end.type != OBJ_INT) || (obj_start.type != OBJ_NULL && obj_start.type != OBJ_INT)) {
+        return make_error_object("Slice indices must be integers.");
+    }
+    struct object_list* source = (struct object_list*) left.value.ptr->value;
+    int32_t start = obj_start.type == OBJ_NULL ? 0 : obj_start.value.integer;
+    int32_t end = obj_end.type == OBJ_NULL ? 0 : obj_end.value.integer;
+    if (start < 0) {
+        start = source->size + start;
+    }
+    if (end <= 0) {
+        end = source->size + end;
+    }
+    if (end < start) {
+        end = start;
+    }
+    struct object_list* list = make_object_list(end - start);
+    for (int i=start; i < end && i < source->size; i++) {
+        list->values[list->size++] = source->values[i];
+    }
+    return make_array_object(list);
+}
+
 
 static void gc_add(struct vm* vm, struct object obj) {
     if (obj.type <= OBJ_BUILTIN) {
@@ -711,14 +736,7 @@ vm_run(struct vm* restrict vm) {
         struct object end = vm_stack_pop(vm);
         struct object start = vm_stack_pop(vm);
         struct object left = vm_stack_pop(vm);
-        assert(end.type == OBJ_INT && start.type == OBJ_INT && start.value.integer >= 0 && start.value.integer < end.value.integer);
-        struct object_list* source = (struct object_list*) left.value.ptr->value;
-        assert(end.value.integer <= source->size);
-        struct object_list* list = make_object_list(end.value.integer - start.value.integer);
-        for (int i=start.value.integer; i < end.value.integer; i++) {
-            list->values[list->size++] = source->values[i];
-        }
-        struct object obj = make_array_object(list);
+        struct object obj = build_slice(left, start, end);
         gc_add(vm, obj);
         vm_stack_push(vm, obj);
         frame->ip++;
