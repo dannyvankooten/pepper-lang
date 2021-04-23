@@ -19,7 +19,7 @@ let b = 25;
 a = a * 5;
 
 // For loops
-for (let i = 0; i < 10; i = i + 1) {
+for (let i = 0; i < 10; i++) {
     // i = 0 .. 9
 }
 

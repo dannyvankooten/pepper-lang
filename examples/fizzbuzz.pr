@@ -1,4 +1,4 @@
-for (let i=0; i <= 100; i=i+1) {
+for (let i=0; i <= 100; i++) {
     let div3 = i % 3 == 0;
     let div5 = i % 5 == 0;
     

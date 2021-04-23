@@ -380,11 +380,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             if (s == NULL) {
                 return COMPILE_ERR_UNKNOWN_IDENT;
             }
-            compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
-
-            
-
-        
+            compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_SET_GLOBAL : OPCODE_SET_LOCAL, s->index);        
         }
         break;
 
