@@ -796,6 +796,18 @@ static void array_slices() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
+static void string_slices() {
+    test_case_t tests[] = {
+        { "\"foobar\"[3:]", EXPECT_STRING("bar") },
+        { "\"foobar\"[100:]", EXPECT_STRING("") },
+        { "\"foobar\"[-1:]", EXPECT_STRING("r") },
+        { "\"foobar\"[-2:-1]", EXPECT_STRING("a") },
+        { "\"foobar\"[-1:-2]", EXPECT_STRING("") },
+    };
+
+    run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
+}
+
 
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
@@ -832,4 +844,5 @@ int main(int argc, const char *argv[]) {
     TEST(string_comparison);
     TEST(postfix_expressions);
     TEST(array_slices);
+    TEST(string_slices);
 }

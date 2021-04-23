@@ -394,14 +394,8 @@ vm_build_array(struct vm* restrict vm, uint16_t start_index, uint16_t end_index)
     return make_array_object(list);
 }
 
-static struct object 
-build_slice(struct object left, struct object obj_start, struct object obj_end) {
-    if ((obj_end.type != OBJ_NULL && obj_end.type != OBJ_INT) || (obj_start.type != OBJ_NULL && obj_start.type != OBJ_INT)) {
-        return make_error_object("Slice indices must be integers.");
-    }
-    struct object_list* source = (struct object_list*) left.value.ptr->value;
-    int32_t start = obj_start.type == OBJ_NULL ? 0 : obj_start.value.integer;
-    int32_t end = obj_end.type == OBJ_NULL ? 0 : obj_end.value.integer;
+static struct object build_slice_from_array(struct object_list* source, int32_t start, int32_t end)
+{
     if (start < 0) {
         start = source->size + start;
     }
@@ -416,6 +410,51 @@ build_slice(struct object left, struct object obj_start, struct object obj_end) 
         list->values[list->size++] = source->values[i];
     }
     return make_array_object(list);
+}
+
+static struct object build_slice_from_string(struct string source, int32_t start, int32_t end)
+{
+    if (start < 0) {
+        start = source.length + start;
+    }
+    if (end <= 0) {
+        end = source.length + end;
+    }
+    if (end < start) {
+        end = start;
+    }
+    struct object obj = make_string_object_with_length("", end - start);
+    struct string str = obj.value.ptr->string;
+    str.length = 0;
+    for (int i=start; i < end && i < source.length; i++) {
+        str.value[str.length++] = source.value[i];
+    }
+    str.value[str.length] = '\0';
+    return obj;
+}
+
+static struct object 
+build_slice(struct object left, struct object obj_start, struct object obj_end) 
+{
+    if ((obj_end.type != OBJ_NULL && obj_end.type != OBJ_INT) || (obj_start.type != OBJ_NULL && obj_start.type != OBJ_INT)) {
+        return make_error_object("Slice indices must be integers.");
+    }
+    int32_t start = obj_start.type == OBJ_NULL ? 0 : obj_start.value.integer;
+    int32_t end = obj_end.type == OBJ_NULL ? 0 : obj_end.value.integer;
+
+    switch (left.type) {
+        case OBJ_ARRAY:
+            return build_slice_from_array((struct object_list*) left.value.ptr->value, start, end);
+        break;
+
+        case OBJ_STRING:
+            return build_slice_from_string(left.value.ptr->string, start, end);
+        break;
+
+        default:
+            return make_error_object("Invalid object type for slice operation");
+        break;
+    } 
 }
 
 
@@ -791,8 +830,11 @@ vm_run(struct vm* restrict vm) {
             }
             break;
 
-            default:
-                return VM_ERR_INVALID_INDEX_SOURCE;
+            default: {
+                struct object obj = make_error_object("Invalid left-hand side for indexing operation");
+                vm_stack_push(vm, obj);
+                gc_add(vm, obj);
+            }
             break;
         }
         
