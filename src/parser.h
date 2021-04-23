@@ -6,7 +6,7 @@
 #include "lexer.h"
 
 enum expression_type {
-    EXPR_INFIX = 1,
+    EXPR_INFIX,
     EXPR_PREFIX,
     EXPR_INT,
     EXPR_IDENT,
@@ -23,7 +23,7 @@ enum expression_type {
 };
 
 enum statement_type {
-    STMT_LET = 1,
+    STMT_LET,
     STMT_RETURN,
     STMT_EXPR,
     STMT_BREAK,

@@ -13,6 +13,7 @@
 static struct expression *parse_expression(struct parser *p, int8_t precedence);
 static int parse_statement(struct parser *p, struct statement *s);
 static void expression_to_str(char *str, const struct expression *expr);
+const char* expression_type_to_str(enum expression_type);
 static void free_expression(struct expression *expr);
 static enum operator parse_operator(enum token_type t);
 void free_parser(struct parser* p);
@@ -356,8 +357,8 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
 static
 struct expression *parse_assignment_expression(struct parser *p, struct expression *left) {
     if (left->type != EXPR_IDENT && left->type != EXPR_INDEX) {
-        // TODO: Convert to parser error
-        err(EXIT_FAILURE, "Parsing error: invalid assignment left-hand side");
+        add_parsing_error(p, "Invalid assignment left-hand side. Expected IDENT or INDEX, got %s.", expression_type_to_str(left->type));
+        return NULL;
     }
 
     struct expression * expr = make_expression(EXPR_ASSIGN, p->current_token); 
@@ -1033,6 +1034,27 @@ char *operator_to_str(enum operator operator) {
     }
 }
 
+const char* 
+expression_type_to_str(enum expression_type t) {
+    const char *names[] = {
+        "INFIX",
+        "PREFIX",
+        "INT",
+        "IDENT",
+        "BOOL",
+        "IF",
+        "FUNCTION",
+        "CALL",
+        "STRING",
+        "ARRAY",
+        "INDEX",
+        "FOR",
+        "WHILE",
+        "ASSIGN",
+    };
+    return names[t];
+}
+
 void free_statements(struct statement *stmts, const uint32_t size) {
     for (uint32_t i=0; i < size; i++) {
         free_expression(stmts[i].value);
@@ -1135,3 +1157,4 @@ void free_program(struct program *p) {
     free_statements(p->statements, p->size);
     free(p);
 }
+

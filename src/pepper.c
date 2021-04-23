@@ -90,7 +90,7 @@ int repl() {
 
 		struct object obj = vm_stack_last_popped(machine);
 		obj = copy_object(&obj);
-		if (obj.type != OBJ_NULL && obj.type != OBJ_BUILTIN && obj.type != OBJ_COMPILED_FUNCTION && obj.type != OBJ_BUILTIN) {
+		if (obj.type != OBJ_COMPILED_FUNCTION && obj.type != OBJ_BUILTIN) {
 			print_object(obj);
 			puts("");
 		}
