@@ -536,6 +536,7 @@ vm_run(struct vm* restrict vm) {
         &&GOTO_OPCODE_ARRAY,
         &&GOTO_OPCODE_INDEX_GET,
         &&GOTO_OPCODE_INDEX_SET,
+        &&GOTO_OPCODE_SLICE,
         &&GOTO_OPCODE_HALT,
     };
     struct frame *frame = &vm_current_frame(vm);
@@ -703,6 +704,24 @@ vm_run(struct vm* restrict vm) {
         vm->stack_pointer -= num_elements;
         vm_stack_push(vm, array);
         gc_add(vm, array);
+        DISPATCH();
+    }
+
+    GOTO_OPCODE_SLICE: {
+        struct object end = vm_stack_pop(vm);
+        struct object start = vm_stack_pop(vm);
+        struct object left = vm_stack_pop(vm);
+        assert(end.type == OBJ_INT && start.type == OBJ_INT && start.value.integer >= 0 && start.value.integer < end.value.integer);
+        struct object_list* source = (struct object_list*) left.value.ptr->value;
+        assert(end.value.integer <= source->size);
+        struct object_list* list = make_object_list(end.value.integer - start.value.integer);
+        for (int i=start.value.integer; i < end.value.integer; i++) {
+            list->values[list->size++] = source->values[i];
+        }
+        struct object obj = make_array_object(list);
+        gc_add(vm, obj);
+        vm_stack_push(vm, obj);
+        frame->ip++;
         DISPATCH();
     }
 

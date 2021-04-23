@@ -596,6 +596,18 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             compiler_emit(c, OPCODE_ARRAY, expr->array.size);
         break;
 
+        case EXPR_SLICE: {
+            err = compile_expression(c, expr->slice.left); 
+            if (err) return err;
+            // TODO: Add support for omitting start or end expression
+            err = compile_expression(c, expr->slice.start); 
+            if (err) return err;
+            err = compile_expression(c, expr->slice.end); 
+            if (err) return err;
+            compiler_emit(c, OPCODE_SLICE);
+        }
+        break;
+
         case EXPR_INDEX: {
             err = compile_expression(c, expr->index.left);
             if (err) return err;

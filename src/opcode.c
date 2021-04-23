@@ -39,8 +39,9 @@ static const struct definition definitions[] = {
     { "OpSetLocal", 1, {1} },
     { "OpGetBuiltin", 1, {1}, },
     { "OpArray", 1, {2}, },
-    { "OpIndexGet", 0, {0}, },
-    { "OpIndexSet", 0, {0}, },
+    { "OpIndexGet", 0, {0} },
+    { "OpIndexSet", 0, {0} },
+    { "OpSlice", 0, {0} },
     { "OpHalt", 0, {0}, },
 };
 

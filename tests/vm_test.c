@@ -28,6 +28,7 @@ typedef struct {
 #define EXPECT_ERROR(v) (test_object_t) { .type = OBJ_ERROR, { .error = v } }
 #define EXPECT_NULL() (test_object_t) { .type = OBJ_NULL }
 
+
 static struct object 
 run_vm_test(const char *program_str) {
     struct program *p = parse_program_str(program_str);
@@ -769,6 +770,17 @@ static void postfix_expressions() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
+static void array_slices() {
+    test_case_t tests[] = {
+        { "[0, 1, 2][0:1][0]", EXPECT_INT(0) },
+        { "[0, 1, 2][1:2][0]", EXPECT_INT(1) },
+        { "[0, 1, 2][1:3][1]", EXPECT_INT(2) },
+        
+    };
+
+    run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
+}
+
 
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
@@ -804,4 +816,5 @@ int main(int argc, const char *argv[]) {
     TEST(string_indexing);
     TEST(string_comparison);
     TEST(postfix_expressions);
+    TEST(array_slices);
 }

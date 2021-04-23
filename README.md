@@ -46,6 +46,9 @@ d[0]; // 5
 array_push(d, 10);
 array_pop(d); // 10
 
+// Slices
+let s = d[0:2]; // [5, true]
+
 // Functions
 let fibonacci = fn(x) {
     if (x < 2) {
@@ -60,7 +63,7 @@ puts("35th fibonacci number is: ", fibonacci(35));
 puts("Type of c = ", type(c));
 puts("Length of c = ", len(c));
 puts("Integer value of true = ", int(true));
-
+file_get_contents("file.txt"); 
 ```
 
 More examples can be found in the [examples](https://github.com/dannyvankooten/pepper-lang/tree/master/examples) directory.

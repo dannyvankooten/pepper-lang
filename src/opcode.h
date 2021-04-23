@@ -42,6 +42,7 @@ enum opcode {
     OPCODE_ARRAY,
     OPCODE_INDEX_GET,
     OPCODE_INDEX_SET,
+    OPCODE_SLICE,
     OPCODE_HALT,
 };
 
