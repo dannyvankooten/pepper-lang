@@ -843,7 +843,7 @@ static void builtin_functions() {
             }, 5,
         },
         {
-            .input = "puts(\"length = \", len(\"monkey\"))",
+            .input = "print(\"length = \", len(\"monkey\"))",
             .constants = {
                 make_string_object("length = "),
                 make_string_object("monkey"),

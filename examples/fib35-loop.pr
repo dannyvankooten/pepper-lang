@@ -13,4 +13,4 @@ let fibonacci = fn(n) {
     return c;
 }
 
-puts("35th fibonacci number is: ", fibonacci(35));
+print("35th fibonacci number is: ", fibonacci(35));

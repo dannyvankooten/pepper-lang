@@ -368,14 +368,14 @@ static void string_expressions() {
 static void builtin_functions() {
     test_case_t tests[] = {
         {"len(\"\")", EXPECT_INT(0)},
-        {"let l = len(\"a\"); puts(\"Length: \", l);", EXPECT_NULL()},
-        {"puts(\"\", len(\"hello world\"));", EXPECT_NULL()},
+        {"let l = len(\"a\"); print(\"Length: \", l);", EXPECT_NULL()},
+        {"print(\"\", len(\"hello world\"));", EXPECT_NULL()},
         {"len(\"hello world\")", EXPECT_INT(11)},
         {"len(1)", EXPECT_ERROR("argument to len() not supported: got INTEGER")},
         {"len(\"one\", \"two\")",EXPECT_ERROR("wrong number of arguments: expected 1, got 2")},
         {"type(\"one\")", EXPECT_STRING("STRING")},
         {"type(\"one\", \"two\")",EXPECT_ERROR("wrong number of arguments: expected 1, got 2")},
-        {"puts(\"one\", \"two\")", EXPECT_NULL()},
+        {"print(\"one\", \"two\")", EXPECT_NULL()},
         {"let s = \"\"; len(s); len(s);", EXPECT_INT(0)},
     };
 

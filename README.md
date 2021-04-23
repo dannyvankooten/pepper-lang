@@ -31,7 +31,7 @@ while (b > a) {
 
 // If statements
 if (b == a || a == b) {
-    puts("b equals a!");
+    print("b equals a!");
 }
 
 // Strings
@@ -59,10 +59,10 @@ let fibonacci = fn(x) {
 }
 
 // Built-in functions
-puts("35th fibonacci number is: ", fibonacci(35));
-puts("Type of c = ", type(c));
-puts("Length of c = ", len(c));
-puts("Integer value of true = ", int(true));
+print("35th fibonacci number is: ", fibonacci(35));
+print("Type of c = ", type(c));
+print("Length of c = ", len(c));
+print("Integer value of true = ", int(true));
 file_get_contents("file.txt"); 
 ```
 

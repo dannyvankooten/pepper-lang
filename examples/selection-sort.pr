@@ -19,4 +19,4 @@ let sort = fn(arr) {
 };
 
 let arr = [ 5, 2, 3, 9, 1, 0, 4, 6, 8, 7];
-puts(sort(arr));
+print(sort(arr));

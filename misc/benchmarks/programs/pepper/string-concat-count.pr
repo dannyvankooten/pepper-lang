@@ -30,4 +30,4 @@ for (let i=0; i < len(str); i++) {
     }
 }
 
-puts(count);
+print(count);

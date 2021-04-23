@@ -6,4 +6,4 @@ let square = fn(x) {
 let a = 10;
 let b = 20;
 let result = square(a) + b * b - 100 / 5 % 8;
-puts(result);
+print(result);

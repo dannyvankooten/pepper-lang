@@ -8,4 +8,4 @@ let fibonacci = fn(x) {
     return fibonacci(x - 1) + fibonacci(x - 2);
 }
 
-puts("35th fibonacci number is: ", fibonacci(35))
+print("35th fibonacci number is: ", fibonacci(35))

@@ -12,7 +12,7 @@
     }) 
 
 static struct object builtin_len(const struct object_list* args);
-static struct object builtin_puts(const struct object_list* args);
+static struct object builtin_print(const struct object_list* args);
 static struct object builtin_type(const struct object_list* args);
 static struct object builtin_int(const struct object_list* args);
 static struct object builtin_array_pop(struct object_list* args);
@@ -27,7 +27,7 @@ const struct {
     const char* name;
     struct object fn_obj;
 } builtin_functions[] = {
-    { "puts", MAKE_BUILTIN(builtin_puts) },
+    { "print", MAKE_BUILTIN(builtin_print) },
     { "len", MAKE_BUILTIN(builtin_len) },
     { "type", MAKE_BUILTIN(builtin_type) },
     { "int", MAKE_BUILTIN(builtin_int) },
@@ -86,7 +86,7 @@ builtin_len(const struct object_list* args) {
 }
 
 static struct object 
-builtin_puts(const struct object_list* args) {
+builtin_print(const struct object_list* args) {
     for (uint32_t i=0; i < args->size; i++) {
         print_object(args->values[i]);
     }

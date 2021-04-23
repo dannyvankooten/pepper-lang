@@ -3,12 +3,12 @@ for (let i=0; i <= 100; i++) {
     let div5 = i % 5 == 0;
     
     if (div3 && div5) {
-        puts("FizzBuzz");
+        print("FizzBuzz");
     } else if (div3) {
-        puts("Fizz");
+        print("Fizz");
     } else if (div5) {
-        puts("Buzz");
+        print("Buzz");
     } else {
-        puts(i);
+        print(i);
     }
 }

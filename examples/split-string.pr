@@ -3,5 +3,5 @@
 let str = "Comma,separated,values";
 let arr = str_split(str, ",");
 for (let i=0; i < len(arr); i++) {
-    puts(i, ": ", arr[i]);
+    print(i, ": ", arr[i]);
 }

@@ -31,4 +31,4 @@ for (let i=0; i < length; i++) {
 
 sort(arr);
 
-puts(arr[0], " - ", arr[4999]);
+print(arr[0], " - ", arr[4999]);

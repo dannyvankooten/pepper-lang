@@ -16,14 +16,14 @@ for (let i=0; i < len(input); i++) {
         let b = input[j];
         
         if (a + b == 2020) {
-            puts("Part 1: ", a * b);
+            print("Part 1: ", a * b);
         }
 
         for (let k = j + 1; k < len(input); k++) {
             let c = input[k];
 
             if (a + b + c == 2020) {
-                puts("Part 2: ", a * b * c);
+                print("Part 2: ", a * b * c);
                 break;
             }
         }
