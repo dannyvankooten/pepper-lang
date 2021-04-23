@@ -746,30 +746,44 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_INDEX_GET: {
         struct object index = vm_stack_pop(vm);
         struct object left = vm_stack_pop(vm);
-        assert(index.type == OBJ_INT);
+        frame->ip++;
+
+        if (index.type != OBJ_INT) {
+            struct object obj = make_error_object("Array index must be integer or slice");
+            vm_stack_push(vm, obj);
+            gc_add(vm, obj);
+            DISPATCH();
+        }
 
         switch (left.type) {
             case OBJ_ARRAY: {
                 struct object_list* list = (struct object_list*) left.value.ptr->value;
-                if (index.value.integer < 0 || index.value.integer >= list->size) {
+                int32_t i = index.value.integer;
+                if (i < 0) {
+                    i = list->size + i;
+                }
+                if (i < 0 || i >= list->size) {
                     vm_stack_push(vm, make_error_object("Array index out of bounds"));
                     gc_add(vm, vm_stack_cur(vm));
                 } else {
-                    vm_stack_push(vm, list->values[index.value.integer]);
+                    vm_stack_push(vm, list->values[i]);
                 }
             }
             break;
 
             case OBJ_STRING: {
                 const char *str = ((const char*) left.value.ptr->string.value);
-                if (index.value.integer < 0 || index.value.integer >= left.value.ptr->string.length) {
+                int32_t i = index.value.integer;
+                if (i < 0) {
+                    i = left.value.ptr->string.length + i;
+                }
+                if (i < 0 || i >= left.value.ptr->string.length) {
                     vm_stack_push(vm, make_error_object("String index out of bounds"));
                     gc_add(vm, vm_stack_cur(vm));
                 } else {
                     char buf[2];
-                    buf[0] = (char) str[index.value.integer];
+                    buf[0] = (char) str[i];
                     buf[1] = '\0';
-
                     struct object obj = make_string_object(buf);
                     vm_stack_push(vm, obj);
                     gc_add(vm, obj);
@@ -782,7 +796,6 @@ vm_run(struct vm* restrict vm) {
             break;
         }
         
-        frame->ip++;
         DISPATCH();
     }
 

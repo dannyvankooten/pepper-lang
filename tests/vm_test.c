@@ -457,6 +457,14 @@ static void array_indexing() {
             "let a = [1, true, \"foobar\"]; a[2]", 
             EXPECT_STRING("foobar"),
         },
+        {
+            "[1, 2, 3][-1]", 
+            EXPECT_INT(3),
+        },
+        {   
+            "[0][-1]", 
+            EXPECT_INT(0),
+        },
     };
 
     run_tests(tests, ARRAY_SIZE(tests)); 
@@ -469,11 +477,11 @@ static void array_indexing_out_of_bounds() {
             EXPECT_ERROR("array index out of "),
         },
         {   
-            "[0][-1]", 
+            "let a = []; a[1];", 
             EXPECT_ERROR("array index out of "),
         },
-        {   
-            "let a = []; a[1];", 
+         {   
+            "let a = []; a[-100];", 
             EXPECT_ERROR("array index out of "),
         },
     };
@@ -727,7 +735,11 @@ static void string_indexing() {
         },
         {  
             "let s = \"hello\"; s[-1]", 
-            EXPECT_ERROR("string index out of "),
+           EXPECT_STRING("o"),
+        },
+        {  
+           "let s = \"hello\"; s[-100]", 
+           EXPECT_ERROR("string index out of ")
         },
     };
 
