@@ -55,7 +55,7 @@ int repl() {
 	char input[BUFSIZ] = { '\0' };
 	while (1)
 	{
-		printf("> ");
+		printf(">> ");
 		if (fgets(input, BUFSIZ, stdin) == NULL) {
 			continue;
 		}
@@ -65,7 +65,7 @@ int repl() {
 		program = parse_program(&parser);
 
 		if (parser.errors > 0) {
-			printf("Whoops! Parsing error:\n");
+			printf("Parsing error:\n");
 			for (int i = 0; i < parser.errors; i++) {
 				printf("- %s\n", parser.error_messages[i]);
 			}
@@ -89,7 +89,6 @@ int repl() {
 		}
 
 		struct object obj = vm_stack_last_popped(machine);
-		obj = copy_object(&obj);
 		if (obj.type != OBJ_COMPILED_FUNCTION && obj.type != OBJ_BUILTIN) {
 			print_object(obj);
 			puts("");
@@ -100,6 +99,7 @@ int repl() {
 			globals[i] = machine->globals[i];
 		}
 
+		//free_parser(&parser);
 		//free_program(program);
 		//compiler_free(compiler);
 		//vm_free(machine);

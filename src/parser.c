@@ -354,7 +354,7 @@ struct expression *parse_call_expression(struct parser *p, struct expression *le
     return expr;
 }
 
-static
+static 
 struct expression *parse_assignment_expression(struct parser *p, struct expression *left) {
     if (left->type != EXPR_IDENT && left->type != EXPR_INDEX) {
         add_parsing_error(p, "Invalid assignment left-hand side. Expected IDENT or INDEX, got %s.", expression_type_to_str(left->type));
@@ -366,6 +366,15 @@ struct expression *parse_assignment_expression(struct parser *p, struct expressi
     int precedence = get_token_precedence(p->current_token);
     next_token(p);
     expr->assign.value = parse_expression(p, precedence);
+    return expr;
+}
+
+static
+struct expression *parse_postfix_expression(struct parser *p, struct expression *left) {
+    struct expression * expr = make_expression(EXPR_POSTFIX, p->current_token);
+    expr->postfix.left = left;
+    next_token(p);
+    expr->postfix.operator = parse_operator(p->current_token.type);
     return expr;
 }
 
@@ -700,7 +709,13 @@ parse_expression(struct parser *p, const int8_t precedence) {
             case TOKEN_OR:
             case TOKEN_PERCENT:
                 next_token(p);
-                left = parse_infix_expression(p, left);
+                // Test: foo++
+                // Test: foo--
+                if (left->type == EXPR_IDENT && next_token_is(p, type) && (next_token_is(p, TOKEN_PLUS) || next_token_is(p, TOKEN_MINUS))) {
+                    left = parse_postfix_expression(p, left);
+                } else {
+                    left = parse_infix_expression(p, left);
+                }
             break; 
 
             case TOKEN_LPAREN: 
@@ -866,6 +881,13 @@ void expression_to_str(char *str, const struct expression *expr) {
             strcat(str, ")");
         break;
 
+        case EXPR_POSTFIX: 
+            strcat(str, "(");
+            expression_to_str(str, expr->postfix.left);
+            strcat(str, expr->token.literal);
+            strcat(str, ")");
+        break;
+
         case EXPR_INFIX: 
             strcat(str, "(");
             expression_to_str(str, expr->infix.left);
@@ -991,7 +1013,7 @@ char *program_to_str(const struct program *p) {
     return str;
 }
 
-enum operator parse_operator(const enum token_type t) {
+enum operator parse_operator(enum token_type t) {
     switch (t) {
         case TOKEN_BANG: return OP_NEGATE; break;
         case TOKEN_MINUS: return OP_SUBTRACT; break;
@@ -1009,8 +1031,6 @@ enum operator parse_operator(const enum token_type t) {
         case TOKEN_PERCENT: return OP_MODULO; break;
         default: return OP_UNKNOWN; break;
     }
-
-    
 }
 
 char *operator_to_str(enum operator operator) {
@@ -1039,6 +1059,7 @@ expression_type_to_str(enum expression_type t) {
     const char *names[] = {
         "INFIX",
         "PREFIX",
+        "POSTFIX",
         "INT",
         "IDENT",
         "BOOL",
@@ -1078,6 +1099,10 @@ void free_expression(struct expression *expr) {
     switch (expr->type) {
         case EXPR_PREFIX: 
             free_expression(expr->prefix.right);
+        break;
+
+        case EXPR_POSTFIX: 
+            free_expression(expr->postfix.left);
         break;
 
         case EXPR_INFIX:

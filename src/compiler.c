@@ -349,6 +349,45 @@ compile_expression(struct compiler *c, const struct expression *expr) {
         }
         break;
 
+        case EXPR_POSTFIX: {
+            // load identifier on the stack
+            err = compile_expression(c, expr->postfix.left);
+            if (err) return err;
+
+            // load again on the stack
+            err = compile_expression(c, expr->postfix.left);
+            if (err) return err;
+
+            // load 1 on the stack
+            compiler_emit(c, OPCODE_CONST, add_constant(c, make_integer_object(1)));
+
+            switch (expr->postfix.operator) {
+                case OP_ADD: 
+                    compiler_emit(c, OPCODE_ADD);
+                break;
+
+                case OP_SUBTRACT: 
+                    compiler_emit(c, OPCODE_SUBTRACT);
+                break;
+
+                default: 
+                    return COMPILE_ERR_UNKNOWN_OPERATOR;
+                break;
+            }   
+
+            // store result in identifier
+            struct symbol *s = symbol_table_resolve(c->symbol_table, expr->postfix.left->ident.value);
+            if (s == NULL) {
+                return COMPILE_ERR_UNKNOWN_IDENT;
+            }
+            compiler_emit(c, OPCODE_SET_GLOBAL, s->index);
+
+            
+
+        
+        }
+        break;
+
         case EXPR_IF: {
             err = compile_expression(c, expr->ifelse.condition);
             if (err) return err;

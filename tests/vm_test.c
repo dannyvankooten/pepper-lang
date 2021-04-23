@@ -733,7 +733,6 @@ static void string_indexing() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-
 static void string_comparison() {
     test_case_t tests[] = {
         {  
@@ -752,6 +751,24 @@ static void string_comparison() {
 
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
+
+
+static void postfix_expressions() {
+    test_case_t tests[] = {
+        { "let foo = 1; foo--;", EXPECT_INT(1) },
+        { "let foo = 1; foo--; foo", EXPECT_INT(0) },
+        { "let foo = 1; foo++;", EXPECT_INT(1) },
+        { "let foo = 1; foo++; foo", EXPECT_INT(2) },
+        { "let foo = 1; foo++;", EXPECT_INT(1) },
+        { "let foo = 1; foo++; foo++; foo", EXPECT_INT(3) },
+        { "fn() { let foo = 1; foo-- }()", EXPECT_INT(1) },
+        { "let foo = 1; let sub = fn() { foo-- }; sub();", EXPECT_INT(1) },
+        { "let foo = 1; let sub = fn() { foo-- }; sub(); sub();", EXPECT_INT(0) },
+    };
+
+    run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
+}
+
 
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
@@ -786,4 +803,5 @@ int main(int argc, const char *argv[]) {
     TEST(arrays_2d);
     TEST(string_indexing);
     TEST(string_comparison);
+    TEST(postfix_expressions);
 }

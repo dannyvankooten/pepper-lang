@@ -243,6 +243,28 @@ static void boolean_expression_parsing() {
     }
 }
 
+static void postfix_expressions() {
+    struct test{
+        const char* input;
+        enum operator operator;
+        const char *identifier;        
+    };
+    struct test tests[] = {
+       {"foo--", OP_SUBTRACT, "foo"},
+       {"foo++", OP_ADD, "foo"},
+    };
+
+    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
+        struct program *program = parse_program_str(tests[i].input);
+        assert_program_size(program, 1);
+        struct statement stmt = program->statements[0];
+        assertf(stmt.value->type == EXPR_POSTFIX, "invalid expression type");
+        assertf(strcmp(stmt.value->postfix.left->ident.value, tests[i].identifier) == 0, "invalid identifier");
+        assertf(stmt.value->postfix.operator == tests[i].operator, "invalid operator");
+        free_program(program);   
+    }
+}
+
 static void infix_expression_parsing() {
     struct test{
         const char *input;
@@ -607,6 +629,7 @@ int main(int argc, char *argv[]) {
     TEST(integer_expression_parsing);
     TEST(boolean_expression_parsing);
     TEST(prefix_expression_parsing);
+    TEST(postfix_expressions);
     TEST(infix_expression_parsing);
     TEST(operator_precedence_parsing);
     TEST(if_expression_parsing);

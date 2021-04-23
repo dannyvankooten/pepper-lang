@@ -8,6 +8,7 @@
 enum expression_type {
     EXPR_INFIX,
     EXPR_PREFIX,
+    EXPR_POSTFIX,
     EXPR_INT,
     EXPR_IDENT,
     EXPR_BOOL,
@@ -51,6 +52,11 @@ enum operator {
 struct prefix_expression {
     enum operator operator;
     struct expression *right;
+};
+
+struct postfix_expression {
+    enum operator operator;
+    struct expression *left;
 };
 
 struct infix_expression {
@@ -138,6 +144,7 @@ struct expression {
         char *string;
         struct identifier ident;
         struct prefix_expression prefix;
+        struct postfix_expression postfix;
         struct infix_expression infix;
         struct if_expression ifelse;
         struct function_literal function;

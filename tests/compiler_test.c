@@ -796,7 +796,6 @@ static void recursive_functions() {
 }
 
 static void string_expressions() {
-
     struct compiler_test_case tests[] = {
         {
             .input = "\"monkey\"",
@@ -1165,6 +1164,49 @@ static void index_set() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
+static void postfix_expressions() {
+    struct compiler_test_case tests[] = {
+        {
+            .input = "let foo = 0; foo--;",
+            .constants = {
+                make_integer_object(0),
+                make_integer_object(1),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),     
+                make_instruction(OPCODE_SET_GLOBAL, 0), 
+                make_instruction(OPCODE_GET_GLOBAL, 0),  
+                make_instruction(OPCODE_GET_GLOBAL, 0),  
+                make_instruction(OPCODE_CONST, 1), 
+                make_instruction(OPCODE_SUBTRACT), 
+                make_instruction(OPCODE_SET_GLOBAL, 0),  
+                make_instruction(OPCODE_POP),       
+                make_instruction(OPCODE_HALT),              
+            }, 9
+        },
+        {
+            .input = "let foo = 0; foo++;",
+            .constants = {
+                make_integer_object(0),
+                make_integer_object(1),
+            }, 2,
+            .instructions = {
+                make_instruction(OPCODE_CONST, 0),     
+                make_instruction(OPCODE_SET_GLOBAL, 0), 
+                make_instruction(OPCODE_GET_GLOBAL, 0),  
+                make_instruction(OPCODE_GET_GLOBAL, 0),  
+                make_instruction(OPCODE_CONST, 1), 
+                make_instruction(OPCODE_ADD), 
+                make_instruction(OPCODE_SET_GLOBAL, 0),  
+                make_instruction(OPCODE_POP),       
+                make_instruction(OPCODE_HALT),              
+            }, 9
+        },
+    };
+
+    run_compiler_tests(tests, ARRAY_SIZE(tests));
+}
+
 int main(int argc, char *argv[]) {    
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -1183,4 +1225,5 @@ int main(int argc, char *argv[]) {
     TEST(index_get);
     TEST(var_assignment);
     TEST(index_set);
+    TEST(postfix_expressions);
 }
