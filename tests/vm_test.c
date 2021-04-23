@@ -63,7 +63,7 @@ static void test_object(struct object obj, object_type expected_type, object_val
             assertf(strcmp(expected_value.string, obj.value.ptr->string.value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected_value.string, obj.value.ptr->string.value);
         break;
         case OBJ_ERROR:
-            assertf(strncmp(obj.value.ptr->value, expected_value.error, strlen(expected_value.error)) == 0, "invalid error value: expected \"%s\", got \"%s\"", expected_value.error, obj.value.ptr->value);
+            assertf(strncasecmp(obj.value.ptr->value, expected_value.error, strlen(expected_value.error)) == 0, "invalid error value: expected \"%s\", got \"%s\"", expected_value.error, obj.value.ptr->value);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj.type));
@@ -81,36 +81,34 @@ static void run_tests(test_case_t* tests, int ntests) {
 }
 
 static void integer_arithmetic() {
-    struct {
-        const char *input;
-        int64_t expected;
-    } tests[] = {
-        {"1", 1},
-        {"2", 2},
-        {"1 + 2", 3}, 
-        {"1 - 2", -1},
-        {"1 * 2", 2},
-        {"4 / 2", 2},
-        {"50 / 2 * 2 + 10 - 5", 55}, 
-        {"5 + 5 + 5 + 5 - 10", 10}, 
-        {"2 * 2 * 2 * 2 * 2", 32}, 
-        {"5 * 2 + 10", 20},
-        {"5 + 2 * 10", 25},
-        {"5 * (2 + 10)", 60},
-        {"-5", -5},
-        {"-10", -10},
-        {"-50 + 100 + -50", 0},
-        {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
-        {"1 % 5", 1},
-        {"6 % 5", 1},
-        {"5 + 1 % 5", 6},
-        {"-10 + -50", -60},
+    test_case_t tests[] = {
+        {"1", EXPECT_INT(1)},
+        {"2", EXPECT_INT(2)},
+        {"1 + 2", EXPECT_INT(3}), 
+        {"1 - 2", EXPECT_INT(-1)},
+        {"1 * 2", EXPECT_INT(2)},
+        {"4 / 2", EXPECT_INT(2)},
+        {"50 / 2 * 2 + 10 - 5", EXPECT_INT(55}), 
+        {"5 + 5 + 5 + 5 - 10", EXPECT_INT(10}), 
+        {"2 * 2 * 2 * 2 * 2", EXPECT_INT(32}), 
+        {"5 * 2 + 10", EXPECT_INT(20)},
+        {"5 + 2 * 10", EXPECT_INT(25)},
+        {"5 * (2 + 10)", EXPECT_INT(60)},
+        {"-5", EXPECT_INT(-5)},
+        {"-10", EXPECT_INT(-10)},
+        {"-50 + 100 + -50", EXPECT_INT(0)},
+        {"(5 + 10 * 2 + 15 / 3) * 2 + -10", EXPECT_INT(50)},
+        {"1 % 5", EXPECT_INT(1)},
+        {"6 % 5", EXPECT_INT(1)},
+        {"5 + 1 % 5", EXPECT_INT(6)},
+        {"-10 + -50", EXPECT_INT(-60)},
+
+        // division by zero should errror
+        {"1 / 0", EXPECT_ERROR("division by zero")},
+        {"1 % 0", EXPECT_ERROR("division by zero")},
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
-        struct object obj = run_vm_test(tests[t].input);
-        test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
-     }
+    run_tests(tests, ARRAY_SIZE(tests));
 }
 
 static void boolean_expressions() {
@@ -327,13 +325,11 @@ static void fib() {
             return fibonacci(x-1) + fibonacci(x-2); \
         };                      \
         fibonacci(6)";
-    int expected = 8;
     struct object obj = run_vm_test(input);
-    test_object(obj, OBJ_INT, (object_value) { .integer = expected });    
+    test_object(obj, OBJ_INT, (object_value) { .integer = 8 });    
 }
 
 static void recursive_functions() {
-
     struct {
         const char *input;
         int expected;

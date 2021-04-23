@@ -137,7 +137,7 @@ void vm_free(struct vm *vm) {
 
 
 static void 
-vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {    
+vm_do_binary_integer_operation(struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {    
     switch (opcode) {
         case OPCODE_ADD: 
             left->value.integer += right->value.integer;
@@ -149,9 +149,21 @@ vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode o
             left->value.integer *= right->value.integer;
         break;
         case OPCODE_DIVIDE: 
+            if (right->value.integer == 0) {
+                vm_stack_cur(vm) = make_error_object("Division by zero");
+                gc_add(vm, vm_stack_cur(vm));
+                return;
+            }
+
             left->value.integer /= right->value.integer;
         break;
         case OPCODE_MODULO:
+            if (right->value.integer == 0) {
+                vm_stack_cur(vm) = make_error_object("Division by zero");
+                gc_add(vm, vm_stack_cur(vm));
+                return;
+            }
+
             left->value.integer %= right->value.integer;
         break;
         default:
