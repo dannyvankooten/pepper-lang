@@ -359,17 +359,16 @@ vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct objec
 
 /* handle call to user-defined function */
 static void 
-vm_do_call_function(struct vm* restrict vm, struct compiled_function* restrict f, const uint8_t num_args) {
-    /* TODO: Validate number of arguments */
+vm_do_call_function(struct vm* restrict vm, struct compiled_function* restrict fn, uint8_t num_args) {
     struct frame* frame = &vm->frames[++vm->frame_index];
-    frame->ip = f->instructions.bytes;
-    frame->fn = f;
+    frame->ip = fn->instructions.bytes;
+    frame->fn = fn;
     frame->base_pointer = vm->stack_pointer - num_args;
-    vm->stack_pointer = frame->base_pointer + f->num_locals; 
+    vm->stack_pointer = frame->base_pointer + fn->num_locals; 
 }
 
 static void
-vm_do_call(struct vm* restrict vm, const uint8_t num_args) {
+vm_do_call(struct vm* restrict vm, uint8_t num_args) {
     const struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
         case OBJ_COMPILED_FUNCTION:
@@ -387,8 +386,8 @@ vm_do_call(struct vm* restrict vm, const uint8_t num_args) {
 }
 
 struct object 
-vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_t end_index) {
-    struct object_list *list = make_object_list(end_index - start_index);
+vm_build_array(struct vm* restrict vm, uint16_t start_index, uint16_t end_index) {
+    struct object_list* list = make_object_list(end_index - start_index);
     for (int32_t i = start_index; i < end_index; i++) {
         list->values[list->size++] = copy_object(&vm->stack[i]);
     }
@@ -580,9 +579,8 @@ vm_run(struct vm* restrict vm) {
     }
 
     GOTO_OPCODE_JUMP_NOT_TRUE: {
-        // struct object condition = vm_stack_pop(vm);
-        struct object *condition = &vm_stack_pop(vm);
-        if (condition->type == OBJ_NULL || (condition->type == OBJ_BOOL && condition->value.boolean == false)) {
+        struct object condition = vm_stack_pop(vm);
+        if (condition.type == OBJ_NULL || (condition.type == OBJ_BOOL && condition.value.boolean == false)) {
             uint16_t pos = read_uint16((frame->ip + 1));
             frame->ip = frame->fn->instructions.bytes + pos;
         } else {
@@ -717,7 +715,8 @@ vm_run(struct vm* restrict vm) {
             case OBJ_ARRAY: {
                 struct object_list* list = (struct object_list*) left.value.ptr->value;
                 if (index.value.integer < 0 || index.value.integer >= list->size) {
-                    vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
+                    vm_stack_push(vm, make_error_object("Array index out of bounds"));
+                    gc_add(vm, vm_stack_cur(vm));
                 } else {
                     vm_stack_push(vm, list->values[index.value.integer]);
                 }
@@ -727,7 +726,8 @@ vm_run(struct vm* restrict vm) {
             case OBJ_STRING: {
                 const char *str = ((const char*) left.value.ptr->string.value);
                 if (index.value.integer < 0 || index.value.integer >= left.value.ptr->string.length) {
-                     vm_stack_push(vm, (struct object) {.type = OBJ_NULL});
+                    vm_stack_push(vm, make_error_object("String index out of bounds"));
+                    gc_add(vm, vm_stack_cur(vm));
                 } else {
                     char buf[2];
                     buf[0] = (char) str[index.value.integer];
@@ -749,8 +749,6 @@ vm_run(struct vm* restrict vm) {
         DISPATCH();
     }
 
-    #define copy(v) (v.type <= OBJ_BUILTIN ? v : copy_object(&v))
-
     GOTO_OPCODE_INDEX_SET: {
         struct object value = vm_stack_pop(vm);
         struct object index = vm_stack_pop(vm);
@@ -759,9 +757,10 @@ vm_run(struct vm* restrict vm) {
         assert(array.type == OBJ_ARRAY);
         struct object_list* list = (struct object_list*) array.value.ptr->value;
         if (index.value.integer < 0 || index.value.integer >= list->size) {
-            // TODO: Determine what we want to do when we assign out of bounds
+            vm_stack_push(vm, make_error_object("Array assignment index out of bounds"));
+            gc_add(vm, vm_stack_cur(vm));
         } else {
-            list->values[index.value.integer] = copy(value);
+            list->values[index.value.integer] = copy_object(&value);
 
             // Push value on stack ???
             vm_stack_push(vm, value);

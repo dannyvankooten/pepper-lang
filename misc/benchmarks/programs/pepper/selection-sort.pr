@@ -20,16 +20,15 @@ let sort = fn(arr) {
         arr[i] = arr[min];
         arr[min] = tmp;
     }
-    return arr;
 };
 
-let arr = file_get_contents("numbers.txt");
-arr = str_split(arr, ",");
+let input = file_get_contents("numbers.txt");
+let arr = str_split(input, ",");
 let length = len(arr);
 for (let i=0; i < length; i=i+1) {
     arr[i] = int(arr[i]);
 }
 
-arr = sort(arr);
+sort(arr);
 
 puts(arr[0], " - ", arr[4999]);

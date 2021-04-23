@@ -465,15 +465,38 @@ static void array_indexing_out_of_bounds() {
     test_case_t tests[] = {
         {  
             "[0][1]", 
-            EXPECT_NULL(),
+            EXPECT_ERROR("array index out of "),
         },
         {   
             "[0][-1]", 
-            EXPECT_NULL(),
+            EXPECT_ERROR("array index out of "),
         },
         {   
             "let a = []; a[1];", 
-            EXPECT_NULL(),
+            EXPECT_ERROR("array index out of "),
+        },
+    };
+
+    run_tests(tests, ARRAY_SIZE(tests)); 
+}
+
+static void array_indexing_assignment() {
+    test_case_t tests[] = {
+         {  
+            "let arr = [1]; arr[0] = 2; arr[0]", 
+            EXPECT_INT(2),
+        },
+        {  
+            "let arr = [1]; arr[0] = 2;", 
+            EXPECT_INT(2),
+        },
+        {  
+            "[5][0] = 1", 
+            EXPECT_INT(1),
+        },
+        {  
+            "let arr = [1]; arr[1] = 2;", 
+            EXPECT_ERROR("array assignment index out of "),
         },
     };
 
@@ -590,18 +613,6 @@ static void var_assignment() {
             "let a = 1; a = 2;", 
             EXPECT_INT(2),
         },
-        {  
-            "let arr = [ 1 ]; arr[0] = 2; arr[0]", 
-            EXPECT_INT(2),
-        },
-        {  
-            "let arr = [ 1 ]; arr[0] = 2;", 
-            EXPECT_INT(2),
-        },
-        {  
-            "[5][0] = 1", 
-            EXPECT_INT(1),
-        }
     };
 
     run_tests(tests, ARRAY_SIZE(tests)); 
@@ -706,12 +717,16 @@ static void string_indexing() {
             EXPECT_STRING("e"),
         },
         {  
-            "let s = \"hello\"; s[-1]", 
-            EXPECT_NULL(),
+            "let s = \"hello\"; s[4]", 
+            EXPECT_STRING("o"),
         },
         {  
-            "let s = \"hello\"; s[100]", 
-            EXPECT_NULL(),
+            "let s = \"hello\"; s[5]", 
+            EXPECT_ERROR("string index out of ")
+        },
+        {  
+            "let s = \"hello\"; s[-1]", 
+            EXPECT_ERROR("string index out of "),
         },
     };
 
@@ -758,6 +773,7 @@ int main(int argc, const char *argv[]) {
     TEST(mixed_arrays);
     TEST(array_indexing);
     TEST(array_indexing_out_of_bounds);
+    TEST(array_indexing_assignment);
     TEST(array_pop);
     TEST(array_push);
     TEST(file_get_contents);
