@@ -8,9 +8,6 @@ static void define() {
     } tests[] = {
         { .name = "a", .expected = { .name = "a", .scope = SCOPE_GLOBAL, .index = 0 } },
         { .name = "b", .expected = { .name = "b", .scope = SCOPE_GLOBAL, .index = 1 } },
-
-        // redefine a, index should be 0
-        { .name = "a", .expected = { .name = "a", .scope = SCOPE_GLOBAL, .index = 0 } },
     };
 
     struct symbol_table *global = symbol_table_new();

@@ -16,6 +16,7 @@ enum {
     COMPILE_ERR_UNKNOWN_OPERATOR,
     COMPILE_ERR_UNKNOWN_EXPR_TYPE,
     COMPILE_ERR_UNKNOWN_IDENT,
+    COMPILE_ERR_PREVIOUSLY_DECLARED,
 };
 
 const uint16_t JUMP_PLACEHOLDER_BREAK = 9999;
@@ -66,12 +67,13 @@ void compiler_free(struct compiler *c) {
 }
 
 /* TODO: We probably want dynamic error messages that includes parts of the program string */
-const char *compiler_error_str(const int err) {
-    const char *error_messages[] = {
+const char *compiler_error_str(int err) {
+    static const char *error_messages[] = {
         "Success",
         "Unknown operator",
         "Unknown expression type",
-        "Undefined variable"
+        "Undefined variable",
+        "Redeclaration of variable",
     };
     return error_messages[err];
 }
@@ -211,10 +213,16 @@ compile_statement(struct compiler *c, const struct statement *stmt) {
 
         case STMT_LET: {
             struct symbol *s = symbol_table_define(c->symbol_table, stmt->name.value);
+            if (s == NULL) {
+                return COMPILE_ERR_PREVIOUSLY_DECLARED;
+            }
+
             if (stmt->value != NULL) {
                 err = compile_expression(c, stmt->value);
                 if (err) return err;
             } else {
+                // declaration without value
+                // Eg: let foo;
                 compiler_emit(c, OPCODE_NULL);
             }
             compiler_emit(c, s->scope == SCOPE_GLOBAL ? OPCODE_SET_GLOBAL : OPCODE_SET_LOCAL, s->index);

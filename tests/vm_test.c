@@ -186,9 +186,9 @@ static void if_expressions() {
 static void while_expressions() {
     test_case_t tests[] = {
         {"while (false) { 10 }; 5", EXPECT_INT(5)},
-        {"let a = 2; while (1 > 3) { let a = a + 1; }; a;",  EXPECT_INT(2)},
-        {"let a = 0; while (a < 3) { let a = a + 1; }; a;",  EXPECT_INT(3)},
-        {"let a = 1; while (a < 3) { let a = a + 1; a; };",  EXPECT_INT(3)},
+        {"let a = 2; while (1 > 3) { a = a + 1; }; a;",  EXPECT_INT(2)},
+        {"let a = 0; while (a < 3) { a = a + 1; }; a;",  EXPECT_INT(3)},
+        {"let a = 1; while (a < 3) { a = a + 1; a; };",  EXPECT_INT(3)},
         {"while (false) { 10 };", EXPECT_NULL()},
         {"let a = 0; while (a < 3) { a = a + 1; };",  EXPECT_INT(3)},
         {"while (true) { break; }; 5", EXPECT_INT(5)},
@@ -217,8 +217,10 @@ static void global_let_statements() {
         {"let one = 1; one", EXPECT_INT(1)},
         {"let one = 1; let two = 2; one + two", EXPECT_INT(3)},
         {"let one = 1; let two = one + one; one + two", EXPECT_INT(3)},
-        {"let one = 1; let one = one + 1;", EXPECT_INT(2)},
         {"let foo; foo", EXPECT_NULL()},
+
+        // redeclaration... we allow this for now 
+        {"let one = 1; let one = 2; one", EXPECT_INT(2)},
     };
     run_tests(tests, ARRAY_SIZE(tests));
 }

@@ -419,24 +419,6 @@ static void global_let_statements() {
                 make_instruction(OPCODE_POP),
                 make_instruction(OPCODE_HALT),
             }, 9,
-        },
-        {
-            .input = "let one = 1; let one = one + 1; one",
-            .constants = {
-                make_integer_object(1),
-                make_integer_object(1),
-            }, 2,
-            .instructions = {
-                make_instruction(OPCODE_CONST, 0),
-                make_instruction(OPCODE_SET_GLOBAL, 0),
-                make_instruction(OPCODE_GET_GLOBAL, 0),
-                make_instruction(OPCODE_CONST, 1),
-                make_instruction(OPCODE_ADD),
-                make_instruction(OPCODE_SET_GLOBAL, 0),
-                make_instruction(OPCODE_GET_GLOBAL, 0),
-                make_instruction(OPCODE_POP),
-                make_instruction(OPCODE_HALT),
-            }, 9,
         }
     };
 

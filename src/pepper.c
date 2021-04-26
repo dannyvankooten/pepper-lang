@@ -121,13 +121,13 @@ int run_script(const char *filename) {
 			puts(parser.error_messages[i]);
 		}
 
-		exit(1);
+		return EXIT_FAILURE;
 	}
 
 	struct compiler *compiler = compiler_new();
 	int err = compile_program(compiler, program);
 	if (err) {
-		puts(compiler_error_str(err));
+		printf("SyntaxError: %s\n", compiler_error_str(err));
 		return EXIT_FAILURE;
 	}
 
