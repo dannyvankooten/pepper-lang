@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <bits/stdint-intn.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>

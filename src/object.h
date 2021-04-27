@@ -68,6 +68,7 @@ struct object_list {
 
 const char *object_type_to_str(const enum object_type t);
 struct object make_integer_object(const int64_t value);
+struct object make_boolean_object(const bool value);
 struct object make_string_object(const char *str1);
 struct object make_string_object_with_length(const char *str, size_t length);
 struct object make_error_object(const char *format, ...);

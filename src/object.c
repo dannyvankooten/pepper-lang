@@ -34,6 +34,14 @@ struct object make_integer_object(const int64_t value)
     };
 }
 
+struct object make_boolean_object(const bool value)
+{
+    return (struct object) {
+        .type = OBJ_BOOL,
+        .value.boolean = value
+    };
+}
+
 struct object make_array_object(struct object_list *elements) 
 {
     struct object obj;
