@@ -1,0 +1,23 @@
+image: alpine/latest
+packages:
+  - make
+  - gcc
+  - valgrind
+  - time
+  - bc
+  - grep
+sources: 
+  - https://git.sr.ht/~dvko/pepper-lang
+tasks:
+  - build: |
+      cd pepper-lang
+      make 
+  - run_tests: |
+      cd pepper-lang
+      make check
+  - run_tests_with_valgrind: |
+      cd pepper-lang
+      make memcheck
+  - run_examples: |
+      cd pepper-lang
+      ./tests/run_examples.sh 
