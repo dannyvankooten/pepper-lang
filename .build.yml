@@ -3,8 +3,6 @@ packages:
   - make
   - gcc
   - valgrind
-  - time
-  - bc
   - grep
 sources: 
   - https://git.sr.ht/~dvko/pepper-lang

@@ -210,13 +210,13 @@ vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
 
     switch (left->type) {
         case OBJ_INT: 
-            return vm_do_binary_integer_operation(vm, opcode, left, right); 
+            vm_do_binary_integer_operation(vm, opcode, left, right); 
         break;
         case OBJ_STRING: 
-            return vm_do_binary_string_operation(vm, opcode, left, right); 
+            vm_do_binary_string_operation(vm, opcode, left, right); 
         break;
         case OBJ_BOOL:
-            return vm_do_binary_boolean_operation(vm, opcode, left, right);
+            vm_do_binary_boolean_operation(vm, opcode, left, right);
         break;
         default: 
             err(VM_ERR_INVALID_OP_TYPE, "Invalid type %s for binary operation.", object_type_to_str(left->type));
@@ -302,15 +302,15 @@ vm_do_comparision(struct vm* restrict vm, const enum opcode opcode) {
 
     switch (left->type) {
         case OBJ_INT:
-            return vm_do_integer_comparison(vm, opcode, left, right);
+            vm_do_integer_comparison(vm, opcode, left, right);
         break;
 
         case OBJ_BOOL:
-            return vm_do_bool_comparison(vm, opcode, left, right);
+            vm_do_bool_comparison(vm, opcode, left, right);
         break;
 
         case OBJ_STRING:
-            return vm_do_string_comparison(vm, opcode, left, right);
+            vm_do_string_comparison(vm, opcode, left, right);
         break;
 
         default:
@@ -371,11 +371,11 @@ vm_do_call(struct vm* restrict vm, uint8_t num_args) {
     const struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
         case OBJ_COMPILED_FUNCTION:
-            return vm_do_call_function(vm, callee.value.ptr->value, num_args);
+            vm_do_call_function(vm, callee.value.ptr->value, num_args);
         break;
 
         case OBJ_BUILTIN:
-            return vm_do_call_builtin(vm, (struct object (*)(struct object_list *)) callee.value.ptr, num_args);
+            vm_do_call_builtin(vm, (struct object (*)(struct object_list *)) callee.value.ptr, num_args);
         break;
 
         default:
