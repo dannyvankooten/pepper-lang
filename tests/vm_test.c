@@ -810,6 +810,17 @@ static void string_slices() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
+static void builtin_str_contains() {
+    test_case_t tests[] = {
+        { "str_contains(\"foobar\", \"foo\");", EXPECT_BOOL(true) },
+        { "str_contains(\"foobar\", \"bar\");", EXPECT_BOOL(true) },
+        { "str_contains(\"foobar\", \"nope\");", EXPECT_BOOL(false) },
+        { "str_contains(\"\", \"\");", EXPECT_BOOL(true) },
+    };
+
+    run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
+}
+
 
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
@@ -847,4 +858,5 @@ int main(int argc, const char *argv[]) {
     TEST(postfix_expressions);
     TEST(array_slices);
     TEST(string_slices);
+    TEST(builtin_str_contains);
 }

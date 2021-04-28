@@ -19,6 +19,7 @@ static struct object builtin_array_pop(struct object_list* args);
 static struct object builtin_array_push(struct object_list* args);
 static struct object builtin_file_get_contents(const struct object_list* args);
 static struct object str_split(const struct object_list* args);
+static struct object str_contains(const struct object_list* args);
 
 
 // here we store the built-in function directly on the pointer by casting it to the wrong value
@@ -35,6 +36,7 @@ const struct {
     { "array_push", MAKE_BUILTIN(builtin_array_push) },
     { "file_get_contents", MAKE_BUILTIN(builtin_file_get_contents) },
     { "str_split", MAKE_BUILTIN(str_split) },
+    { "str_contains", MAKE_BUILTIN(str_contains) }
 };
 
 inline 
@@ -225,4 +227,23 @@ str_split(const struct object_list *args) {
     strcpy(buf, str);
     list = append_to_object_list(list, make_string_object(buf));
     return make_array_object(list);
+}
+
+static struct object 
+str_contains(const struct object_list *args) {
+    if (args->size != 2) {
+        return make_error_object("wrong number of arguments: expected 2, got %d", args->size);
+    }
+
+    if (args->values[0].type != OBJ_STRING || args->values[1].type != OBJ_STRING) {
+        return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
+    }
+
+    const char* subject = (char*) args->values[0].value.ptr->value;
+    const char* search = (char*) args->values[1].value.ptr->value;
+    char* ret;
+
+    ret = strstr(subject, search);
+
+    return make_boolean_object(ret != NULL);
 }
