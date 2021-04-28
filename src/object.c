@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h> 
-#include <sys/cdefs.h>
 #include "util.h"
 #include "opcode.h"
 #include "object.h"

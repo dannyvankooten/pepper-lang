@@ -24,7 +24,6 @@
         print_debug_info(vm);               \
         goto *dispatch_table[*frame->ip];      
 
-
 static void 
 print_debug_info(struct vm *vm) {
     char str[BUFSIZ] = {'\0'};
