@@ -821,7 +821,6 @@ static void builtin_str_contains() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
-
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
     TEST(boolean_expressions);

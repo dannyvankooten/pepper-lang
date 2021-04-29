@@ -40,6 +40,8 @@ struct string {
 struct heap_object {
     union {
         void *value;
+		struct object_list* list;
+		struct compiled_function *fn_compiled;
         struct string string;
     };
 
@@ -51,6 +53,7 @@ struct heap_object {
 union object_value {
     bool boolean;
     int64_t integer;
+	struct object (*fn_builtin)(const struct object_list* args);
     struct heap_object* ptr;
 };
 

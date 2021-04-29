@@ -8,15 +8,15 @@
 
 #define MAKE_BUILTIN(fn) ((struct object) {                     \
     .type = OBJ_BUILTIN,                                        \
-    .value = { .ptr = (struct heap_object *) &fn }    \
+    .value = { .fn_builtin = &fn }    \
     }) 
 
 static struct object builtin_len(const struct object_list* args);
 static struct object builtin_print(const struct object_list* args);
 static struct object builtin_type(const struct object_list* args);
 static struct object builtin_int(const struct object_list* args);
-static struct object builtin_array_pop(struct object_list* args);
-static struct object builtin_array_push(struct object_list* args);
+static struct object builtin_array_pop(const struct object_list* args);
+static struct object builtin_array_push(const struct object_list* args);
 static struct object builtin_file_get_contents(const struct object_list* args);
 static struct object str_split(const struct object_list* args);
 static struct object str_contains(const struct object_list* args);
@@ -77,7 +77,7 @@ builtin_len(const struct object_list* args) {
         break;
 
         case OBJ_ARRAY:
-            return make_integer_object(((struct object_list*) (arg.value.ptr->value))->size);
+            return make_integer_object(arg.value.ptr->list->size);
         break;
 
         default:
@@ -136,7 +136,7 @@ builtin_int(const struct object_list *args) {
 }
 
 static struct object 
-builtin_array_pop(struct object_list *args) {
+builtin_array_pop(const struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
@@ -145,16 +145,17 @@ builtin_array_pop(struct object_list *args) {
         return make_error_object("invalid argument: expected ARRAY, got %s", object_type_to_str(args->values[0].type));
     }
 
-    struct object_list *arr = (struct object_list *) args->values[0].value.ptr->value;
-    if (arr->size == 0) {
+	struct object array = args->values[0];
+	struct object_list* list = array.value.ptr->list;
+    if (list->size == 0) {
         return (struct object) {.type = OBJ_NULL};
     }
 
-    return copy_object(&arr->values[arr->size-- - 1]);
+    return copy_object(&list->values[list->size-- - 1]);
 }
 
 static struct object 
-builtin_array_push(struct object_list *args) {
+builtin_array_push(const struct object_list *args) {
     if (args->size != 2) {
         return make_error_object("wrong number of arguments: expected 2, got %d", args->size);
     }
@@ -162,11 +163,12 @@ builtin_array_push(struct object_list *args) {
     if (args->values[0].type != OBJ_ARRAY) {
         return make_error_object("invalid argument: expected ARRAY, got %s", object_type_to_str(args->values[0].type));
     }
-    
-    struct object_list **arr = (struct object_list **) &args->values[0].value.ptr->value;
-    struct object *value = (struct object *) &args->values[1];
-    *arr = append_to_object_list(*arr, copy_object(value)); 
-    return make_integer_object((*arr)->size);
+   
+	struct object array = args->values[0];
+	struct object_list** list = &(array.value.ptr->list);
+    struct object *value = (struct object*) &args->values[1];
+    *list = append_to_object_list(*list, copy_object(value)); 
+    return make_integer_object((*list)->size);
 }
 
 static struct object 
@@ -207,25 +209,27 @@ str_split(const struct object_list *args) {
         return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
     }
 
-    const char* str = (char*) args->values[0].value.ptr->value;
-    const char* delim = (char*) args->values[1].value.ptr->value;
-    const int delim_length = strlen(delim);
+    const char* str = (char*) args->values[0].value.ptr->string.value;
+	struct string delim = args->values[1].value.ptr->string;
     struct object_list *list = make_object_list(8);
 
-    char buf[BUFSIZ];
     char *p;
+	struct object obj;
 
-    while ((p = strstr(str, delim)) != NULL) {
+    while ((p = strstr(str, delim.value)) != NULL) {
         size_t len = p - str;
-        memcpy(buf, str, len);
-        buf[len] = '\0';
-        list = append_to_object_list(list, make_string_object_with_length(buf, len));
-        str = p + delim_length;
+		obj = make_string_object_with_length("", len);
+		memcpy(obj.value.ptr->string.value, str, len);
+		obj.value.ptr->string.value[len] = '\0';
+        list = append_to_object_list(list, obj);
+        str = p + delim.length;
     }
     
     // remainder (after last delimiter)
-    strcpy(buf, str);
-    list = append_to_object_list(list, make_string_object(buf));
+    obj = make_string_object(str);
+	list = append_to_object_list(list, obj);
+
+	// return array
     return make_array_object(list);
 }
 

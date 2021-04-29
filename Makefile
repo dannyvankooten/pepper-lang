@@ -23,13 +23,13 @@ bin/compiler_test: tests/compiler_test.c lexer.c parser.c opcode.c compiler.c ob
 bin/vm_test: tests/vm_test.c lexer.c parser.c opcode.c compiler.c object.c symbol_table.c builtins.c vm.c | bin/
 bin/symbol_table_test: tests/symbol_table_test.c symbol_table.c | bin/
 bin/%_test: 
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) -DTEST_MODE $^ -o $@
 
-check: CFLAGS += -DTEST_MODE
+.PHONY: check
 check: $(TESTS)
 	for test in $^; do $$test || exit 1; done
 
-memcheck: CFLAGS += -DTEST_MODE
+.PHONY: memcheck
 memcheck: $(TESTS)
 	for test in $^; do valgrind $$test || exit 1; done
 

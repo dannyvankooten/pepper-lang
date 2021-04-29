@@ -335,7 +335,7 @@ vm_do_minus_operation(struct vm* restrict vm) {
 
 /* handle call to built-in function */
 static void 
-vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct object_list *), const uint8_t num_args) {
+vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(const struct object_list *), const uint8_t num_args) {
     struct object_list *args = _builtin_args_list;
     
     for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
@@ -351,9 +351,7 @@ vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct objec
     args->size = 0;
 
     // register result object in heap for GC
-    if(obj.type > OBJ_BUILTIN) {
-        gc_add(vm, obj);
-    }
+    gc_add(vm, obj);
 }
 
 /* handle call to user-defined function */
@@ -371,11 +369,11 @@ vm_do_call(struct vm* restrict vm, uint8_t num_args) {
     const struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
         case OBJ_COMPILED_FUNCTION:
-            vm_do_call_function(vm, callee.value.ptr->value, num_args);
+            vm_do_call_function(vm, callee.value.ptr->fn_compiled, num_args);
         break;
 
         case OBJ_BUILTIN:
-            vm_do_call_builtin(vm, (struct object (*)(struct object_list *)) callee.value.ptr, num_args);
+            vm_do_call_builtin(vm, callee.value.fn_builtin, num_args);
         break;
 
         default:
@@ -443,7 +441,7 @@ build_slice(struct object left, struct object obj_start, struct object obj_end)
 
     switch (left.type) {
         case OBJ_ARRAY:
-            return build_slice_from_array((struct object_list*) left.value.ptr->value, start, end);
+            return build_slice_from_array(left.value.ptr->list, start, end);
         break;
 
         case OBJ_STRING:
@@ -795,7 +793,7 @@ vm_run(struct vm* restrict vm) {
 
         switch (left.type) {
             case OBJ_ARRAY: {
-                struct object_list* list = (struct object_list*) left.value.ptr->value;
+                struct object_list* list = left.value.ptr->list;
                 int32_t i = index.value.integer;
                 if (i < 0) {
                     i = list->size + i;
@@ -846,7 +844,7 @@ vm_run(struct vm* restrict vm) {
         struct object array = vm_stack_pop(vm);
         assert(index.type == OBJ_INT);
         assert(array.type == OBJ_ARRAY);
-        struct object_list* list = (struct object_list*) array.value.ptr->value;
+        struct object_list* list = array.value.ptr->list;
         if (index.value.integer < 0 || index.value.integer >= list->size) {
             vm_stack_push(vm, make_error_object("Array assignment index out of bounds"));
             gc_add(vm, vm_stack_cur(vm));

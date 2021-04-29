@@ -2,11 +2,11 @@
 
 <img src="https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/logo.png" width="120" height="120" align="right" />
 
-Pepper is an experimental interpreted programming language with a focus on simplicity and verbosity. It is dynamically typed and comes with built-in garbage collection. It's like a weird hybrid resembling C and Python.
+Pepper is an interpreted programming toy language that I wrote with a focus on simplicity and verbosity. It is dynamically typed and comes with built-in garbage collection. At the moment, it's basically a weird hybrid between C, JavaScript and Python.
 
-It's also [quite fast](#Benchmarks) for an interpreted language that does not (yet) rely on JIT compilation.
+It's also [quite fast](#Benchmarks) for an interpreted language that does not (yet) use JIT compilation.
 
-Pepper is implemented in standard C11 with no external dependencies, so it can run on a wide variety of systems.
+Pepper is implemented in C11 with no external dependencies. It would have been ANSI standard if it weren't for the use of computed goto's in the VM main loop to improve CPU branch prediction.
 
 ### Syntax example 
 

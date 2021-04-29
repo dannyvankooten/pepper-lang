@@ -10,9 +10,9 @@
 #include "object.h"
 #include "parser.h"
 
-const char *object_type_to_str(const enum object_type t) 
+const char *object_type_to_str(enum object_type t) 
 {
-    const char *object_names[] = {
+    static const char *object_names[] = {
         "NULL",
         "BOOLEAN",
         "INTEGER",
@@ -25,7 +25,7 @@ const char *object_type_to_str(const enum object_type t)
     return object_names[t];
 }
   
-struct object make_integer_object(const int64_t value) 
+struct object make_integer_object(int64_t value) 
 {
     return (struct object) {
         .type = OBJ_INT,
@@ -33,7 +33,7 @@ struct object make_integer_object(const int64_t value)
     };
 }
 
-struct object make_boolean_object(const bool value)
+struct object make_boolean_object(bool value)
 {
     return (struct object) {
         .type = OBJ_BOOL,
@@ -290,7 +290,7 @@ void print_object(struct object obj)
 }
 
 // TODO: Fix this function for strings and arrays larger than BUFSIZ
-void object_to_str(char *str, const struct object obj)
+void object_to_str(char *str, struct object obj)
 {
     char tmp[BUFSIZ] = { '\0' };
 
