@@ -87,25 +87,6 @@ struct instruction *compiler_current_instructions(struct compiler *c) {
     return scope.instructions;
 }
 
-static uint32_t 
-add_instruction(struct compiler *c, struct instruction *ins) {
-    struct instruction *cins = compiler_current_instructions(c);
-    uint32_t pos = cins->size;
-    uint32_t new_size = cins->size + ins->size;
-
-    if (new_size >= cins->cap) {
-        cins->cap *= 2;
-        cins->bytes = realloc(cins->bytes, cins->cap * sizeof(*cins->bytes));
-        assert(cins->bytes != NULL);
-    }
-    
-    // append instruction code to current compiler code
-    memcpy(cins->bytes + cins->size, ins->bytes, ins->size * sizeof(*ins->bytes));
-    cins->size += ins->size;
-    free_instruction(ins);
-    return pos;
-}
-
 static uint32_t
 add_constant(struct compiler *c, struct object obj) {
     c->constants->values[c->constants->size++] = obj;
@@ -158,13 +139,38 @@ static void compiler_change_operand(struct compiler *c, uint32_t pos, uint16_t o
     }
 }
 
+static uint32_t compiler_emit_va(struct compiler *c, enum opcode opcode, va_list operands) {
+    struct definition def = lookup(opcode);  
+    struct instruction *cins = compiler_current_instructions(c);
+
+    if (cins->size + def.operands * 3 >= cins->cap) {
+        cins->cap *= 2;
+        cins->bytes = realloc(cins->bytes, cins->cap * sizeof(*cins->bytes));
+        assert(cins->bytes != NULL);
+    }
+
+    uint32_t pos = cins->size;
+
+    // write opcode to bytecode
+    cins->bytes[cins->size++] = opcode;
+
+    // write operands to bytecode
+    for (uint8_t op_idx = 0; op_idx < def.operands; op_idx++) {
+        int64_t operand = va_arg(operands, int64_t);
+        for (int8_t byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
+            cins->bytes[cins->size++] = (uint8_t) (operand >> (byte_idx * 8));
+        }
+    }
+
+    compiler_set_last_instruction(c, opcode, pos);
+    return pos;
+}
+
 uint32_t compiler_emit(struct compiler *c, enum opcode opcode, ...) {
     va_list args;
     va_start(args, opcode);
-    struct instruction *ins = make_instruction_va(opcode, args);
+    uint32_t pos = compiler_emit_va(c, opcode, args);
     va_end(args);
-    uint32_t pos = add_instruction(c, ins);
-    compiler_set_last_instruction(c, opcode, pos);
     return pos;
 }
 

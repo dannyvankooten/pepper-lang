@@ -7,7 +7,7 @@
 #include "util.h"
 #include "opcode.h"
 
-static const struct definition definitions[] = {
+const struct definition definitions[] = {
     { "OpConstant", 1, {2} },
     { "OpPop", 0, {0} },
     { "OpAdd", 0, {0} },
@@ -46,21 +46,21 @@ static const struct definition definitions[] = {
 };
 
 inline const 
-char *opcode_to_str(const enum opcode opcode) {
+char *opcode_to_str(enum opcode opcode) {
     return definitions[opcode].name;
 }
 
 inline const
-struct definition lookup(const enum opcode opcode) {
+struct definition lookup(enum opcode opcode) {
     return definitions[opcode];
 }
 
-struct instruction *make_instruction_va(const enum opcode opcode, va_list operands) {
+struct instruction *make_instruction_va(enum opcode opcode, va_list operands) {
     struct definition def = lookup(opcode);
     struct instruction *ins = malloc(sizeof *ins);
     assert(ins != NULL);
     
-    ins->bytes = malloc(sizeof *ins->bytes * (def.operands + 1) * 3);
+    ins->bytes = malloc(sizeof *ins->bytes * (def.operands * 3 + 1));
     assert(ins->bytes != NULL);
     ins->bytes[0] = opcode;
     ins->size = 1;
