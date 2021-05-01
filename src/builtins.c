@@ -73,11 +73,11 @@ builtin_len(const struct object_list* args) {
     struct object arg = args->values[0];
     switch (arg.type) {
         case OBJ_STRING:
-            return make_integer_object(arg.value.ptr->string.length);
+            return make_integer_object(arg.value.string->length);
         break;
 
         case OBJ_ARRAY:
-            return make_integer_object(arg.value.ptr->list->size);
+            return make_integer_object(arg.value.list->size);
         break;
 
         default:
@@ -120,7 +120,7 @@ builtin_int(const struct object_list *args) {
         break;
 
         case OBJ_STRING:
-            return make_integer_object(atoi(obj->value.ptr->string.value));
+            return make_integer_object(atoi(obj->value.string->value));
         break;
 
         case OBJ_BOOL:
@@ -146,7 +146,7 @@ builtin_array_pop(const struct object_list *args) {
     }
 
 	struct object array = args->values[0];
-	struct object_list* list = array.value.ptr->list;
+	struct object_list* list = array.value.list;
     if (list->size == 0) {
         return (struct object) {.type = OBJ_NULL};
     }
@@ -165,10 +165,10 @@ builtin_array_push(const struct object_list *args) {
     }
    
 	struct object array = args->values[0];
-	struct object_list** list = &(array.value.ptr->list);
+	struct object_list* list = array.value.list;
     struct object *value = (struct object*) &args->values[1];
-    *list = append_to_object_list(*list, copy_object(value)); 
-    return make_integer_object((*list)->size);
+    append_to_object_list(list, copy_object(value)); 
+    return make_integer_object(list->size);
 }
 
 static struct object 
@@ -181,7 +181,7 @@ builtin_file_get_contents(const struct object_list *args) {
         return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
     }
 
-    const char *filename = (char *) args->values[0].value.ptr->value;
+    const char *filename = args->values[0].value.string->value;
     FILE *fd = fopen(filename, "rb");
     if (!fd) {
         return make_error_object("error opening file \"%s\"", filename);
@@ -192,9 +192,9 @@ builtin_file_get_contents(const struct object_list *args) {
     fseek(fd, 0, SEEK_SET); 
 
     struct object obj = make_string_object_with_length("", fsize);
-    size_t bytes_read = fread(obj.value.ptr->string.value, 1, fsize, fd);
+    size_t bytes_read = fread(obj.value.string->value, 1, fsize, fd);
     assert(bytes_read >= 0);
-    obj.value.ptr->string.value[fsize] = '\0';
+    obj.value.string->value[fsize] = '\0';
     fclose(fd);
     return obj;
 }
@@ -209,25 +209,25 @@ str_split(const struct object_list *args) {
         return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
     }
 
-    const char* str = (char*) args->values[0].value.ptr->string.value;
-	struct string delim = args->values[1].value.ptr->string;
+    const char* str = (char*) args->values[0].value.string->value;
+	struct string* delim = args->values[1].value.string;
     struct object_list *list = make_object_list(8);
 
     char *p;
 	struct object obj;
 
-    while ((p = strstr(str, delim.value)) != NULL) {
+    while ((p = strstr(str, delim->value)) != NULL) {
         size_t len = p - str;
 		obj = make_string_object_with_length("", len);
-		memcpy(obj.value.ptr->string.value, str, len);
-		obj.value.ptr->string.value[len] = '\0';
-        list = append_to_object_list(list, obj);
-        str = p + delim.length;
+		memcpy(obj.value.string->value, str, len);
+		obj.value.string->value[len] = '\0';
+        append_to_object_list(list, obj);
+        str = p + delim->length;
     }
     
     // remainder (after last delimiter)
     obj = make_string_object(str);
-	list = append_to_object_list(list, obj);
+	append_to_object_list(list, obj);
 
 	// return array
     return make_array_object(list);
@@ -243,8 +243,8 @@ str_contains(const struct object_list *args) {
         return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
     }
 
-    const char* subject = (char*) args->values[0].value.ptr->value;
-    const char* search = (char*) args->values[1].value.ptr->value;
+    const char* subject = args->values[0].value.string->value;
+    const char* search = args->values[1].value.string->value;
     char* ret;
 
     ret = strstr(subject, search);

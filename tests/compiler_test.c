@@ -20,8 +20,8 @@ static void test_object(struct object expected, struct object actual) {
             assertf(actual.value.boolean == expected.value.boolean, "invalid boolean value: expected %d, got %d", expected.value.boolean, actual.value.boolean);
         break;
         case OBJ_COMPILED_FUNCTION: {
-            struct compiled_function* af = (struct compiled_function*) actual.value.ptr->value;
-            struct compiled_function* ef = (struct compiled_function*) expected.value.ptr->value;
+            struct compiled_function* af = actual.value.fn_compiled;
+            struct compiled_function* ef = expected.value.fn_compiled;
             char *expected_str = instruction_to_str(&ef->instructions);
             char *actual_str = instruction_to_str(&af->instructions);
             assertf(ef->instructions.size == af->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
@@ -33,7 +33,7 @@ static void test_object(struct object expected, struct object actual) {
         }
         break;
         case OBJ_STRING: 
-            assertf(strcmp(expected.value.ptr->value, actual.value.ptr->value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected.value.ptr->value, actual.value.ptr->value);
+            assertf(strcmp(expected.value.string->value, actual.value.string->value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected.value.string->value, actual.value.string->value);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(actual.type));
@@ -48,7 +48,6 @@ static void run_compiler_test(struct compiler_test_case t) {
     assertf(err == 0, "compiler error: %s", compiler_error_str(err));
     struct bytecode *bytecode = get_bytecode(compiler);
     struct instruction *concatted = flatten_instructions_array(t.instructions, t.instructions_size);
-
     char *concatted_str = instruction_to_str(concatted);
     char *bytecode_str = instruction_to_str(bytecode->instructions);
     assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: \nexpected %d\n\"%s\"\ngot %d\n\"%s\"", concatted->size, concatted_str, bytecode->instructions->size, bytecode_str);

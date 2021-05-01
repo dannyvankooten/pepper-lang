@@ -10,6 +10,7 @@
 #include "opcode.h"
 #include "vm.h"
 #include "builtins.h"
+#include "gc.h"
 
 #define vm_current_frame(vm) (vm->frames[vm->frame_index])
 #define vm_stack_pop_ignore(vm) (vm->stack_pointer--)
@@ -70,8 +71,6 @@ print_debug_info(struct vm *vm) {
 }
 #endif 
 
-static void gc(struct vm* vm);
-static void gc_add(struct vm* vm, struct object obj);
 static struct object_list *_builtin_args_list;
 
 struct vm *vm_new(struct bytecode *bc) {
@@ -103,11 +102,10 @@ struct vm *vm_new(struct bytecode *bc) {
     assert(ins != NULL);
     memcpy(ins, bc->instructions, sizeof(struct instruction));
     struct object fn_obj = make_compiled_function_object(ins, 0);
-    struct compiled_function* fn = (struct compiled_function*) fn_obj.value.ptr->value;
+    struct compiled_function* fn = fn_obj.value.fn_compiled;
     vm->frames[0].ip = fn->instructions.bytes;
     vm->frames[0].fn = fn;
     vm->frames[0].base_pointer = 0;
-    free(fn_obj.value.ptr);
     return vm;
 }
 
@@ -175,7 +173,7 @@ static void
 vm_do_binary_string_operation(struct vm* restrict vm, enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     switch (opcode) {
         case OPCODE_ADD: {            
-            struct object o = concat_string_objects(left->value.ptr->string, right->value.ptr->string);
+            struct object o = concat_string_objects(left->value.string, right->value.string);
             vm_stack_cur(vm) = o;
             gc_add(vm, o);   
         }
@@ -281,11 +279,11 @@ vm_do_string_comparison(const struct vm* restrict vm, const enum opcode opcode, 
     left->type = OBJ_BOOL;
     switch (opcode) {
         case OPCODE_EQUAL: 
-            left->value.boolean = strcmp(left->value.ptr->string.value, right->value.ptr->string.value) == 0;
+            left->value.boolean = strcmp(left->value.string->value, right->value.string->value) == 0;
         break;
 
         case OPCODE_NOT_EQUAL: 
-            left->value.boolean = strcmp(left->value.ptr->string.value, right->value.ptr->string.value) != 0;
+            left->value.boolean = strcmp(left->value.string->value, right->value.string->value) != 0;
         break;
 
         default: 
@@ -369,7 +367,7 @@ vm_do_call(struct vm* restrict vm, uint8_t num_args) {
     const struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
         case OBJ_COMPILED_FUNCTION:
-            vm_do_call_function(vm, callee.value.ptr->fn_compiled, num_args);
+            vm_do_call_function(vm, callee.value.fn_compiled, num_args);
         break;
 
         case OBJ_BUILTIN:
@@ -409,24 +407,24 @@ static struct object build_slice_from_array(struct object_list* source, int32_t 
     return make_array_object(list);
 }
 
-static struct object build_slice_from_string(struct string source, int32_t start, int32_t end)
+static struct object build_slice_from_string(struct string* source, int32_t start, int32_t end)
 {
     if (start < 0) {
-        start = source.length + start;
+        start = source->length + start;
     }
     if (end <= 0) {
-        end = source.length + end;
+        end = source->length + end;
     }
     if (end < start) {
         end = start;
     }
     struct object obj = make_string_object_with_length("", end - start);
-    struct string str = obj.value.ptr->string;
-    str.length = 0;
-    for (int i=start; i < end && i < source.length; i++) {
-        str.value[str.length++] = source.value[i];
+    struct string* str = obj.value.string;
+    str->length = 0;
+    for (int i=start; i < end && i < source->length; i++) {
+        str->value[str->length++] = source->value[i];
     }
-    str.value[str.length] = '\0';
+    str->value[str->length] = '\0';
     return obj;
 }
 
@@ -441,84 +439,17 @@ build_slice(struct object left, struct object obj_start, struct object obj_end)
 
     switch (left.type) {
         case OBJ_ARRAY:
-            return build_slice_from_array(left.value.ptr->list, start, end);
+            return build_slice_from_array(left.value.list, start, end);
         break;
 
         case OBJ_STRING:
-            return build_slice_from_string(left.value.ptr->string, start, end);
+            return build_slice_from_string(left.value.string, start, end);
         break;
 
         default:
             return make_error_object("Invalid object type for slice operation");
         break;
     } 
-}
-
-
-static void gc_add(struct vm* vm, struct object obj) {
-    if (obj.type <= OBJ_BUILTIN) {
-        return;
-    }
-
-    gc(vm);
-    vm->heap = append_to_object_list(vm->heap, obj);
-}
-
-static void 
-gc(struct vm* restrict vm) 
-{
-    // we want to run the garbage collector pretty much all the time when in debug mode
-    // so this code gets properly exercised
-    #ifndef TEST_MODE 
-    if (vm->heap->size < (vm->heap->cap * 0.8)) {
-        return;
-    }
-    #endif 
-
-    #ifdef DEBUG_GC
-    printf("GARBAGE COLLECTION START\n");
-    printf("Heap size (before): %d\n", vm->heap->size);
-    #endif
-
-    // traverse VM constants, stack and globals and mark every object that is reachable
-    for (uint32_t i=0; i < vm->stack_pointer; i++) {
-        if (vm->stack[i].type <= OBJ_BUILTIN) { 
-            continue;
-        }
-        vm->stack[i].value.ptr->marked = true;
-    }
-    for (uint32_t i=0; i < vm->nconstants; i++) {
-        if (vm->constants[i].type <= OBJ_BUILTIN) { 
-            continue;
-        }
-        vm->constants[i].value.ptr->marked = true;
-    }
-    for (uint32_t i=0; i < GLOBALS_SIZE && vm->globals[i].type != OBJ_NULL; i++) {
-        if (vm->globals[i].type <= OBJ_BUILTIN) { 
-            continue;
-        }
-        vm->globals[i].value.ptr->marked = true;
-    }
-
-    // traverse all objects, free all unmarked objects
-    for (int32_t i = vm->heap->size - 1; i >= 0; i--) {
-        if (vm->heap->values[i].value.ptr->marked) {
-            // unset marked bit for next gc run
-            vm->heap->values[i].value.ptr->marked = false;
-            continue;
-        }
-
-        // free object
-        free_object(&vm->heap->values[i]);
-
-        // remove from heap (swap with last value)  
-        vm->heap->values[i] = vm->heap->values[--vm->heap->size];
-    }
-
-    #ifdef DEBUG_GC
-    printf("Heap size (after): %d\n", vm->heap->size);
-    printf("GARBAGE COLLECTION DONE\n");
-    #endif
 }
 
 enum result 
@@ -793,7 +724,7 @@ vm_run(struct vm* restrict vm) {
 
         switch (left.type) {
             case OBJ_ARRAY: {
-                struct object_list* list = left.value.ptr->list;
+                struct object_list* list = left.value.list;
                 int32_t i = index.value.integer;
                 if (i < 0) {
                     i = list->size + i;
@@ -808,12 +739,12 @@ vm_run(struct vm* restrict vm) {
             break;
 
             case OBJ_STRING: {
-                const char *str = ((const char*) left.value.ptr->string.value);
+                const char *str = left.value.string->value;
                 int32_t i = index.value.integer;
                 if (i < 0) {
-                    i = left.value.ptr->string.length + i;
+                    i = left.value.string->length + i;
                 }
-                if (i < 0 || i >= left.value.ptr->string.length) {
+                if (i < 0 || i >= left.value.string->length) {
                     vm_stack_push(vm, make_error_object("String index out of bounds"));
                     gc_add(vm, vm_stack_cur(vm));
                 } else {
@@ -844,7 +775,7 @@ vm_run(struct vm* restrict vm) {
         struct object array = vm_stack_pop(vm);
         assert(index.type == OBJ_INT);
         assert(array.type == OBJ_ARRAY);
-        struct object_list* list = array.value.ptr->list;
+        struct object_list* list = array.value.list;
         if (index.value.integer < 0 || index.value.integer >= list->size) {
             vm_stack_push(vm, make_error_object("Array assignment index out of bounds"));
             gc_add(vm, vm_stack_cur(vm));

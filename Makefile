@@ -20,7 +20,7 @@ bin/lexer_test: tests/lexer_test.c lexer.c | bin/
 bin/parser_test: tests/parser_test.c parser.c lexer.c | bin/
 bin/opcode_test: tests/opcode_test.c opcode.c | bin/
 bin/compiler_test: tests/compiler_test.c lexer.c parser.c opcode.c compiler.c object.c symbol_table.c builtins.c | bin/
-bin/vm_test: tests/vm_test.c lexer.c parser.c opcode.c compiler.c object.c symbol_table.c builtins.c vm.c | bin/
+bin/vm_test: tests/vm_test.c lexer.c parser.c opcode.c compiler.c object.c symbol_table.c builtins.c vm.c gc.c | bin/
 bin/symbol_table_test: tests/symbol_table_test.c symbol_table.c | bin/
 bin/%_test: 
 	$(CC) $(CFLAGS) -DTEST_MODE $^ -o $@

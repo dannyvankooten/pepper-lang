@@ -61,10 +61,10 @@ static void test_object(struct object obj, object_type expected_type, object_val
             // nothing to do as null objects have no further contents and type has already been checked
         break;
         case OBJ_STRING: 
-            assertf(strcmp(expected_value.string, obj.value.ptr->string.value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected_value.string, obj.value.ptr->string.value);
+            assertf(strcmp(expected_value.string, obj.value.string->value) == 0, "invalid string value: expected \"%s\", got \"%s\"", expected_value.string, obj.value.string->value);
         break;
         case OBJ_ERROR:
-            assertf(strncasecmp(obj.value.ptr->value, expected_value.error, strlen(expected_value.error)) == 0, "invalid error value: expected \"%s\", got \"%s\"", expected_value.error, obj.value.ptr->value);
+            assertf(strncasecmp(obj.value.error->value, expected_value.error, strlen(expected_value.error)) == 0, "invalid error value: expected \"%s\", got \"%s\"", expected_value.error, obj.value.error->value);
         break;
         default: 
             assertf(false, "missing test implementation for object of type %s", object_type_to_str(obj.type));
@@ -400,7 +400,7 @@ static void array_literals() {
         struct object obj = run_vm_test(tests[i].input);
         assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
 
-        struct object_list* arr = obj.value.ptr->value;
+        struct object_list* arr = obj.value.list;
         assertf(tests[i].nexpected == arr->size, "invalid array size");
 
         for (int j=0; j < tests[i].nexpected; j++) {
@@ -430,7 +430,7 @@ static void mixed_arrays() {
         struct object obj = run_vm_test(tests[i].input);
         assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
 
-        struct object_list* arr = obj.value.ptr->value;
+        struct object_list* arr = obj.value.list;
         assertf(arr->size == 4, "invalid array size");
 
         for (int j=0; j < 4; j++) {
@@ -586,11 +586,11 @@ static void str_split() {
     for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
         struct object obj = run_vm_test(tests[i].input);
         assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
-        struct object_list* arr = obj.value.ptr->value;
+        struct object_list* arr = obj.value.list;
         assertf(arr->size == 3, "invalid array size: expected 3, got %d", arr->size);
         for (int j=0; j < 3; j++) {
             assertf(arr->values[j].type == OBJ_STRING, "invalid type");
-            assertf(strcmp(arr->values[j].value.ptr->value, tests[i].expected[j]) == 0, "invalid type");
+            assertf(strcmp(arr->values[j].value.string->value, tests[i].expected[j]) == 0, "invalid string value");
         }
         free_object(&obj);
     }

@@ -45,10 +45,8 @@ struct object make_array_object(struct object_list *elements)
 {
     struct object obj;
     obj.type = OBJ_ARRAY;
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
-    assert(obj.value.ptr != NULL);
-    obj.value.ptr->marked = false;
-    obj.value.ptr->value = elements;
+    obj.value.list = elements;
+    elements->gc_meta.marked = false;
     return obj;
 }
 
@@ -56,12 +54,12 @@ struct object make_string_object_with_length(const char *str, size_t length)
 {
     struct object obj;
     obj.type = OBJ_STRING;
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + length + 1);
-    assert(obj.value.ptr != NULL);
-    obj.value.ptr->marked = false;
-    obj.value.ptr->string.value = (char*) (obj.value.ptr + 1);
-    strcpy(obj.value.ptr->string.value, str);
-    obj.value.ptr->string.length = length;
+    obj.value.string = malloc(sizeof(*obj.value.string) + length + 1);
+    assert(obj.value.string != NULL);
+    obj.value.string->gc_meta.marked = false;
+    obj.value.string->value = (char*) (obj.value.string + 1);
+    strcpy(obj.value.string->value, str);
+    obj.value.string->length = length;
     return obj;
 }
 
@@ -70,19 +68,10 @@ struct object make_string_object(const char *str)
     return make_string_object_with_length(str, strlen(str));
 }
 
-struct object concat_string_objects(struct string left, struct string right)
+struct object concat_string_objects(struct string* left, struct string* right)
 {
-    struct object obj;
-    obj.type = OBJ_STRING;
-    size_t length = left.length + right.length;
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + length + 1);
-    assert(obj.value.ptr != NULL);
-    obj.value.ptr->marked = false;
-    obj.value.ptr->string.value = (char*) (obj.value.ptr + 1);
-    obj.value.ptr->string.length = length;
-    strcpy(obj.value.ptr->string.value, left.value);
-    strcpy(obj.value.ptr->string.value + left.length, right.value);
-    obj.value.ptr->string.value[length] = '\0';
+    struct object obj = make_string_object_with_length(left->value, left->length + right->length); 
+    strcpy(obj.value.string->value + left->length, right->value);
     return obj;
 }
 
@@ -94,13 +83,12 @@ struct object make_error_object(const char *format, ...)
 
     // assume all expansions in the format string take up at most 64 bytes
     uint32_t len = strlen(format) + 64;
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr) + len);
-    assert(obj.value.ptr != NULL);
-    obj.value.ptr->marked = false;
-    obj.value.ptr->value = (char*) (obj.value.ptr + 1);
-    assert(obj.value.ptr->value != NULL);
+    obj.value.error = malloc(sizeof(*obj.value.error) + len);
+    assert(obj.value.error != NULL);
+    obj.value.error->gc_meta.marked = false;
+    obj.value.error->value = (char*) (obj.value.error + 1);
     va_start(args, format);  
-    vsnprintf(obj.value.ptr->value, len + 64, format, args);
+    vsnprintf(obj.value.error->value, len + 64, format, args);
     va_end(args);
     return obj;
 }
@@ -113,9 +101,8 @@ struct object make_compiled_function_object(struct instruction *ins, uint32_t nu
     f->num_locals = num_locals;
     f->instructions = *ins;
     free(ins);
-    obj.value.ptr = malloc(sizeof(*obj.value.ptr));
-    assert(obj.value.ptr != NULL);
-    obj.value.ptr->value = f;
+    obj.value.fn_compiled = f;
+    f->gc_meta.marked = false;
     return obj;
 }   
  
@@ -131,21 +118,21 @@ struct object copy_object(const struct object* restrict obj) {
             break;
 
         case OBJ_ERROR: 
-            return make_error_object(obj->value.ptr->value);
+            return make_error_object(obj->value.error->value);
             break;
         
         case OBJ_STRING:
-            return make_string_object(obj->value.ptr->value);
+            return make_string_object(obj->value.string->value);
             break;
 
         case OBJ_ARRAY: {
-            struct object_list* list = (struct object_list*) obj->value.ptr->value;
+            struct object_list* list = obj->value.list;
             return make_array_object(copy_object_list(list));
             break;    
         }
 
         case OBJ_COMPILED_FUNCTION: {
-            struct compiled_function* f = (struct compiled_function*) obj->value.ptr->value;
+            struct compiled_function* f = obj->value.fn_compiled;
             struct instruction *ins = copy_instructions(&f->instructions);
             return make_compiled_function_object(ins, f->num_locals);
         }
@@ -168,35 +155,41 @@ void free_object(struct object* restrict obj)
             break;
 
         case OBJ_COMPILED_FUNCTION: {
-            struct compiled_function* fn = (struct compiled_function*) obj->value.ptr->value;
+            struct compiled_function* fn = obj->value.fn_compiled;
             free(fn->instructions.bytes);
-            free(obj->value.ptr->value);
+            free(fn);
             break;
         }
         case OBJ_ARRAY: {
             // Note that we do not free the values in the list here
             // As these are also handled by the GC
-            struct object_list* list = (struct object_list*) obj->value.ptr->value;
+            struct object_list* list = obj->value.list;
             free_object_list(list);
             break;
         }
+
+        case OBJ_STRING:
+            free(obj->value.string);
+        break;
+
+        case OBJ_ERROR:
+            free(obj->value.error);
+        break;
 
         default: 
             // see below
         break;
     }
-
-    free(obj->value.ptr);
-    obj->value.ptr = NULL;
 }
 
 struct object_list *make_object_list(uint32_t cap) {
     struct object_list *list;
-    list = (struct object_list *) malloc(sizeof (struct object_list) + cap * sizeof(struct object));
+    list = (struct object_list *) malloc(sizeof (struct object_list));
     assert(list != NULL);
+    list->values = (struct object*) malloc(cap * sizeof(struct object));
+    assert(list->values != NULL);
     list->cap = cap;
     list->size = 0;
-    list->values = (struct object*) (list + 1);
     return list;
 }
 
@@ -205,22 +198,19 @@ void free_object_list(struct object_list *list) {
     for (uint32_t i=0; i < list->size; i++) {
         free_object(&list->values[i]);
     }
+    free(list->values);
     free(list);
 }
 
-struct object_list*
+void 
 append_to_object_list(struct object_list* list, struct object obj) {
     if (list->size == list->cap) {
         list->cap = (list->cap > 0) ? list->cap * 2 : 1;
-        list = (struct object_list*) realloc(list, sizeof(struct object_list) + list->cap * sizeof(struct object));
-        assert(list != NULL);
-        list->values = (struct object*) (list + 1);
+        list->values = (struct object*) realloc(list->values, list->cap * sizeof(struct object));
+        assert(list->values != NULL);
     }
 
     list->values[list->size++] = obj;
-
-    // return (possibly modified) pointer
-    return list;
 }
 
 /* deep copy of object list, incl. all values */
@@ -251,14 +241,14 @@ void print_object(struct object obj)
             break;
             
         case OBJ_ERROR: 
-            printf("%s", (const char *) obj.value.ptr->value);
+            printf("%s", obj.value.error->value);
             break;  
 
         case OBJ_STRING: 
             #ifdef DEBUG
                 printf("\"%s\"", (const char *) obj.value.ptr->string.value);
             #else
-                printf("%s", (const char *) obj.value.ptr->string.value);  
+                printf("%s", (const char *) obj.value.string->value);  
             #endif
             break;
 
@@ -268,19 +258,19 @@ void print_object(struct object obj)
 
         case OBJ_ARRAY: {
             printf("[");
-            struct object_list* arr = (struct object_list*) obj.value.ptr->value;
-            for (uint32_t i=0; i < arr->size; i++) {
+            struct object_list* list = obj.value.list;
+            for (uint32_t i=0; i < list->size; i++) {
                 if (i > 0) {
                     printf(", ");
                 }
-                print_object(arr->values[i]);
+                print_object(list->values[i]);
             }
             printf("]");
             break;
         }
 
         case OBJ_COMPILED_FUNCTION: {
-            struct compiled_function* f = (struct compiled_function*) obj.value.ptr->value;
+            struct compiled_function* f = obj.value.fn_compiled;
             char *instruction_str = instruction_to_str(&f->instructions);
             printf("%s", instruction_str);
             free(instruction_str);
@@ -310,14 +300,14 @@ void object_to_str(char *str, struct object obj)
             break;
             
         case OBJ_ERROR: 
-            strcat(str, obj.value.ptr->value);
+            strcat(str, obj.value.error->value);
             break;  
 
         case OBJ_STRING: 
             #ifdef DEBUG 
             strcat(str, "\"");
             #endif
-            strcat(str, obj.value.ptr->value);
+            strcat(str, obj.value.string->value);
             #ifdef DEBUG 
             strcat(str, "\"");
             #endif
@@ -329,10 +319,10 @@ void object_to_str(char *str, struct object obj)
 
         case OBJ_ARRAY: {
             strcat(str, "[");
-            struct object_list* arr = (struct object_list*) obj.value.ptr->value;
-            for (uint32_t i=0; i < arr->size; i++) {
-                object_to_str(str, arr->values[i]);
-                if (i < (arr->size - 1)) {
+            struct object_list* list = obj.value.list;
+            for (uint32_t i=0; i < list->size; i++) {
+                object_to_str(str, list->values[i]);
+                if (i < (list->size - 1)) {
                     strcat(str, ", ");
                 }
             }
@@ -341,7 +331,7 @@ void object_to_str(char *str, struct object obj)
         }
 
         case OBJ_COMPILED_FUNCTION: {
-            struct compiled_function* f = (struct compiled_function*) obj.value.ptr->value;
+            struct compiled_function* f = obj.value.fn_compiled;
             char *instruction_str = instruction_to_str(&f->instructions);
             strcat(str, instruction_str);
             free(instruction_str);
@@ -349,3 +339,5 @@ void object_to_str(char *str, struct object obj)
         }
     }
 }
+
+
