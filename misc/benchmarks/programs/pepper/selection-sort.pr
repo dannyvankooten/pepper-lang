@@ -28,7 +28,6 @@ let length = len(arr);
 for (let i=0; i < length; i++) {
     arr[i] = int(arr[i]);
 }
-
 sort(arr);
 
 print(arr[0], " - ", arr[4999]);

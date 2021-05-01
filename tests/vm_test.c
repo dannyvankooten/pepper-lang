@@ -576,10 +576,22 @@ static void str_split() {
     {
         const char* input;
         char* expected[3];
+        int nexpected;
     } tests[] = {
         {  
             "str_split(\"a,b,c\", \",\")", 
-            {"a", "b", "c" }
+            {"a", "b", "c" },
+            3,
+        },
+        {  
+            "str_split(\"a, b, c\", \", \")", 
+            {"a", "b", "c" },
+            3,
+        },
+        {  
+            "str_split(\"abc\", \", \")", 
+            {"abc"},
+            1,
         },
     };
 
@@ -587,10 +599,10 @@ static void str_split() {
         struct object obj = run_vm_test(tests[i].input);
         assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
         struct object_list* arr = obj.value.list;
-        assertf(arr->size == 3, "invalid array size: expected 3, got %d", arr->size);
-        for (int j=0; j < 3; j++) {
+        assertf(arr->size == tests[i].nexpected, "invalid array size: expected 3, got %d", arr->size);
+        for (int j=0; j < tests[i].nexpected; j++) {
             assertf(arr->values[j].type == OBJ_STRING, "invalid type");
-            assertf(strcmp(arr->values[j].value.string->value, tests[i].expected[j]) == 0, "invalid string value");
+            assertf(strcmp(arr->values[j].value.string->value, tests[i].expected[j]) == 0, "invalid string value: expected \"%s\", got \"%s\"", tests[i].expected[j], arr->values[j].value.string->value);
         }
         free_object(&obj);
     }

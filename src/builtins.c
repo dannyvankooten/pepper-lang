@@ -199,38 +199,43 @@ builtin_file_get_contents(const struct object_list *args) {
     return obj;
 }
 
-static struct object 
-str_split(const struct object_list *args) {
-    if (args->size != 2) {
-        return make_error_object("wrong number of arguments: expected 2, got %d", args->size);
-    }
+static struct object str_split(const struct object_list *args) {
+  if (args->size != 2) {
+    return make_error_object("wrong number of arguments: expected 2, got %d",
+                             args->size);
+  }
 
-    if (args->values[0].type != OBJ_STRING || args->values[1].type != OBJ_STRING) {
-        return make_error_object("invalid argument: expected %s, got %s", object_type_to_str(OBJ_STRING), object_type_to_str(args->values[0].type));
-    }
+  if (args->values[0].type != OBJ_STRING ||
+      args->values[1].type != OBJ_STRING) {
+    return make_error_object("invalid argument: expected %s, got %s",
+                             object_type_to_str(OBJ_STRING),
+                             object_type_to_str(args->values[0].type));
+  }
 
-    const char* str = (char*) args->values[0].value.string->value;
-	struct string* delim = args->values[1].value.string;
-    struct object_list *list = make_object_list(8);
 
-    char *p;
-	struct object obj;
 
-    while ((p = strstr(str, delim->value)) != NULL) {
-        size_t len = p - str;
-		obj = make_string_object_with_length("", len);
-		memcpy(obj.value.string->value, str, len);
-		obj.value.string->value[len] = '\0';
-        append_to_object_list(list, obj);
-        str = p + delim->length;
-    }
-    
-    // remainder (after last delimiter)
-    obj = make_string_object(str);
-	append_to_object_list(list, obj);
+  const char *str = args->values[0].value.string->value;
+  struct string *delim = args->values[1].value.string;
+  struct object_list *list = make_object_list(8);
 
-	// return array
-    return make_array_object(list);
+  char *p;
+  struct object obj;
+
+  while ((p = strstr(str, delim->value)) != NULL) {
+    size_t len = p - str;
+    obj = make_string_object_with_length("", len);
+    memcpy(obj.value.string->value, str, len);
+    obj.value.string->value[len] = '\0';
+    append_to_object_list(list, obj);
+    str = p + delim->length;
+  }
+
+  // remainder (after last delimiter)
+  obj = make_string_object(str);
+  append_to_object_list(list, obj);
+
+  // return array
+  return make_array_object(list);
 }
 
 static struct object 

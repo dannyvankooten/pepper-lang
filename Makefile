@@ -12,7 +12,7 @@ all: bin/pepper
 bin/:
 	mkdir -p bin/
 
-bin/pepper: pepper.c lexer.c parser.c opcode.c compiler.c object.c symbol_table.c builtins.c vm.c | bin/
+bin/pepper: pepper.c lexer.c parser.c opcode.c compiler.c object.c symbol_table.c builtins.c vm.c gc.c | bin/
 	$(CC) $(CFLAGS) $^ -Ofast -o $@ 
 
 # tests
