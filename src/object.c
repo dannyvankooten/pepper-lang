@@ -93,14 +93,16 @@ struct object make_error_object(const char *format, ...)
     return obj;
 }
 
-struct object make_compiled_function_object(struct instruction *ins, uint32_t num_locals) {
+struct object make_compiled_function_object(const struct instruction *ins, uint32_t num_locals) {
     struct object obj;
     obj.type = OBJ_COMPILED_FUNCTION;
-    struct compiled_function *f = malloc(sizeof (struct compiled_function));
+    struct compiled_function *f = malloc(sizeof (struct compiled_function) + ins->size);
     assert(f != NULL);
     f->num_locals = num_locals;
-    f->instructions = *ins;
-    free(ins);
+    f->instructions.cap = ins->size;
+    f->instructions.size = ins->size;
+    f->instructions.bytes = (uint8_t *) (f + 1);
+    memcpy(f->instructions.bytes, ins->bytes, ins->size);
     obj.value.fn_compiled = f;
     f->gc_meta.marked = false;
     return obj;
@@ -133,8 +135,7 @@ struct object copy_object(const struct object* restrict obj) {
 
         case OBJ_COMPILED_FUNCTION: {
             struct compiled_function* f = obj->value.fn_compiled;
-            struct instruction *ins = copy_instructions(&f->instructions);
-            return make_compiled_function_object(ins, f->num_locals);
+            return make_compiled_function_object(&f->instructions, f->num_locals);
         }
         break;  
 
@@ -155,9 +156,7 @@ void free_object(struct object* restrict obj)
             break;
 
         case OBJ_COMPILED_FUNCTION: {
-            struct compiled_function* fn = obj->value.fn_compiled;
-            free(fn->instructions.bytes);
-            free(fn);
+            free(obj->value.fn_compiled);
             break;
         }
         case OBJ_ARRAY: {

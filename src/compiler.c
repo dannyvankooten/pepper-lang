@@ -498,6 +498,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
             struct instruction *ins = compiler_leave_scope(c);
             struct object obj = make_compiled_function_object(ins, num_locals);
             compiler_emit(c, OPCODE_CONST, add_constant(c, obj));
+            free_instruction(ins);
         }
         break;
 

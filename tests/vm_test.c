@@ -833,6 +833,14 @@ static void builtin_str_contains() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
+static void copies() {
+    test_case_t tests[] = {
+        { "let a = fn() { 5 }; let b = a; a = 100; b();", EXPECT_INT(5) },
+    };
+
+    run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
+}
+
 int main(int argc, const char *argv[]) {
     TEST(integer_arithmetic);
     TEST(boolean_expressions);
@@ -870,4 +878,5 @@ int main(int argc, const char *argv[]) {
     TEST(array_slices);
     TEST(string_slices);
     TEST(builtin_str_contains);
+    TEST(copies);
 }

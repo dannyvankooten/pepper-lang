@@ -95,13 +95,7 @@ struct vm *vm_new(struct bytecode *bc) {
     // initialize heap
     vm->heap = make_object_list(256);
 
-    // copy instruction as we are not adding this compiled function to a constant list
-    // the bytes are freed through the bytecode object
-    // TODO: Simplify this
-    struct instruction *ins = malloc(sizeof (struct instruction));
-    assert(ins != NULL);
-    memcpy(ins, bc->instructions, sizeof(struct instruction));
-    struct object fn_obj = make_compiled_function_object(ins, 0);
+    struct object fn_obj = make_compiled_function_object(bc->instructions, 0);
     struct compiled_function* fn = fn_obj.value.fn_compiled;
     vm->frames[0].ip = fn->instructions.bytes;
     vm->frames[0].fn = fn;

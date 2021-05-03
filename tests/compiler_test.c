@@ -446,6 +446,7 @@ static void functions() {
             }, 3,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
    {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -468,6 +469,7 @@ static void functions() {
             }, 3,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
     }
     {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -490,6 +492,7 @@ static void functions() {
             }, 3,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
     }
     {
         // test function without return value
@@ -508,6 +511,7 @@ static void functions() {
             }, 3,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
     }
 }
 
@@ -559,6 +563,7 @@ static void function_calls() {
             }, 4,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
    {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -581,6 +586,7 @@ static void function_calls() {
             }, 6,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
    { 
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -604,6 +610,7 @@ static void function_calls() {
             }, 7,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
    {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -635,6 +642,7 @@ static void function_calls() {
             }, 9,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
    {
         // test code with multiple functions to exercise scope logic (entering and leaving scopes)
@@ -669,12 +677,13 @@ static void function_calls() {
             }, 11,
         };
         run_compiler_test(t);
+        free_instruction(fn_one);
+        free_instruction(fn_two);
    }
 }
 
 
 static void let_statement_scopes() {
-
     {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_GET_GLOBAL, 0),
@@ -695,6 +704,7 @@ static void let_statement_scopes() {
             }, 5,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
    {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -716,6 +726,7 @@ static void let_statement_scopes() {
             }, 3,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
    {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
@@ -742,6 +753,7 @@ static void let_statement_scopes() {
             }, 3,
         };
         run_compiler_test(t);
+        free_instruction(fn_body);
    }
 
 
@@ -774,6 +786,7 @@ static void recursive_functions() {
         }, 7,
     };
     run_compiler_test(t);
+    free_instruction(fn_body);
 }
 
 static void string_expressions() {
@@ -806,6 +819,7 @@ static void string_expressions() {
     };
 
     run_compiler_tests(tests, ARRAY_SIZE(tests));
+    
 }
 
 static void builtin_functions() {
