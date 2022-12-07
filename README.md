@@ -1,3 +1,7 @@
+Repository moved to https://git.sr.ht/~dvko/pepper-lang on 2022-12-07 :warning:
+
+---
+
 # Pepper Programming Language
 
 <img src="https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/logo.png" width="120" height="120" align="right" />
