@@ -36,7 +36,7 @@ struct vm {
 };
 
 struct vm *vm_new(struct bytecode *bc);
-struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_SIZE]);
+struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[GLOBALS_SIZE]);
 enum result vm_run(struct vm *vm);
 struct object vm_stack_last_popped(struct vm *vm);
 void vm_free(struct vm *vm);
