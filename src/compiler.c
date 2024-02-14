@@ -25,7 +25,7 @@ const uint16_t JUMP_PLACEHOLDER_CONTINUE = 9998;
 static int compile_statement(struct compiler *compiler, const struct statement *statement);
 static int compile_expression(struct compiler *compiler, const struct expression *expression);
 
-struct compiler *compiler_new() {
+struct compiler *compiler_new(void) {
     struct compiler *c = malloc(sizeof *c);
     assert(c != NULL);
     struct compiler_scope scope;
@@ -604,7 +604,7 @@ compile_expression(struct compiler *c, const struct expression *expr) {
         break;
 
         case EXPR_ARRAY:
-            for (int i=0; i < expr->array.size; i++) {
+            for (unsigned i=0; i < expr->array.size; i++) {
                 err = compile_expression(c, expr->array.values[i]);
                 if (err) return err;
             }

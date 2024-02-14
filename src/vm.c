@@ -46,14 +46,14 @@ print_debug_info(struct vm *vm) {
     }
 
     printf("Constants: \n");
-    for (int i = 0; i < vm->nconstants; i++) {
+    for (unsigned i = 0; i < vm->nconstants; i++) {
         str[0] = '\0';
         object_to_str(str, vm->constants[i]);
         printf("  %3d: %s = %s\n", i, object_type_to_str(vm->constants[i].type), str);
     }
 
     printf("Globals: \n");
-    for (int i = 0; i < GLOBALS_SIZE; i++) {
+    for (unsigned i = 0; i < GLOBALS_SIZE; i++) {
         if (vm->globals[i].type == OBJ_NULL) {
             break;
         }
@@ -63,7 +63,7 @@ print_debug_info(struct vm *vm) {
     }
 
     printf("Stack: \n");
-    for (int i=0; i < vm->stack_pointer; i++) {
+    for (unsigned i=0; i < vm->stack_pointer; i++) {
         str[0] = '\0';
         object_to_str(str, vm->stack[i]);
         printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack[i].type), str);
@@ -80,13 +80,13 @@ struct vm *vm_new(struct bytecode *bc) {
     vm->frame_index = 0;
 
     // initialize globals as null objects for print_debug_info()
-    for (int32_t i=0; i < GLOBALS_SIZE; i++) {
+    for (unsigned i=0; i < GLOBALS_SIZE; i++) {
         vm->globals[i].type = OBJ_NULL;
     }
 
     // copy over constants from compiled bytecode
     vm->nconstants = 0;
-    for (int32_t i=0; i < bc->constants->size; i++) {
+    for (unsigned i=0; i < bc->constants->size; i++) {
        vm->constants[vm->nconstants++] = bc->constants->values[i];
     }    
 
@@ -106,7 +106,7 @@ struct vm *vm_new(struct bytecode *bc) {
 struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[GLOBALS_SIZE]) {
     struct vm *vm = vm_new(bc);
 
-    for (int32_t i=0; i < GLOBALS_SIZE; i++) {
+    for (unsigned i=0; i < GLOBALS_SIZE; i++) {
         vm->globals[i] = globals[i];
     }
     return vm;
@@ -385,6 +385,7 @@ vm_build_array(struct vm* restrict vm, uint16_t start_index, uint16_t end_index)
 
 static struct object build_slice_from_array(struct object_list* source, int32_t start, int32_t end)
 {
+
     if (start < 0) {
         start = source->size + start;
     }
@@ -395,7 +396,7 @@ static struct object build_slice_from_array(struct object_list* source, int32_t 
         end = start;
     }
     struct object_list* list = make_object_list(end - start);
-    for (int i=start; i < end && i < source->size; i++) {
+    for (int i=start; i < end && i < (int) source->size; i++) {
         list->values[list->size++] = source->values[i];
     }
     return make_array_object(list);
@@ -415,7 +416,7 @@ static struct object build_slice_from_string(struct string* source, int32_t star
     struct object obj = make_string_object_with_length("", end - start);
     struct string* str = obj.value.string;
     str->length = 0;
-    for (int i=start; i < end && i < source->length; i++) {
+    for (int i=start; i < end && i < (int) source->length; i++) {
         str->value[str->length++] = source->value[i];
     }
     str->value[str->length] = '\0';

@@ -9,17 +9,11 @@
 #include "lexer.h"
 #include "util.h"
 
-static struct expression *parse_expression(struct parser *p, int8_t precedence);
-static int parse_statement(struct parser *p, struct statement *s);
-static void expression_to_str(char *str, const struct expression *expr);
-static void free_expression(struct expression *expr);
-static enum operator parse_operator(enum token_type t);
-void free_parser(struct parser* p);
 
 enum precedence {
     LOWEST = 1,
     ASSIGN,
-    LOGICAL_OR,   
+    LOGICAL_OR,
     LOGICAL_AND,
     EQUALS,         // ==
     LESSGREATER,    // < or >
@@ -30,9 +24,15 @@ enum precedence {
     INDEX,          // array[i]
 };
 
+static struct expression *parse_expression(struct parser *p, enum precedence precedence);
+static int parse_statement(struct parser *p, struct statement *s);
+static void expression_to_str(char *str, const struct expression *expr);
+static void free_expression(struct expression *expr);
+static enum operator parse_operator(enum token_type t);
+void free_parser(struct parser* p);
+
 static 
-enum precedence 
-get_token_precedence(const struct token t) {
+enum precedence get_token_precedence(const struct token t) {
     switch (t.type) {
         default: 
             return LOWEST;
@@ -79,8 +79,7 @@ struct parser new_parser(struct lexer *l) {
         .lexer = l,
         .errors = 0,
     };
-    p.error_messages = malloc(0);
-    assert(p.error_messages != NULL);
+    p.error_messages = NULL;
 
     // read two tokens so that both current_token and next_token are set
     gettoken(p.lexer, &p.current_token);
@@ -451,7 +450,7 @@ struct expression *parse_grouped_expression(struct parser *p) {
 }
 
 static struct block_statement* 
-create_block_statement(uint32_t cap) {
+create_block_statement(unsigned cap) {
     struct block_statement *b = (struct block_statement *) malloc(sizeof *b);
     assert(b != NULL);
     b->cap = cap;
@@ -676,8 +675,7 @@ struct expression *parse_function_literal(struct parser *p) {
     return expr;
 }
 
-static struct expression *
-parse_expression(struct parser *p, const int8_t precedence) {
+static struct expression *parse_expression(struct parser *p, const enum precedence precedence) {
     struct expression *left;
     switch (p->current_token.type) {
         case TOKEN_IDENT: 
@@ -897,13 +895,13 @@ void statement_to_str(char *str, const struct statement *stmt) {
 }
 
 void block_statement_to_str(char *str, const struct block_statement *b) {
-    for (int32_t i=0; i < b->size; i++) {
+    for (unsigned i=0; i < b->size; i++) {
         statement_to_str(str, &b->statements[i]);
     }
 }
 
 void identifier_list_to_str(char *str, const struct identifier_list *identifiers) {
-    for (int32_t i=0; i < identifiers->size; i++) {
+    for (unsigned i=0; i < identifiers->size; i++) {
         if (i > 0) {
             strcat(str, ", ");
         }
@@ -1006,7 +1004,7 @@ void expression_to_str(char *str, const struct expression *expr) {
         case EXPR_CALL:
             expression_to_str(str, expr->call.function);
             strcat(str, "(");
-            for (int32_t i=0; i < expr->call.arguments.size; i++){
+            for (unsigned i=0; i < expr->call.arguments.size; i++){
                 expression_to_str(str, expr->call.arguments.values[i]);
                 if (i < (expr->call.arguments.size - 1)) {
                     strcat(str, ", ");
@@ -1017,7 +1015,7 @@ void expression_to_str(char *str, const struct expression *expr) {
 
         case EXPR_ARRAY: 
             strcat(str, "[");
-            for (int32_t i=0; i < expr->array.size; i++) {
+            for (unsigned i=0; i < expr->array.size; i++) {
                 expression_to_str(str, expr->array.values[i]);
 
                 if (i < (expr->array.size - 1)) {
@@ -1228,7 +1226,7 @@ void free_expression(struct expression *expr) {
 }
 
 void free_parser(struct parser* p) {
-    for (int i=0; i < p->errors; i++) {
+    for (unsigned i=0; i < p->errors; i++) {
         free(p->error_messages[i]);
     }
     free(p->error_messages);

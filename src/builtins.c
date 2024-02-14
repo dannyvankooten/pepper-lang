@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <stdarg.h>
 #include <stdint.h>
 #include <string.h> 
 #include <stdio.h>
@@ -45,7 +44,7 @@ struct object get_builtin_by_index(const uint8_t index) {
 }
 
 struct object get_builtin(const char* name) {
-    for (int i = 0; i < sizeof(builtin_functions) / sizeof(builtin_functions[0]); i++) {
+    for (unsigned i = 0; i < sizeof(builtin_functions) / sizeof(builtin_functions[0]); i++) {
         if (strcmp(name, builtin_functions[i].name) == 0) {
             return builtin_functions[i].fn_obj;
         }
@@ -59,13 +58,12 @@ struct object get_builtin(const char* name) {
 
 // defines built-in functions in compiler symbol table
 void define_builtins(struct symbol_table* st) {
-    for (int i = 0; i < sizeof(builtin_functions) / sizeof(builtin_functions[0]); i++) {
+    for (unsigned i = 0; i < sizeof(builtin_functions) / sizeof(builtin_functions[0]); i++) {
         symbol_table_define_builtin_function(st, i, builtin_functions[i].name);
     }
 }
 
-static struct object 
-builtin_len(const struct object_list* args) {
+static struct object builtin_len(const struct object_list* args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
@@ -87,9 +85,8 @@ builtin_len(const struct object_list* args) {
 
 }
 
-static struct object 
-builtin_print(const struct object_list* args) {
-    for (uint32_t i=0; i < args->size; i++) {
+static struct object builtin_print(const struct object_list* args) {
+    for (unsigned i=0; i < args->size; i++) {
         print_object(args->values[i]);
     }
 
@@ -99,16 +96,14 @@ builtin_print(const struct object_list* args) {
     };
 }
 
-static struct object 
-builtin_type(const struct object_list *args) {
+static struct object builtin_type(const struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
     return make_string_object(object_type_to_str(args->values[0].type));
 }
 
-static struct object 
-builtin_int(const struct object_list *args) {
+static struct object builtin_int(const struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
@@ -135,8 +130,7 @@ builtin_int(const struct object_list *args) {
     return make_error_object("invalid object type");
 }
 
-static struct object 
-builtin_array_pop(const struct object_list *args) {
+static struct object builtin_array_pop(const struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
@@ -154,8 +148,7 @@ builtin_array_pop(const struct object_list *args) {
     return copy_object(&list->values[list->size-- - 1]);
 }
 
-static struct object 
-builtin_array_push(const struct object_list *args) {
+static struct object builtin_array_push(const struct object_list *args) {
     if (args->size != 2) {
         return make_error_object("wrong number of arguments: expected 2, got %d", args->size);
     }
@@ -171,8 +164,7 @@ builtin_array_push(const struct object_list *args) {
     return make_integer_object(list->size);
 }
 
-static struct object 
-builtin_file_get_contents(const struct object_list *args) {
+static struct object builtin_file_get_contents(const struct object_list *args) {
     if (args->size != 1) {
         return make_error_object("wrong number of arguments: expected 1, got %d", args->size);
     }
@@ -193,7 +185,7 @@ builtin_file_get_contents(const struct object_list *args) {
 
     struct object obj = make_string_object_with_length("", fsize);
     size_t bytes_read = fread(obj.value.string->value, 1, fsize, fd);
-    assert(bytes_read >= 0);
+    assert(bytes_read == fsize);
     obj.value.string->value[fsize] = '\0';
     fclose(fd);
     return obj;
@@ -238,8 +230,7 @@ static struct object str_split(const struct object_list *args) {
   return make_array_object(list);
 }
 
-static struct object 
-str_contains(const struct object_list *args) {
+static struct object str_contains(const struct object_list *args) {
     if (args->size != 2) {
         return make_error_object("wrong number of arguments: expected 2, got %d", args->size);
     }

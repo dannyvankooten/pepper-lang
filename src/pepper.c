@@ -40,12 +40,12 @@ static
 char *read_file(const char *filename);
 
 static
-void print_version() {
+void print_version(void) {
 	printf("Pepper v%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
 
 static 
-int repl() {
+int repl(void) {
 	print_version();
 	printf("Press CTRL+c to exit\n\n");
 	struct program *program;
@@ -66,7 +66,7 @@ int repl() {
 
 		if (parser.errors > 0) {
 			printf("Parsing error:\n");
-			for (int i = 0; i < parser.errors; i++) {
+			for (unsigned i = 0; i < parser.errors; i++) {
 				printf("- %s\n", parser.error_messages[i]);
 			}
 
@@ -95,7 +95,7 @@ int repl() {
 		}
 
 		// copy globals out of VM so we can re-use them in next iteration
-		for (int32_t i=0; i < GLOBALS_SIZE; i++) {
+		for (unsigned i=0; i < GLOBALS_SIZE; i++) {
 			globals[i] = machine->globals[i];
 		}
 
@@ -117,7 +117,7 @@ int run_script(const char *filename) {
 	struct program *program = parse_program(&parser);
 
 	if (parser.errors > 0) {
-		for (int8_t i = 0; i < parser.errors; i++) {
+		for (unsigned i = 0; i < parser.errors; i++) {
 			puts(parser.error_messages[i]);
 		}
 

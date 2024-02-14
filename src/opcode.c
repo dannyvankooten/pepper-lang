@@ -45,13 +45,11 @@ const struct definition definitions[] = {
     { "OpHalt", 0, {0}, },
 };
 
-inline const 
-char *opcode_to_str(enum opcode opcode) {
+inline const char *opcode_to_str(enum opcode opcode) {
     return definitions[opcode].name;
 }
 
-inline const
-struct definition lookup(enum opcode opcode) {
+inline struct definition lookup(enum opcode opcode) {
     return definitions[opcode];
 }
 
@@ -102,19 +100,19 @@ struct instruction *copy_instructions(const struct instruction *a) {
     return b;
 }
 
-struct instruction *flatten_instructions_array(struct instruction *arr[], const uint32_t size) {
+struct instruction *flatten_instructions_array(struct instruction *arr[], const unsigned size) {
     struct instruction *ins = arr[0];
 
     // reallocate to fit all bytecode 
-    int32_t totalsize = 0;
-    for (int32_t i=0; i < size; i++) {
+    unsigned totalsize = 0;
+    for (unsigned i=0; i < size; i++) {
         totalsize += arr[i]->size;
     }
     ins->bytes = realloc(ins->bytes, totalsize);
     assert(ins->bytes != NULL);
 
     // add all instructions to first instruction in the list
-    for (uint32_t i = 1; i < size; i++) {        
+    for (unsigned i = 1; i < size; i++) {
         memcpy(ins->bytes + ins->size, arr[i]->bytes, arr[i]->size);
         ins->size += arr[i]->size;
         free_instruction(arr[i]);
@@ -126,12 +124,12 @@ struct instruction *flatten_instructions_array(struct instruction *arr[], const 
 char *instruction_to_str(struct instruction *ins) {
     char *buffer = malloc(ins->size * 32);
     assert(buffer != NULL);
-    uint32_t operands[MAX_OP_SIZE] = {0, 0};
+    unsigned operands[MAX_OP_SIZE] = {0, 0};
     buffer[0] = '\0';
 
-    for (uint32_t i=0; i < ins->size; i++) {
+    for (unsigned i=0; i < ins->size; i++) {
         struct definition def = lookup(ins->bytes[i]);
-        uint32_t bytes_read = read_operands(operands, def, ins, i);
+        unsigned bytes_read = read_operands(operands, def, ins, i);
         
         if (i > 0) {
             strcat(buffer, " | ");
@@ -156,8 +154,8 @@ char *instruction_to_str(struct instruction *ins) {
     return buffer;
 }
 
-uint32_t read_operands(uint32_t dest[], struct definition def, const struct instruction *ins, uint32_t offset) {
-    uint32_t bytes_read = 0;
+unsigned read_operands(unsigned dest[], struct definition def, const struct instruction *ins, uint32_t offset) {
+    unsigned bytes_read = 0;
 
     // skip opcode
     offset += 1;

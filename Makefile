@@ -1,4 +1,4 @@
-CFLAGS+= -std=c11 -Wall -Wpedantic -Wstringop-overflow=3 -Wvla -Wundef -Wextra -Isrc/ -g
+CFLAGS+= -std=c11 -Wall -Wstringop-overflow=3 -Wvla -Wundef -Wextra -Isrc/ -g
 VPATH= src
 TESTS= bin/lexer_test bin/parser_test bin/opcode_test bin/compiler_test bin/vm_test bin/symbol_table_test
 

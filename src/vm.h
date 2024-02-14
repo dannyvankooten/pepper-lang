@@ -4,9 +4,9 @@
 #include "opcode.h"
 #include "object.h"
 
-#define FRAMES_SIZE 64
-#define GLOBALS_SIZE 64
-#define STACK_SIZE 256
+#define FRAMES_SIZE 64u
+#define GLOBALS_SIZE 64u
+#define STACK_SIZE 256u
 
 enum result {
     VM_SUCCESS = 0,
@@ -21,13 +21,13 @@ enum result {
 struct frame {
     uint8_t *ip;
     struct compiled_function* fn;
-    uint32_t base_pointer;    
+    unsigned base_pointer;
 };
 
 struct vm {
-    uint32_t stack_pointer;
-    uint32_t frame_index;
-    uint32_t nconstants;
+    unsigned stack_pointer;
+    unsigned frame_index;
+    unsigned nconstants;
     struct object stack[STACK_SIZE];
     struct object constants[GLOBALS_SIZE];
     struct frame frames[FRAMES_SIZE];
