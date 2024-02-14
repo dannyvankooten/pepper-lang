@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <strings.h>
 #include "test_helpers.h"
 #include "../src/vm.h"
 #include "../src/compiler.h"

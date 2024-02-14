@@ -113,7 +113,10 @@ add_parsing_error(struct parser *p, const char *_format, ...)
 static void
 next_token(struct parser * p) {
     p->current_token = p->next_token;
-    gettoken(p->lexer, &p->next_token);
+
+    if (p->current_token.type != TOKEN_EOF) {
+        gettoken(p->lexer, &p->next_token);
+    }
 }
 
 static bool 
