@@ -1,7 +1,3 @@
-Repository moved to https://git.sr.ht/~dvko/pepper-lang on 2022-12-07 :warning:
-
----
-
 # Pepper Programming Language
 
 <img src="https://raw.githubusercontent.com/dannyvankooten/pepper-lang/master/misc/logo.png" width="120" height="120" align="right" />
@@ -94,11 +90,6 @@ Build & run tests
 make check
 ```
 
-Install Pepper in your system's binaries
-```
-sudo make install
-```
-
 ### Benchmarks
 
 A benchmark to calculate the [35th fibonacci number](https://github.com/dannyvankooten/pepper-lang/blob/master/examples/fib35-recursive.pr) using a recursive function is run on every commit through [this](https://github.com/dannyvankooten/pepper-lang/actions/workflows/c.yml) Github action workflow.
@@ -109,7 +100,7 @@ For fun, I ran the same algorithm expressed in some other interpreted languages 
 
 | Language   	| fib-35    	| string-concat-count 	| selection-sort 	|
 |------------	|-----------	|---------------------	|----------------	|
-| **Pepper** 	| **0.720** 	| **0.024**           	| **0.349**      	|
+| **Pepper** 	| **0.698** 	| **0.024**           	| **0.349**      	|
 | Lua 5.4    	| 0.830     	| 0.030               	| 0.156          	|
 | Node 15    	| 0.210     	| 0.058               	| 0.071          	|
 | PHP 8.0    	| 0.480     	| 0.036               	| 0.595          	|
