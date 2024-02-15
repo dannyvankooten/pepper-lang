@@ -4,7 +4,7 @@
 #include "object.h"
 
 
-int main() {
+int main(void) {
     printf("sizeof(char): %ld\n", sizeof(char));
     printf("sizeof(enum): %ld\n", sizeof(enum { A, B}));
     printf("sizeof(char*): %ld\n", sizeof(char*));

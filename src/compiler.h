@@ -22,7 +22,7 @@ struct compiler {
     struct compiler_scope scopes[64];
 };
 
-struct compiler *compiler_new();
+struct compiler *compiler_new(void);
 struct compiler *compiler_new_with_state(struct symbol_table *t, struct object_list *constants);
 void compiler_free(struct compiler *c);
 int compile_program(struct compiler *compiler, const struct program *program);

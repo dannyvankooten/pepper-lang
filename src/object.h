@@ -10,14 +10,14 @@
 
 enum object_type
 {
-    OBJ_NULL,
-    OBJ_BOOL,
-    OBJ_INT,
-    OBJ_BUILTIN,
-    OBJ_ERROR,
-    OBJ_STRING,
-    OBJ_ARRAY,
-    OBJ_COMPILED_FUNCTION,
+    OBJ_NULL,               // 0b000
+    OBJ_BOOL,               // 0b001
+    OBJ_INT,                // 0b010
+    OBJ_BUILTIN,            // 0b011
+    OBJ_ERROR,              // 0b100
+    OBJ_STRING,             // 0b101
+    OBJ_ARRAY,              // 0b110
+    OBJ_COMPILED_FUNCTION,  // 0b111
 };
 
 struct function {

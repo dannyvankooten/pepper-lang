@@ -2,10 +2,8 @@
 #include "test_helpers.h"
 
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-static void test_lexer() {
+static void test_lexer(void) {
     const char *input = "let five = 5;\n"
         "let ten = 10;\n"
         "let add = fn(x, y) {\n"
@@ -129,7 +127,7 @@ static void test_lexer() {
 
     struct token t;
 
-    for (int j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
+    for (unsigned j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
         gettoken(&l, &t);
         assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), token_type_to_str(t.type));
         assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong %s literal: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), tokens[j].literal, t.literal);
@@ -139,7 +137,7 @@ static void test_lexer() {
     }
 }
 
-static void string_with_256_chars() {
+static void string_with_256_chars(void) {
     char *input = "\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"";
     struct lexer l = new_lexer(input);
     struct token t;

@@ -48,6 +48,7 @@ static
 int repl(void) {
 	print_version();
 	printf("Press CTRL+c to exit\n\n");
+
 	struct program *program;
 	struct symbol_table *symbol_table = symbol_table_new();
 	struct object_list *constants = make_object_list(64);

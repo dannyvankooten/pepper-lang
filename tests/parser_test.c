@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> 
-#include <stdarg.h> 
 
 #include "../src/parser.h"
 #include "test_helpers.h"
@@ -56,7 +55,7 @@ static void assert_program_size(struct program *p, uint32_t expected_size) {
     assertf(p->size == expected_size, "wrong program size. expected %d, got %d\n", expected_size, p->size); 
 }
 
-static void let_statements() {
+static void let_statements(void) {
     const char *input = ""
         "let x = 5;\n"
         "let y = true;\n"
@@ -86,7 +85,7 @@ static void let_statements() {
     free_program(program);
 }
 
-static void let_statements_without_assignment() {
+static void let_statements_without_assignment(void) {
     const char *input = "let foo;";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);    
@@ -96,7 +95,7 @@ static void let_statements_without_assignment() {
     free_program(program);
 }
 
-static void return_statements() {
+static void return_statements(void) {
     const char *input = ""
         "return 5;\n"
         "return true;\n"
@@ -124,7 +123,7 @@ static void return_statements() {
     free_program(program);
 }
 
-static void program_string() {
+static void program_string(void) {
     struct expression e1 = {
         .type = EXPR_INT,
         .token = {
@@ -200,7 +199,7 @@ static void program_string() {
     free(str);
 }
 
-static void identifier_expression_parsing() {
+static void identifier_expression_parsing(void) {
     const char *input = "foobar;";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -212,7 +211,7 @@ static void identifier_expression_parsing() {
     free_program(program);
 }
 
-static void integer_expression_parsing() {
+static void integer_expression_parsing(void) {
     const char *input = "5;";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -224,7 +223,7 @@ static void integer_expression_parsing() {
     free_program(program);
 }
 
-static void boolean_expression_parsing() {
+static void boolean_expression_parsing(void) {
     struct test {
         const char* input;
         char expected;
@@ -243,7 +242,7 @@ static void boolean_expression_parsing() {
     }
 }
 
-static void postfix_expressions() {
+static void postfix_expressions(void) {
     struct test{
         const char* input;
         enum operator operator;
@@ -254,7 +253,7 @@ static void postfix_expressions() {
        {"foo++", OP_ADD, "foo"},
     };
 
-    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i=0; i < sizeof tests / sizeof tests[0]; i++) {
         struct program *program = parse_program_str(tests[i].input);
         assert_program_size(program, 1);
         struct statement stmt = program->statements[0];
@@ -265,7 +264,7 @@ static void postfix_expressions() {
     }
 }
 
-static void infix_expression_parsing() {
+static void infix_expression_parsing(void) {
     struct test{
         const char *input;
         union expression_value left_value;
@@ -286,7 +285,7 @@ static void infix_expression_parsing() {
        {"false == false", {0}, OP_EQ, {0}},
     };
 
-    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i=0; i < sizeof tests / sizeof tests[0]; i++) {
         struct test t = tests[i];
         struct program *program = parse_program_str(t.input);
         assert_program_size(program, 1);
@@ -296,7 +295,7 @@ static void infix_expression_parsing() {
     }
 }
 
-static void prefix_expression_parsing() {
+static void prefix_expression_parsing(void) {
     typedef struct test {
         const char *input;
         enum operator operator;
@@ -310,7 +309,7 @@ static void prefix_expression_parsing() {
         {"!false", OP_NEGATE, { .bool_value = 0 }},
     };
     test t;
-    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i=0; i < sizeof tests / sizeof tests[0]; i++) {
         t = tests[i];
        
         struct program *program = parse_program_str(tests[i].input);
@@ -324,7 +323,7 @@ static void prefix_expression_parsing() {
     }
 }
 
-static void operator_precedence_parsing() {
+static void operator_precedence_parsing(void) {
     struct test {
         const char *input;
         const char *expected;
@@ -370,7 +369,7 @@ static void operator_precedence_parsing() {
         },
     };
 
-    for (int i=0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i=0; i < sizeof tests / sizeof tests[0]; i++) {
         struct program *program = parse_program_str(tests[i].input);
         char *program_str = program_to_str(program);
         assertf(strcmp(program_str, tests[i].expected) == 0, "wrong program string: expected %s, got %s\n", tests[i].expected, program_str);        
@@ -379,7 +378,7 @@ static void operator_precedence_parsing() {
     }
 }
 
-static void if_expression_parsing() {
+static void if_expression_parsing(void) {
     const char *input = "if (x < y) { x }";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -401,7 +400,7 @@ static void if_expression_parsing() {
     free_program(program);
 }
 
-static void if_else_expression_parsing() {
+static void if_else_expression_parsing(void) {
     const char *input = "if (x < y) { x } else { 5 }";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -426,7 +425,7 @@ static void if_else_expression_parsing() {
     free_program(program);
 }
 
-static void if_elseif() {
+static void if_elseif(void) {
     const char *input = "if (x < y) { x } else if (true) { 5 }";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -453,7 +452,7 @@ static void if_elseif() {
     free_program(program);
 }
 
-static void function_literal_parsing() {
+static void function_literal_parsing(void) {
     const char *input = "fn(x, y) { x + y; }";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -476,7 +475,7 @@ static void function_literal_parsing() {
     free_program(program);
 }
 
-static void call_expression_parsing() {
+static void call_expression_parsing(void) {
     const char *input = "add(1, 2 * 3, 4 + 5);";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -518,7 +517,7 @@ static void test_string_literal(struct expression *expr, char *expected) {
     assertf(strcmp(expr->string, expected) == 0, "wrong expression value: expected \"%s\", got %s", expected, expr->string);
 }
 
-static void string_expression_parsing() {
+static void string_expression_parsing(void) {
     const char *input = "\"hello world\";";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -529,7 +528,7 @@ static void string_expression_parsing() {
     free_program(program);
 }
 
-static void array_literal_parsing() {
+static void array_literal_parsing(void) {
     const char *input = "[ 1, 2 * 2, 3 + 3, \"four\"];";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -546,7 +545,7 @@ static void array_literal_parsing() {
     free_program(program);
 }
 
-static void index_expression_parsing() {
+static void index_expression_parsing(void) {
     const char *input = "myArray[1+2];";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -560,7 +559,7 @@ static void index_expression_parsing() {
     free_program(program);
 }
 
-static void slice_expression_parsing() {
+static void slice_expression_parsing(void) {
     const char *input = "myArray[1:2+2];";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -574,7 +573,7 @@ static void slice_expression_parsing() {
     free_program(program);
 }
 
-static void while_expression_parsing() {
+static void while_expression_parsing(void) {
     const char *input = "while (x < y) { x }";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -595,7 +594,7 @@ static void while_expression_parsing() {
     free_program(program);
 }
 
-static void for_expressions() {
+static void for_expressions(void) {
     const char *input = "for (let i=0; i < 5; i = i + 1) { x }";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -606,7 +605,7 @@ static void for_expressions() {
     free_program(program);
 }
 
-static void function_literal_with_name() {
+static void function_literal_with_name(void) {
     const char *input = "let myFunction = fn() {};";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 1);
@@ -618,7 +617,7 @@ static void function_literal_with_name() {
     free_program(program);
 }
 
-static void assignment_expressions() {
+static void assignment_expressions(void) {
     const char *input = "let a = 5; a = 10;";
     struct program *program = parse_program_str(input);
     assert_program_size(program, 2);

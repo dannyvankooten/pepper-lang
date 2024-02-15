@@ -5,7 +5,7 @@
 #include "../src/opcode.h"
 #include "test_helpers.h"
 
-static void test_make_instruction() {
+static void test_make_instruction(void) {
     struct {
         enum opcode opcode;
         uint32_t operands[MAX_OP_SIZE];
@@ -29,11 +29,11 @@ static void test_make_instruction() {
         }
     };
 
-    for (int i=0; i < ARRAY_SIZE(tests); i++) {
+    for (unsigned i=0; i < ARRAY_SIZE(tests); i++) {
         struct instruction *ins = make_instruction(tests[i].opcode, tests[i].operands[0]);
         
         assertf(ins->size == tests[i].expected_size, "wrong length: expected %d, got %d", tests[i].expected_size, ins->size);
-        for (int j=0; j < tests[i].expected_size; j++) {
+        for (unsigned j=0; j < tests[i].expected_size; j++) {
             assertf(ins->bytes[j] == tests[i].expected[j], "[%d] invalid byte value at index %d: expected %d, got %d", i, j, tests[i].expected[j], ins->bytes[j]);
         }
 
@@ -41,7 +41,7 @@ static void test_make_instruction() {
     }
 }
 
-static void test_instruction_string() {
+static void test_instruction_string(void) {
     struct instruction *instructions[] = {
         make_instruction(OPCODE_ADD),
         make_instruction(OPCODE_GET_LOCAL, 1),
@@ -57,7 +57,7 @@ static void test_instruction_string() {
     free(str);
 }
 
-static void test_read_operands() {
+static void test_read_operands(void) {
     struct {
         enum opcode opcode;
         uint32_t operands[MAX_OP_SIZE];
@@ -68,7 +68,7 @@ static void test_read_operands() {
         {OPCODE_GET_LOCAL, {255}, 1},
     };
 
-    for (int t = 0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t = 0; t < ARRAY_SIZE(tests); t++) {
         struct instruction *ins = make_instruction(tests[t].opcode, tests[t].operands[0]);
         struct definition def = lookup(tests[t].opcode);
         uint32_t operands[3] = {0};
@@ -81,7 +81,7 @@ static void test_read_operands() {
     }
 }
 
-static void test_read_bytes() {
+static void test_read_bytes(void) {
     uint8_t bytes[] = {100, 20, 255};
     uint8_t v1 = read_uint8(bytes);
     assertf(v1 == 100, "read_bytes(uint8_t) failed: expected %d, got %d", 100, v1);

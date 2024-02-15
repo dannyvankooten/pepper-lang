@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "parser.h"
 #include "util.h"
 #include "object.h"
 #include "opcode.h"
@@ -180,7 +179,7 @@ vm_do_binary_string_operation(struct vm* restrict vm, enum opcode opcode, struct
 }
 
 static void 
-vm_do_binary_boolean_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {    
+vm_do_binary_boolean_operation(__attribute__((unused)) struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     switch (opcode) {
         case OPCODE_AND: 
             left->value.boolean = left->value.boolean && right->value.boolean;
@@ -217,7 +216,7 @@ vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
 }
 
 static void 
-vm_do_integer_comparison(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {   
+vm_do_integer_comparison(__attribute__((unused)) struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     switch (opcode) {
          case OPCODE_EQUAL: 
             left->value.boolean = left->value.integer == right->value.integer;
@@ -252,7 +251,7 @@ vm_do_integer_comparison(const struct vm* restrict vm, const enum opcode opcode,
 }
 
 static void
-vm_do_bool_comparison(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
+vm_do_bool_comparison(__attribute__((unused)) struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     switch (opcode) {
         case OPCODE_EQUAL: 
             left->value.boolean = left->value.boolean == right->value.boolean;
@@ -269,7 +268,7 @@ vm_do_bool_comparison(const struct vm* restrict vm, const enum opcode opcode, st
 }
 
 static void
-vm_do_string_comparison(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
+vm_do_string_comparison(__attribute__((unused)) struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {
     left->type = OBJ_BOOL;
     switch (opcode) {
         case OPCODE_EQUAL: 
@@ -720,31 +719,26 @@ vm_run(struct vm* restrict vm) {
         switch (left.type) {
             case OBJ_ARRAY: {
                 struct object_list* list = left.value.list;
-                int32_t i = index.value.integer;
-                if (i < 0) {
-                    i = list->size + i;
-                }
-                if (i < 0 || i >= list->size) {
+                unsigned idx = (unsigned) (index.value.integer < 0 ? list->size + index.value.integer : index.value.integer);
+                if (idx >= list->size) {
                     vm_stack_push(vm, make_error_object("Array index out of bounds"));
                     gc_add(vm, vm_stack_cur(vm));
                 } else {
-                    vm_stack_push(vm, list->values[i]);
+                    vm_stack_push(vm, list->values[idx]);
                 }
             }
             break;
 
             case OBJ_STRING: {
                 const char *str = left.value.string->value;
-                int32_t i = index.value.integer;
-                if (i < 0) {
-                    i = left.value.string->length + i;
-                }
-                if (i < 0 || i >= left.value.string->length) {
+                unsigned idx = (unsigned) (index.value.integer < 0 ? (int) left.value.string->length + index.value.integer : index.value.integer);
+                if (idx >= left.value.string->length) {
                     vm_stack_push(vm, make_error_object("String index out of bounds"));
                     gc_add(vm, vm_stack_cur(vm));
                 } else {
+                    /* TODO: Create char object? Bit wasteful here for a single byte */
                     char buf[2];
-                    buf[0] = (char) str[i];
+                    buf[0] = (char) str[idx];
                     buf[1] = '\0';
                     struct object obj = make_string_object(buf);
                     vm_stack_push(vm, obj);

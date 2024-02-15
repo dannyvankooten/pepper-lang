@@ -8,7 +8,6 @@
 #include "opcode.h"
 #include "parser.h"
 #include "symbol_table.h"
-#include "vm.h"
 #include "builtins.h"
 
 enum {
@@ -272,74 +271,80 @@ void compiler_change_jump_placeholders(struct compiler* c, uint32_t pos_start, u
     }
 }
 
-static int 
+static int compile_infix_expression(struct compiler *c, const struct expression *expr) {
+    int err = compile_expression(c, expr->infix.left);
+    if (err) return err;
+
+    err = compile_expression(c, expr->infix.right);
+    if (err) return err;
+
+    switch (expr->infix.operator) {
+        case OP_ADD:
+            compiler_emit(c, OPCODE_ADD);
+        break;
+
+        case OP_SUBTRACT:
+            compiler_emit(c, OPCODE_SUBTRACT);
+        break;
+
+        case OP_MULTIPLY:
+            compiler_emit(c, OPCODE_MULTIPLY);
+        break;
+
+        case OP_DIVIDE:
+            compiler_emit(c, OPCODE_DIVIDE);
+        break;
+
+        case OP_MODULO:
+            compiler_emit(c, OPCODE_MODULO);
+        break;
+
+        case OP_GTE:
+            compiler_emit(c, OPCODE_GREATER_THAN_OR_EQUALS);
+        break;
+
+        case OP_GT:
+            compiler_emit(c, OPCODE_GREATER_THAN);
+        break;
+
+        case OP_EQ:
+            compiler_emit(c, OPCODE_EQUAL);
+        break;
+
+        case OP_NOT_EQ:
+            compiler_emit(c, OPCODE_NOT_EQUAL);
+        break;
+
+        case OP_LT:
+            compiler_emit(c, OPCODE_LESS_THAN);
+        break;
+
+        case OP_LTE:
+            compiler_emit(c, OPCODE_LESS_THAN_OR_EQUALS);
+        break;
+
+        case OP_AND:
+            compiler_emit(c, OPCODE_AND);
+        break;
+
+        case OP_OR:
+            compiler_emit(c, OPCODE_OR);
+        break;
+
+        default:
+            return COMPILE_ERR_UNKNOWN_OPERATOR;
+        break;
+    }
+
+    return 0;
+}
+
+static int
 compile_expression(struct compiler *c, const struct expression *expr) {
     int err;
     switch (expr->type) {
         case EXPR_INFIX: {
-            err = compile_expression(c, expr->infix.left);
-            if (err) return err;
-
-            err = compile_expression(c, expr->infix.right);
-            if (err) return err;
-
-            switch (expr->infix.operator) {
-                case OP_ADD:
-                    compiler_emit(c, OPCODE_ADD);
-                break;
-
-                case OP_SUBTRACT:
-                    compiler_emit(c, OPCODE_SUBTRACT);
-                break;
-
-                case OP_MULTIPLY: 
-                    compiler_emit(c, OPCODE_MULTIPLY);
-                break;
-
-                case OP_DIVIDE: 
-                    compiler_emit(c, OPCODE_DIVIDE);
-                break;
-
-                case OP_MODULO: 
-                    compiler_emit(c, OPCODE_MODULO);
-                break;
-
-                case OP_GTE:
-                    compiler_emit(c, OPCODE_GREATER_THAN_OR_EQUALS);
-                break;
-
-                case OP_GT:
-                    compiler_emit(c, OPCODE_GREATER_THAN);
-                break;
-
-                case OP_EQ: 
-                    compiler_emit(c, OPCODE_EQUAL);
-                break;
-
-                case OP_NOT_EQ:
-                    compiler_emit(c, OPCODE_NOT_EQUAL);
-                break;
-
-                case OP_LT:
-                    compiler_emit(c, OPCODE_LESS_THAN);
-                break;
-
-                case OP_LTE:
-                    compiler_emit(c, OPCODE_LESS_THAN_OR_EQUALS);
-                break;
-
-                case OP_AND:
-                    compiler_emit(c, OPCODE_AND);
-                break;
-
-                case OP_OR:
-                    compiler_emit(c, OPCODE_OR);
-                break;
-
-                default: 
-                    return COMPILE_ERR_UNKNOWN_OPERATOR;
-                break;
-            }
+            return compile_infix_expression(c, expr);
         }
         break;   
 

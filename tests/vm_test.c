@@ -82,7 +82,7 @@ static void run_tests(test_case_t* tests, int ntests) {
     }
 }
 
-static void integer_arithmetic() {
+static void integer_arithmetic(void) {
     test_case_t tests[] = {
         {"1", EXPECT_INT(1)},
         {"2", EXPECT_INT(2)},
@@ -113,7 +113,7 @@ static void integer_arithmetic() {
     run_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void boolean_expressions() {
+static void boolean_expressions(void) {
     struct {
         const char *input;
         bool expected;
@@ -150,13 +150,13 @@ static void boolean_expressions() {
         {"1 % 2 == 0 || true", true},
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_BOOL, (object_value) { .boolean = tests[t].expected });
      }
 }
 
-static void if_expressions() {
+static void if_expressions(void) {
    test_case_t tests[] = {
         {"if (true) { 10 }", EXPECT_INT(10) },
         {"if (true) { 10 } else { 20 }", EXPECT_INT(10) },
@@ -184,7 +184,7 @@ static void if_expressions() {
 }
 
 
-static void while_expressions() {
+static void while_expressions(void) {
     test_case_t tests[] = {
         {"while (false) { 10 }; 5", EXPECT_INT(5)},
         {"let a = 2; while (1 > 3) { a = a + 1; }; a;",  EXPECT_INT(2)},
@@ -199,7 +199,7 @@ static void while_expressions() {
     run_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void nulls() {
+static void nulls(void) {
     struct {
         const char *input;
     } tests[] = {
@@ -207,13 +207,13 @@ static void nulls() {
         {"if (false) { 10 }"},
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         assertf(obj.type == OBJ_NULL, "expected NULL, got %s", object_type_to_str(obj.type));
      }
 }
 
-static void global_let_statements() {
+static void global_let_statements(void) {
     test_case_t tests[] = {
         {"let one = 1; one", EXPECT_INT(1)},
         {"let one = 1; let two = 2; one + two", EXPECT_INT(3)},
@@ -226,7 +226,7 @@ static void global_let_statements() {
     run_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void function_calls() {
+static void function_calls(void) {
     struct {
         const char *input;
         int expected;
@@ -238,25 +238,25 @@ static void function_calls() {
         {"let earlyExit = fn() { return 99; return 100; }; earlyExit();", 99},
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
-static void functions_without_return_value() {
+static void functions_without_return_value(void) {
    const char *tests[] = {
         "let noReturn = fn() { }; noReturn();",
         "let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();"
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t]);
-        test_object(obj, OBJ_NULL, (object_value) {});
+        test_object(obj, OBJ_NULL, (object_value) {0});
      }
 }
 
-static void first_class_functions() {
+static void first_class_functions(void) {
 
     struct {
         const char *input;
@@ -265,13 +265,13 @@ static void first_class_functions() {
         {"let returnsOne = fn() { 1; }; let returnsOneReturner = fn() { returnsOne; }; returnsOneReturner()();", 1},
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
-static void function_calls_with_bindings() {
+static void function_calls_with_bindings(void) {
     struct {
         const char *input;
         int expected;
@@ -283,14 +283,14 @@ static void function_calls_with_bindings() {
         {"let globalSeed = 50; let minusOne = fn() { let num = 1; globalSeed - num; } let minusTwo = fn() { let num = 2; globalSeed - num; } minusOne() + minusTwo();", 97},
     };
 
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
 
-static void function_calls_with_args_and_bindings() {
+static void function_calls_with_args_and_bindings(void) {
     struct {
         const char *input;
         int expected;
@@ -314,13 +314,13 @@ static void function_calls_with_args_and_bindings() {
         {"let a = 5; let add = fn(a, b) { a + b }; add(1, 2);", 3}
     };
     
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
-static void fib() {
+static void fib(void) {
     const char *input = "              \
         let fibonacci = fn(x) {  \
             if (x < 2) {         \
@@ -333,7 +333,7 @@ static void fib() {
     test_object(obj, OBJ_INT, (object_value) { .integer = 8 });    
 }
 
-static void recursive_functions() {
+static void recursive_functions(void) {
     struct {
         const char *input;
         int expected;
@@ -342,13 +342,13 @@ static void recursive_functions() {
         {"let countdown = fn(x) { if (x < 0) { return 0; } countdown(x-1) + countdown(x-2); }; countdown(3);", 0},
     };
     
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_INT, (object_value) { .integer = tests[t].expected });
      }
 }
 
-static void string_expressions() {
+static void string_expressions(void) {
     struct {
         const char *input;
         char *expected;
@@ -362,13 +362,13 @@ static void string_expressions() {
         {"let a = \"foo\"; let b = \"bar\"; let c = a + b; c", "foobar"},
     };
     
-    for (int t=0; t < ARRAY_SIZE(tests); t++) {
+    for (unsigned t=0; t < ARRAY_SIZE(tests); t++) {
         struct object obj = run_vm_test(tests[t].input);
         test_object(obj, OBJ_STRING, (object_value) { .string = tests[t].expected });
      }
 }
 
-static void builtin_functions() {
+static void builtin_functions(void) {
     test_case_t tests[] = {
         {"len(\"\")", EXPECT_INT(0)},
         {"let l = len(\"a\"); print(\"Length: \", l);", EXPECT_NULL()},
@@ -385,26 +385,26 @@ static void builtin_functions() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void array_literals() {
+static void array_literals(void) {
     struct
     {
         const char *input;
-        int nexpected;
+        unsigned nexpected;
         int expected[3];
     } tests[] = {
-        {"[]", 0, {}},
+        {"[]", 0, {0}},
         {"[1, 2, 3]", 3, {1, 2, 3}},
         {"[1 + 2, 3 * 4, 5 + 6]", 3, {3, 12, 11}},
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i = 0; i < sizeof tests / sizeof tests[0]; i++) {
         struct object obj = run_vm_test(tests[i].input);
         assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
 
         struct object_list* arr = obj.value.list;
         assertf(tests[i].nexpected == arr->size, "invalid array size");
 
-        for (int j=0; j < tests[i].nexpected; j++) {
+        for (unsigned j=0; j < tests[i].nexpected; j++) {
             assertf(arr->values[j].type == OBJ_INT, "invalid element type");
             assertf(arr->values[j].value.integer == tests[i].expected[j], "invalid integer value: expected %d, got %d", tests[i].expected[j], arr->values[j].value.integer);
         }
@@ -413,7 +413,7 @@ static void array_literals() {
 }
 
 
-static void mixed_arrays() {
+static void mixed_arrays(void) {
     struct
     {
         const char *input;
@@ -427,7 +427,7 @@ static void mixed_arrays() {
         }
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i = 0; i < sizeof tests / sizeof tests[0]; i++) {
         struct object obj = run_vm_test(tests[i].input);
         assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
 
@@ -442,7 +442,7 @@ static void mixed_arrays() {
     }
 }
 
-static void array_indexing() {
+static void array_indexing(void) {
     test_case_t tests[] = {
         {
             "[1, 2, 3][1]", 
@@ -473,7 +473,7 @@ static void array_indexing() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void array_indexing_out_of_bounds() {
+static void array_indexing_out_of_bounds(void) {
     test_case_t tests[] = {
         {  
             "[0][1]", 
@@ -492,7 +492,7 @@ static void array_indexing_out_of_bounds() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void array_indexing_assignment() {
+static void array_indexing_assignment(void) {
     test_case_t tests[] = {
          {  
             "let arr = [1]; arr[0] = 2; arr[0]", 
@@ -515,7 +515,7 @@ static void array_indexing_assignment() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void array_pop() {
+static void array_pop(void) {
     test_case_t tests[] = {
         {  
             "array_pop([])", 
@@ -538,7 +538,7 @@ static void array_pop() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void array_push() {
+static void array_push(void) {
     test_case_t tests[] = {
         {  
             "array_push([], 1)", 
@@ -557,7 +557,7 @@ static void array_push() {
    run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void file_get_contents() {
+static void file_get_contents(void) {
     test_case_t tests[] = {
         {  
             "file_get_contents(\"tests/file.txt\")", 
@@ -572,12 +572,12 @@ static void file_get_contents() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void str_split() {
+static void str_split(void) {
      struct
     {
         const char* input;
         char* expected[3];
-        int nexpected;
+        unsigned nexpected;
     } tests[] = {
         {  
             "str_split(\"a,b,c\", \",\")", 
@@ -596,12 +596,12 @@ static void str_split() {
         },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i = 0; i < sizeof tests / sizeof tests[0]; i++) {
         struct object obj = run_vm_test(tests[i].input);
         assertf(obj.type == OBJ_ARRAY, "invalid obj type: expected \"%s\", got \"%s\"", object_type_to_str(OBJ_ARRAY), object_type_to_str(obj.type));
         struct object_list* arr = obj.value.list;
         assertf(arr->size == tests[i].nexpected, "invalid array size: expected 3, got %d", arr->size);
-        for (int j=0; j < tests[i].nexpected; j++) {
+        for (unsigned j=0; j < tests[i].nexpected; j++) {
             assertf(arr->values[j].type == OBJ_STRING, "invalid type");
             assertf(strcmp(arr->values[j].value.string->value, tests[i].expected[j]) == 0, "invalid string value: expected \"%s\", got \"%s\"", tests[i].expected[j], arr->values[j].value.string->value);
         }
@@ -609,7 +609,7 @@ static void str_split() {
     }
 }
 
-static void builtin_int() {
+static void builtin_int(void) {
     struct
     {
         const char* input;
@@ -621,13 +621,13 @@ static void builtin_int() {
         { "int(false)", 0 },
     };
 
-    for (int i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+    for (unsigned i = 0; i < sizeof tests / sizeof tests[0]; i++) {
         struct object obj = run_vm_test(tests[i].input);
         test_object(obj, OBJ_INT, (object_value) { .integer = tests[i].expected } );
     }
 }
 
-static void var_assignment() {
+static void var_assignment(void) {
     test_case_t tests[] = {
         {  
             "let a = 1; a = 2; a", 
@@ -642,7 +642,7 @@ static void var_assignment() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void for_loops() {
+static void for_loops(void) {
     test_case_t tests[] = {
         {  
             "for (let i=0; i < 10; i = i + 1) { i }", 
@@ -681,7 +681,7 @@ static void for_loops() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void for_loops_break_statement() {
+static void for_loops_break_statement(void) {
     test_case_t tests[] = {
         {  
             "for (let i = 0; i < 3; i = i + 1) { break; } i;", 
@@ -704,7 +704,7 @@ static void for_loops_break_statement() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void for_loops_continue_statement() {
+static void for_loops_continue_statement(void) {
     test_case_t tests[] = {
         {  
             "for (let i = 0; i < 3; i = i + 1) { continue; };", 
@@ -723,7 +723,7 @@ static void for_loops_continue_statement() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void arrays_2d() {
+static void arrays_2d(void) {
     test_case_t tests[] = {
         {  
             "[[10, 11, 12], [20, 21,22 ]][0][0];", 
@@ -734,7 +734,7 @@ static void arrays_2d() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void string_indexing() {
+static void string_indexing(void) {
     test_case_t tests[] = {
         {  
             "let s = \"hello\"; s[1]", 
@@ -761,7 +761,7 @@ static void string_indexing() {
     run_tests(tests, ARRAY_SIZE(tests)); 
 }
 
-static void string_comparison() {
+static void string_comparison(void) {
     test_case_t tests[] = {
         {  
             "\"foo\" == \"bar\"", 
@@ -781,7 +781,7 @@ static void string_comparison() {
 }
 
 
-static void postfix_expressions() {
+static void postfix_expressions(void) {
     test_case_t tests[] = {
         { "let foo = 1; foo--;", EXPECT_INT(1) },
         { "let foo = 1; foo--; foo", EXPECT_INT(0) },
@@ -797,7 +797,7 @@ static void postfix_expressions() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
-static void array_slices() {
+static void array_slices(void) {
     test_case_t tests[] = {
         { "[0, 1, 2][0:1][0]", EXPECT_INT(0) },
         { "[0, 1, 2][1:2][0]", EXPECT_INT(1) },
@@ -811,7 +811,7 @@ static void array_slices() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
-static void string_slices() {
+static void string_slices(void) {
     test_case_t tests[] = {
         { "\"foobar\"[3:]", EXPECT_STRING("bar") },
         { "\"foobar\"[100:]", EXPECT_STRING("") },
@@ -823,7 +823,7 @@ static void string_slices() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
-static void builtin_str_contains() {
+static void builtin_str_contains(void) {
     test_case_t tests[] = {
         { "str_contains(\"foobar\", \"foo\");", EXPECT_BOOL(true) },
         { "str_contains(\"foobar\", \"bar\");", EXPECT_BOOL(true) },
@@ -834,7 +834,7 @@ static void builtin_str_contains() {
     run_tests(tests, sizeof(tests) / sizeof(tests[0]));    
 }
 
-static void copies() {
+static void copies(void) {
     test_case_t tests[] = {
         { "let a = fn() { 5 }; let b = a; a = 100; b();", EXPECT_INT(5) },
     };

@@ -4,10 +4,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
-#include "util.h"
 #include "opcode.h"
 
-const struct definition definitions[] = {
+static const struct definition definitions[] = {
     { "OpConstant", 1, {2} },
     { "OpPop", 0, {0} },
     { "OpAdd", 0, {0} },

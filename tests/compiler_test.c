@@ -25,7 +25,7 @@ static void test_object(struct object expected, struct object actual) {
             char *expected_str = instruction_to_str(&ef->instructions);
             char *actual_str = instruction_to_str(&af->instructions);
             assertf(ef->instructions.size == af->instructions.size, "wrong instructions length: \nexpected\n\"%s\"\ngot\n\"%s\"", expected_str, actual_str);
-            for (int i=0; i < ef->instructions.size; i++) {
+            for (unsigned i=0; i < ef->instructions.size; i++) {
                 assertf(ef->instructions.bytes[i] == af->instructions.bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, ef->instructions.bytes[i], af->instructions.bytes[i], expected_str, actual_str);
             }
             free(expected_str);
@@ -52,12 +52,12 @@ static void run_compiler_test(struct compiler_test_case t) {
     char *bytecode_str = instruction_to_str(bytecode->instructions);
     assertf(bytecode->instructions->size == concatted->size, "wrong instructions length: \nexpected %d\n\"%s\"\ngot %d\n\"%s\"", concatted->size, concatted_str, bytecode->instructions->size, bytecode_str);
     
-    for (int i=0; i < concatted->size; i++) {
+    for (unsigned i=0; i < concatted->size; i++) {
         assertf(concatted->bytes[i] == bytecode->instructions->bytes[i], "byte mismatch at pos %d: expected '%d', got '%d'\n\texpected: \t%s\n\tgot: \t\t%s\n", i, concatted->bytes[i], bytecode->instructions->bytes[i], concatted_str, bytecode_str);
     }
 
     assertf(bytecode->constants->size == t.constants_size, "wrong constants size: expected %d, got %d", t.constants_size, bytecode->constants->size);
-    for (int i=0; i < t.constants_size; i++) {
+    for (unsigned i=0; i < t.constants_size; i++) {
         test_object(t.constants[i], bytecode->constants->values[i]);
         free_object(&t.constants[i]);
     }
@@ -71,12 +71,12 @@ static void run_compiler_test(struct compiler_test_case t) {
 }
 
 static void run_compiler_tests(struct compiler_test_case tests[], uint32_t n) {
-    for (int t=0; t < n; t++) {
+    for (unsigned t=0; t < n; t++) {
        run_compiler_test(tests[t]);
     }
 }
 
-static void integer_arithmetic() {
+static void integer_arithmetic(void) {
 
     struct compiler_test_case tests[] = {
         {
@@ -176,12 +176,12 @@ static void integer_arithmetic() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void boolean_expressions() {
+static void boolean_expressions(void) {
 
     struct compiler_test_case tests[] = {
         {
             .input = "true",
-            .constants = {},
+            .constants = {{0}},
             .constants_size = 0,
             .instructions = {
                 make_instruction(OPCODE_TRUE),
@@ -192,7 +192,7 @@ static void boolean_expressions() {
         },
         {
             "false",
-            {}, 0,
+            {{0}}, 0,
             {
                 make_instruction(OPCODE_FALSE),
                 make_instruction(OPCODE_POP),
@@ -258,7 +258,7 @@ static void boolean_expressions() {
         },
         {
             "true == false", 
-            {}, 0,
+            {{0}}, 0,
             {
                 make_instruction(OPCODE_TRUE),
                 make_instruction(OPCODE_FALSE),
@@ -269,7 +269,7 @@ static void boolean_expressions() {
         },
         {
             "true != false", 
-            {}, 0,
+            {{0}}, 0,
             {
                 make_instruction(OPCODE_TRUE),
                 make_instruction(OPCODE_FALSE),
@@ -280,7 +280,7 @@ static void boolean_expressions() {
         },
          {
             "!true", 
-            {}, 0,
+            {{0}}, 0,
             {
                 make_instruction(OPCODE_TRUE),
                 make_instruction(OPCODE_BANG),
@@ -293,7 +293,7 @@ static void boolean_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void if_expressions() {
+static void if_expressions(void) {
 
     struct compiler_test_case tests[] = {
         {
@@ -357,7 +357,7 @@ static void if_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void global_let_statements() {
+static void global_let_statements(void) {
     struct compiler_test_case tests[] = {
         {
             .input = "let one = 1; let two = 2;",
@@ -424,7 +424,7 @@ static void global_let_statements() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void functions() {
+static void functions(void) {
     {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
@@ -515,7 +515,7 @@ static void functions() {
     }
 }
 
-static void compiler_scopes() {
+static void compiler_scopes(void) {
     struct compiler_scope scope;
     struct compiler *compiler = compiler_new();
     assertf(compiler->scope_index == 0, "wrong scope index: expected %d, got %d", 0, compiler->scope_index);
@@ -543,7 +543,7 @@ static void compiler_scopes() {
     compiler_free(compiler);
 }
 
-static void function_calls() {
+static void function_calls(void) {
     {
         struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_CONST, 0),
@@ -683,7 +683,7 @@ static void function_calls() {
 }
 
 
-static void let_statement_scopes() {
+static void let_statement_scopes(void) {
     {
        struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
             make_instruction(OPCODE_GET_GLOBAL, 0),
@@ -759,7 +759,7 @@ static void let_statement_scopes() {
 
 }
 
-static void recursive_functions() {
+static void recursive_functions(void) {
     struct instruction *fn_body = flatten_instructions_array((struct instruction *[]) {
         make_instruction(OPCODE_GET_GLOBAL, 0),
         make_instruction(OPCODE_GET_LOCAL, 0),
@@ -789,7 +789,7 @@ static void recursive_functions() {
     free_instruction(fn_body);
 }
 
-static void string_expressions() {
+static void string_expressions(void) {
     struct compiler_test_case tests[] = {
         {
             .input = "\"monkey\"",
@@ -822,7 +822,7 @@ static void string_expressions() {
     
 }
 
-static void builtin_functions() {
+static void builtin_functions(void) {
     struct compiler_test_case tests[] = {
         {
             .input = "len(\"monkey\")",
@@ -859,7 +859,7 @@ static void builtin_functions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void while_expressions() {
+static void while_expressions(void) {
     struct compiler_test_case tests[] = {
         {
             .input = "while (true) { 10; } 3333;",
@@ -898,7 +898,7 @@ static void while_expressions() {
         },
         {
             .input = "while (true) { break; };",
-            .constants = {}, 0,
+            .constants = {{0}}, 0,
             .instructions = {
                 make_instruction(OPCODE_NULL),              
                 make_instruction(OPCODE_TRUE),              
@@ -914,7 +914,7 @@ static void while_expressions() {
         },
         {
             .input = "while (true) { continue; };",
-            .constants = {}, 0,
+            .constants = {{0}}, 0,
             .instructions = {
                 make_instruction(OPCODE_NULL),              
                 make_instruction(OPCODE_TRUE),              
@@ -933,7 +933,7 @@ static void while_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void for_expressions() {
+static void for_expressions(void) {
     struct compiler_test_case tests[] = {
         {
             .input = "for (let i = 0; i < 10; i = i + 1) { 5 }",
@@ -1029,11 +1029,11 @@ static void for_expressions() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void array_literals() {
+static void array_literals(void) {
      struct compiler_test_case tests[] = {
         {
             .input = "[]",
-            .constants = {}, 0,
+            .constants = {{0}}, 0,
             .instructions = {
                 make_instruction(OPCODE_ARRAY, 0),              
                 make_instruction(OPCODE_POP),  
@@ -1086,7 +1086,7 @@ static void array_literals() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void index_get() {
+static void index_get(void) {
     struct compiler_test_case tests[] = {
         {
             .input = "[1, 2][1]",
@@ -1110,7 +1110,7 @@ static void index_get() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void var_assignment() {
+static void var_assignment(void) {
      struct compiler_test_case tests[] = {
         {
             .input = "let a = 1; a = 2;",
@@ -1133,7 +1133,7 @@ static void var_assignment() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void index_set() {
+static void index_set(void) {
      struct compiler_test_case tests[] = {
         {
             .input = "let arr = [1]; arr[0] = 2;",
@@ -1160,7 +1160,7 @@ static void index_set() {
 }
 
 
-static void slices() {
+static void slices(void) {
      struct compiler_test_case tests[] = {
         {
             .input = "[0, 1, 2][0:1]",
@@ -1188,7 +1188,7 @@ static void slices() {
     run_compiler_tests(tests, ARRAY_SIZE(tests));
 }
 
-static void postfix_expressions() {
+static void postfix_expressions(void) {
     struct compiler_test_case tests[] = {
         {
             .input = "let foo = 0; foo--;",

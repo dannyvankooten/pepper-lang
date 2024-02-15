@@ -8,7 +8,6 @@
 #include "util.h"
 #include "opcode.h"
 #include "object.h"
-#include "parser.h"
 
 const char *object_type_to_str(enum object_type t) 
 {
